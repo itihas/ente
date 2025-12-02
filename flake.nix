@@ -88,7 +88,7 @@
             enable = mkEnableOption "enable ente photos service";
             nginx = { enable = mkEnableOption "configure"; };
             domain = mkOption { type = types.string; };
-            subdomains = mkOption {
+            apps = mkOption {
               type = types.listOf (types.enum [
                 "auth"
                 "cast"
@@ -99,6 +99,17 @@
               ]);
               default = [ "auth" "cast" "embed" "photos" "share" "accounts" ];
             };
+            port = mkOption {
+              type = types.int;
+              default = 8080;
+              description =
+                "port that the ente server binds to. ente apps are file-served and can therefore just be served by nginx directly, they don't need local ports.";
+            };
+            museumYaml = mkOption {
+              type = types.nullOr types.string;
+              default = null;
+            };
+
             museumExtraConfig = mkOption {
               type = type.attrsOf types.any;
               default = { };
@@ -107,14 +118,18 @@
           config = {
             systemd.services.ente-server = let
               museumConfig = {
-                apps = genAttrs cfg.subdomains (n: "${n}.ente.${domain}");
+                http.port = cfg.port;
+                apps = genAttrs cfg.apps (n: "${n}.ente.${domain}");
               };
               configDir = stdenv.symlinkJoin {
                 name = "ente-config";
                 paths = [
                   self.packages.${head self.systems}.ente-server
-                  (writeTextFile "museum.yaml" (lib.generators.toYAML
-                    (lib.mkMerge [ museumConfig cfg.museumExtraConfig ])))
+                  (if cfg.museumYml != null then
+                    cfg.museumYaml
+                  else
+                    (writeTextFile "museum.yaml" (lib.generators.toYAML
+                      (lib.mkMerge [ museumConfig cfg.museumExtraConfig ]))))
                 ];
               };
             in {
@@ -125,14 +140,17 @@
               };
             };
 
-            services.nginx.virtualHosts =
-              genAttrs (map (n: "${n}.${domain}") cfg.subdomains) (subdomain: {
-                forceSSL = true;
-                enableACME = true;
-                root =
-                  "${self.packages.${head self.systems}.ente-web}/${subdomain}";
-                locations."/" = { tryFiles = "$uri $uri.html /index.html"; };
-              });
+            services.nginx.virtualHosts = {
+              ${domain} = {
+                proxyPass = "http://localhost:${toString cfg.port}";
+              };
+            } genAttrs (map (n: "${n}.${domain}") cfg.apps) (subdomain: {
+              forceSSL = true;
+              enableACME = true;
+              root =
+                "${self.packages.${head self.systems}.ente-web}/${subdomain}";
+              locations."/" = { tryFiles = "$uri $uri.html /index.html"; };
+            });
           };
         };
     });
