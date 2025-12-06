@@ -6,7 +6,8 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
   };
   outputs = inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } ({ self, ... }: {
+    inputs.flake-parts.lib.mkFlake { inherit inputs; }
+    ({ self, moduleWithSystem, ... }: {
       systems = [ "x86_64-linux" ];
       perSystem = { pkgs, ... }: {
         packages = with pkgs; {
@@ -80,14 +81,15 @@
           });
         };
       };
-      flake.nixosModules.ente = { config, pkgs, lib, ... }:
+      flake.nixosModules.ente = moduleWithSystem (perSystem@{ config, ... }:
+        nixos@{ config, pkgs, lib, ... }:
         with lib;
         let cfg = config.services.ente;
         in {
           options.services.ente = {
             enable = mkEnableOption "enable ente photos service";
             nginx = { enable = mkEnableOption "configure"; };
-            domain = mkOption { type = types.string; };
+            domain = mkOption { type = types.str; };
             apps = mkOption {
               type = types.listOf (types.enum [
                 "auth"
@@ -109,12 +111,8 @@
               type = types.nullOr types.str;
               default = null;
             };
-            museumEnvironmentFile = mkOption {
-              type = types.path;
-              default = null;
-            };
             museumExtraConfig = mkOption {
-              type = types.attrsOf types.any;
+              type = types.attrs;
               default = { };
             };
           };
@@ -130,43 +128,42 @@
             systemd.services.ente-server = let
               museumConfig = {
                 http.port = cfg.port;
-                apps = genAttrs cfg.apps (n: "${n}.ente.${domain}");
+                apps = genAttrs cfg.apps (n: "${n}.ente.${cfg.domain}");
               };
-              configDir = stdenv.symlinkJoin {
+              configDir = pkgs.symlinkJoin {
                 name = "ente-config";
                 paths = [
-                  self.packages.${head self.systems}.ente-server
-                  (if cfg.museumYml != null then
+                  perSystem.config.packages.ente-server
+                  (if cfg.museumYaml != null then
                     cfg.museumYaml
                   else
-                    (writeTextFile "museum.yaml" (lib.generators.toYAML
-                      (lib.mkMerge [ museumConfig cfg.museumExtraConfig ]))))
+                    (pkgs.writeTextDir "museum.yaml" (builtins.toJSON
+                      (mkMerge [ museumConfig cfg.museumExtraConfig ]))))
                 ];
               };
             in {
               wantedBy = [ "multi-user.target" ];
-              environment = {
-                ENVIROMENT = "production";
-              };
+              environment = { ENVIROMENT = "production"; };
               serviceConfig = {
                 RootDirectory = configDir;
                 ExecStart = "./bin/museum";
-                EnvironmentFile = cfg.museumEnvironmentFile;
               };
             };
 
             services.nginx.virtualHosts = {
-              ${domain} = {
-                proxyPass = "http://localhost:${toString cfg.port}";
+              ${cfg.domain} = {
+                forceSSL = true;
+                enableACME = true;
+                locations."/".proxyPass =
+                  "http://localhost:${toString cfg.port}";
               };
-            } genAttrs (map (n: "${n}.${domain}") cfg.apps) (subdomain: {
+            } // genAttrs (map (n: "${n}.${cfg.domain}") cfg.apps) (subdomain: {
               forceSSL = true;
               enableACME = true;
-              root =
-                "${self.packages.${head self.systems}.ente-web}/${subdomain}";
+              root = "${perSystem.config.packages.ente-web}/${subdomain}";
               locations."/" = { tryFiles = "$uri $uri.html /index.html"; };
             });
           };
-        };
+        });
     });
 }
