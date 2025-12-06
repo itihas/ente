@@ -106,16 +106,27 @@
                 "port that the ente server binds to. ente apps are file-served and can therefore just be served by nginx directly, they don't need local ports.";
             };
             museumYaml = mkOption {
-              type = types.nullOr types.string;
+              type = types.nullOr types.str;
               default = null;
             };
-
+            museumEnvironmentFile = mkOption {
+              type = types.path;
+              default = null;
+            };
             museumExtraConfig = mkOption {
-              type = type.attrsOf types.any;
+              type = types.attrsOf types.any;
               default = { };
             };
           };
           config = {
+
+            users = {
+              users.ente = {
+                isSystemUser = true;
+                group = "ente";
+              };
+              groups.ente = { };
+            };
             systemd.services.ente-server = let
               museumConfig = {
                 http.port = cfg.port;
@@ -134,9 +145,13 @@
               };
             in {
               wantedBy = [ "multi-user.target" ];
+              environment = {
+                ENVIROMENT = "production";
+              };
               serviceConfig = {
                 RootDirectory = configDir;
                 ExecStart = "./bin/museum";
+                EnvironmentFile = cfg.museumEnvironmentFile;
               };
             };
 
