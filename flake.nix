@@ -251,14 +251,14 @@
 
             services.nginx.recommendedTlsSettings = true;
             services.nginx.virtualHosts = let
-              webRoot = pkgs.runCommand "ente-web-configured" { } ''
-                cp -r ${perSystem.config.packages.ente-web} $out
-                find $out -name "*.js" -type f -exec sed -i \
-                  -e 's|NEXT_PUBLIC_ENTE_ENDPOINT|https://${cfg.domain}|g' \
-                  -e 's|NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT|https://albums.${cfg.domain}|g' \
-                  -e 's|NEXT_PUBLIC_ENTE_PHOTOS_ENDPOINT|https://photos.${cfg.domain}|g' \
-                  -e 's|NEXT_PUBLIC_ENTE_SHARE_ENDPOINT|https://share.${cfg.domain}|g' \
-                  {} +
+              envPolyfill = pkgs.writeText "env.js" ''
+                window.process = window.process || {};
+                window.process.env = {
+                  NEXT_PUBLIC_ENTE_ENDPOINT: 'https://${cfg.domain}'
+                  NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT: 'https://albums.${cfg.domain}'
+                  NEXT_PUBLIC_ENTE_PHOTOS_ENDPOINT: 'https://photos.${cfg.domain}'
+                  NEXT_PUBLIC_ENTE_SHARE_ENDPOINT: 'https://share.${cfg.domain}'
+                };
               '';
             in {
               ${cfg.domain} = {
@@ -271,8 +271,18 @@
               (nameValuePair "${subdomain}.${cfg.domain}" {
                 forceSSL = true;
                 enableACME = true;
-                root = "${webRoot}/${subdomain}";
-                locations."/" = { tryFiles = "$uri $uri.html /index.html"; };
+                root = "${perSystem.config.packages.ente-web}/${subdomain}";
+                locations."=/env.js" = {
+                  alias = "${envPolyfill}";
+                  extraConfig = ''
+                    add_header Content-Type application/javascript;
+                  '';
+                };
+                locations."/".extraConfig = ''
+                  sub_filter '</head>' '<script src="/env.js"></script></head>';
+                  sub_filter_once on;
+
+                  try_files $uri $uri.html /index.html;'';
               })) cfg.apps;
           };
         });
