@@ -249,7 +249,6 @@
               };
             };
 
-            services.nginx.recommendedTlsSettings = true;
             services.nginx.virtualHosts = let
               envPolyfill = pkgs.writeText "env.js" ''
                 window.process = window.process || {};
