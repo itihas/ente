@@ -193,7 +193,6 @@
                 cast = "cast";
                 embed-albums = "embed";
                 photos = "photos";
-                public-albums = "albums";
                 public-locker = "share";
                 family = "family";
               };
@@ -225,7 +224,7 @@
             systemd.services.ente-server = let
               museumConfig = {
                 http.port = cfg.port;
-                apps = mapAttrs (n: v: "${n}.${cfg.domain}") cfg.apps;
+                apps = mapAttrs (n: v: "https://${v}.${cfg.domain}") cfg.apps;
               };
               configDir = pkgs.symlinkJoin {
                 name = "ente-config";
@@ -253,10 +252,10 @@
               envPolyfill = pkgs.writeText "env.js" ''
                 window.process = window.process || {};
                 window.process.env = {
-                  NEXT_PUBLIC_ENTE_ENDPOINT: 'https://${cfg.domain}'
-                  NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT: 'https://albums.${cfg.domain}'
-                  NEXT_PUBLIC_ENTE_PHOTOS_ENDPOINT: 'https://photos.${cfg.domain}'
-                  NEXT_PUBLIC_ENTE_SHARE_ENDPOINT: 'https://share.${cfg.domain}'
+                  NEXT_PUBLIC_ENTE_ENDPOINT: 'https://${cfg.domain}',
+                  NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT: 'https://albums.${cfg.domain}',
+                  NEXT_PUBLIC_ENTE_PHOTOS_ENDPOINT: 'https://photos.${cfg.domain}',
+                  NEXT_PUBLIC_ENTE_SHARE_ENDPOINT: 'https://share.${cfg.domain}',
                 };
               '';
             in {
