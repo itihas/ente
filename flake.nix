@@ -100,12 +100,7 @@
           ente-web = stdenv.mkDerivation (finalAttrs: {
             pname = "ente-web";
             version = "main";
-            src = ./.;
-
-            postUnpack = ''
-              cd $sourceRoot/web
-              sourceRoot="."
-            '';
+            src = ./web;
 
             nativeBuildInputs = [
               yarn
