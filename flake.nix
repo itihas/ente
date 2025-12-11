@@ -203,6 +203,12 @@
               description =
                 "port that the ente server binds to. ente apps are file-served and can therefore just be served by nginx directly, they don't need local ports.";
             };
+            credentialsFile = mkOption {
+              type = types.str;
+              default = "";
+              description =
+                "path where your credentials file lives. It is currently useless to set the credentials-file value in museum.yaml because the viper merge order is wrong. Therefore this variable sets `ENTE_CREDENTIALS_FILE in the systemd service environment.`";
+            };
             museumYaml = mkOption {
               type = types.nullOr types.str;
               default = null;
@@ -239,7 +245,10 @@
               };
             in {
               wantedBy = [ "multi-user.target" ];
-              environment = { ENVIROMENT = "production"; };
+              environment = {
+                ENVIRONMENT = "production";
+                ENTE_CREDENTIALS_FILE = cfg.credentialsFile;
+              };
               serviceConfig = {
                 User = "ente";
                 Group = "ente";
