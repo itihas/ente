@@ -183,6 +183,16 @@ class _AppState extends State<App>
   }
 
   @override
+  void onWindowMaximize() {
+    WindowListenerService.instance.onWindowMaximize().ignore();
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    WindowListenerService.instance.onWindowUnmaximize().ignore();
+  }
+
+  @override
   void onTrayIconMouseDown() {
     if (Platform.isWindows) {
       windowManager.show();
@@ -224,13 +234,7 @@ class _AppState extends State<App>
         windowManager.setSkipTaskbar(false);
         break;
       case 'exit_app':
-        if (Platform.isWindows) {
-          final int hProcess = GetCurrentProcess();
-          TerminateProcess(hProcess, 0);
-        } else {
-          windowManager.setPreventClose(false);
-          windowManager.destroy();
-        }
+        _quitApp().ignore();
         break;
     }
   }
@@ -243,13 +247,24 @@ class _AppState extends State<App>
       windowManager.hide();
       windowManager.setSkipTaskbar(true);
     } else {
-      if (Platform.isWindows) {
-        final int hProcess = GetCurrentProcess();
-        TerminateProcess(hProcess, 0);
-      } else {
-        windowManager.setPreventClose(false);
-        windowManager.destroy();
-      }
+      _quitApp().ignore();
+    }
+  }
+
+  Future<void> _quitApp() async {
+    if (Platform.isWindows) {
+      final int hProcess = GetCurrentProcess();
+      TerminateProcess(hProcess, 0);
+      return;
+    }
+
+    await windowManager.setPreventClose(false);
+    await windowManager.destroy();
+
+    // On Linux, closing via window_manager.destroy() can still segfault during
+    // native window teardown. Explicitly exiting here avoids that crash.
+    if (Platform.isLinux) {
+      exit(0);
     }
   }
 

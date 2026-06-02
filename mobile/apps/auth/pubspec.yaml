@@ -1,6 +1,6 @@
 name: ente_auth
 description: ente two-factor authenticator
-version: 4.4.18+755
+version: 4.4.23+877
 publish_to: none
 
 environment:
@@ -206,11 +206,6 @@ flutter_launcher_icons:
     image_path: "assets/generation-icons/icon-macos.png"
 
   windows:
-    generate: true
-    image_path: "assets/generation-icons/icon-windows-linux.png"
-    icon_size: 256
-
-  linux:
     generate: true
     image_path: "assets/generation-icons/icon-windows-linux.png"
     icon_size: 256

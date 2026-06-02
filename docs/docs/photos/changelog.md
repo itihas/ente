@@ -7,11 +7,54 @@ description: Release notes of recent updates to Ente Photos mobile and desktop a
 
 A short summary list of changes to the Ente Photos mobile and desktop apps. For a more descriptive list with screenshots and blog post links, see the [news](https://ente.com/news).
 
+## v1.3.40 (mobile) - May 2026
+
+- Faster Memories loading
+- Memory lane improvements
+- New QR Codes section in Discovery
+- Photos loading improvements
+- Better handling of high resolution images
+- Fixed widget showing hidden photos
+
+## v1.7.23 (desktop) - May 2026
+
+- All People dialogs shows entire face clusters
+- Public Albums app separated from Photos app
+- Faster and Light-weight public albums
+- Memory and Memory Lane links
+- Improvements (Public albums, file viewer, metadata preservation on editing, and more)
+
+## v1.3.36 (mobile) - Apr 2026
+
+- Memories improvements
+- View other family members
+- Better OCR selection
+- Fix dedupe cleanup progress percentage display
+- Fix app going blank on iOS after deleting all empty albums
+- Home gallery bug fixes
+
+## v1.3.32 (mobile) - Apr 2026
+
+- Memory Lane
+- Share any memory or Memory Lane as a link
+- Long press to detect QR codes in photos
+- Long press to select text in photos
+- Bug fixes and performance improvements
+
 ## v1.7.22 (desktop) - Mar 2026
 
 - App lock
 - Better people list experience (bigger view with search)
 - Various bug fixes (map view tiles, etc)
+
+## v1.3.28 (mobile) - Mar 2026
+
+- Fix app getting stuck on splash screen
+- Bug fixes and performance improvements
+
+## v1.3.24 (mobile) - Mar 2026
+
+- Fix app getting stuck on splash screen
 
 ## v1.3.22 (mobile) - Mar 2026
 
