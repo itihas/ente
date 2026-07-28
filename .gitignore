@@ -19,3 +19,5 @@ node_modules/
 
 # Build artifacts
 target/
+/cors.json
+/result

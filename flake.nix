@@ -19,20 +19,6 @@
       perSystem = { self', inputs', pkgs, system, lib, ... }: {
         packages = with pkgs; {
 
-          # refer https://github.com/ipetkov/crane/blob/master/examples/quick-start/flake.nix
-          ente-core = let
-            craneLib = inputs.crane.mkLib pkgs;
-            src = craneLib.cleanCargoSource ./rust/core;
-            commonArgs = {
-              inherit src;
-              strictDeps = true;
-              nativeBuildInputs = [ pkg-config ];
-              buildInputs = [ openssl ]
-                ++ lib.optionals pkgs.stdenv.isDarwin [ ];
-            };
-            cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-          in craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
-
           # refer https://github.com/ipetkov/crane/blob/master/examples/custom-toolchain/flake.nix
           ente-wasm = let
             pkgs = import inputs.nixpkgs {
@@ -47,20 +33,21 @@
               root = ./.;
               fileset = lib.fileset.unions [
                 (craneLib.fileset.commonCargoSources ./rust/core)
+                (craneLib.fileset.commonCargoSources ./rust/contacts)
                 ./web/packages/wasm
               ];
             };
             wasm-bindgen-cli = (pkgs.buildWasmBindgenCli rec {
               src = pkgs.fetchCrate {
                 pname = "wasm-bindgen-cli";
-                version = "0.2.106";
-                hash = "sha256-M6WuGl7EruNopHZbqBpucu4RWz44/MSdv6f0zkYw+44=";
+                version = "0.2.108";
+                hash = "sha256-UsuxILm1G6PkmVw0I/JF12CRltAfCJQFOaT4hFwvR8E=";
               };
 
               cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
                 inherit src;
                 inherit (src) pname version;
-                hash = "sha256-ElDatyOwdKwHg3bNH/1pcxKI7LXkhsotlDPQjiLHBwA=";
+                hash = "sha256-iqQiWbsKlLBiJFeqIYiXo3cqxGLSjNM8SOWXGM9u43E=";
               };
             });
           in craneLib.buildPackage {
@@ -103,7 +90,7 @@
             src = ./server;
             nativeBuildInputs = [ pkg-config ];
             buildInputs = [ libsodium ];
-            vendorHash = "sha256-napF55nA/9P8l5lddnEHQMjLXWSyTzgblIQCbSZ20MA=";
+            vendorHash = "sha256-qrcfNacMR2hwdtezwYrYTPpr1ALCwZktSW8UiyzGXjQ=";
             doCheck = false;
             postInstall = "cp -R ./* $out/";
           };
@@ -124,9 +111,13 @@
             ];
             doCheck = false;
 
+            # yarn.lock drifts from upstream: the key for base-x must be
+            # "base-x@5.0.1, base-x@^5.0.0:" (not just "base-x@^5.0.0:") so
+            # that fetchYarnDeps includes it for the resolutions pin in
+            # package.json. Reverse when upstream restores the multi-alias key.
             yarnOfflineCache = fetchYarnDeps {
               yarnLock = ./web/yarn.lock;
-              hash = "sha256-Kr/sOyju+WsdbdS0KN017vtrAsyQoTzn32rltSXykNk=";
+              hash = "sha256-gc0TsT0pYHQfiwjOQHUqtuO65ib+mS8Ifc0TcBig2/s=";
             };
 
             buildPhase = ''
@@ -135,30 +126,21 @@
               mkdir packages/wasm/pkg
               cp -R ${self'.packages.ente-wasm}/* packages/wasm/pkg
 
-              # These commands are executed inside web directory
-              # Build photos. Build output to be served is present at apps/photos/
-              # yarn --offline build
               yarn workspace photos next build
 
-              # Build accounts. Build output to be served is present at apps/accounts/out
-              # yarn --offline build:accounts
+              yarn workspace albums next build
+
               yarn workspace accounts next build
 
-              # Build auth. Build output to be served is present at apps/auth/out
-              # yarn --offline build:auth
               yarn workspace auth next build
 
-              # Build cast. Build output to be served is present at apps/cast/out
-              # yarn --offline build:cast
               yarn workspace cast next build
 
-              # Build public locker. Build output to be served is present at apps/share/out
-              # yarn --offline build:share
               yarn workspace share next build && yarn workspace share build:post
 
-              # Build embed. Build output to be served is present at apps/embed/out
-              # yarn --offline build:embed
               yarn workspace embed next build
+
+              yarn workspace memories next build && yarn workspace memories build:post
 
               runHook postBuild
             '';
@@ -168,6 +150,8 @@
 
               # Photos
               cp -r apps/photos/out $out/photos
+              # Albums
+              cp -r apps/albums/out $out/albums
               # Accounts
               cp -r apps/accounts/out $out/accounts
               # Auth
@@ -178,6 +162,8 @@
               cp -r apps/share/out $out/share
               # Embed
               cp -r apps/embed/out $out/embed
+              # Memories
+              cp -r apps/memories/out $out/memories
             '';
           });
         };
@@ -198,6 +184,10 @@
                   subdomain = "accounts";
                   serve = "accounts";
                 };
+                public-albums = {
+                  subdomain = "albums";
+                  serve = "albums";
+                };
                 auth = {
                   subdomain = "auth";
                   serve = "auth";
@@ -210,10 +200,6 @@
                   subdomain = "embed";
                   serve = "embed";
                 };
-                public-albums = {
-                  subdomain = "albums";
-                  serve = "photos";
-                };
                 photos = {
                   subdomain = "photos";
                   serve = "photos";
@@ -221,10 +207,6 @@
                 public-locker = {
                   subdomain = "share";
                   serve = "share";
-                };
-                family = {
-                  subdomain = "family";
-                  serve = "family";
                 };
               };
             };
@@ -289,8 +271,20 @@
             };
 
             services.nginx.virtualHosts = let
+              # TODO: upstream fix to web/packages/base/next.config.base.js —
+              # add a webpack ProvidePlugin for process/browser so that
+              # process.nextTick is injected at the module level rather than
+              # relying on window.process. The nextTick shim below is a
+              # workaround for fast-srp-hap → crypto-browserify → randombytes
+              # calling process.nextTick, which fails because the pre-compiled
+              # crypto-browserify bundle inside Next.js reads from window.process
+              # rather than webpack's per-module process injection.
               envPolyfill = pkgs.writeText "env.js" ''
                 window.process = window.process || {};
+                window.process.nextTick = window.process.nextTick || function nextTick(fn) {
+                  var args = Array.prototype.slice.call(arguments, 1);
+                  Promise.resolve().then(function() { fn.apply(null, args); });
+                };
                 window.process.env = {
                   NEXT_PUBLIC_ENTE_ENDPOINT: 'https://${cfg.domain}',
                   NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT: 'https://albums.${cfg.domain}',
