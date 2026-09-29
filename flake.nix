@@ -19,6 +19,11 @@
       perSystem = { self', inputs', pkgs, system, lib, ... }: {
         packages = with pkgs; {
 
+          # The wasm bindings used by the web apps we build, from the rust/
+          # workspace. Upstream builds these with `wasm-pack build --target
+          # bundler --no-pack`; wasm-pack downloads its tools at build time, so
+          # we run the cargo + wasm-bindgen steps it would run ourselves.
+          #
           # refer https://github.com/ipetkov/crane/blob/master/examples/custom-toolchain/flake.nix
           ente-wasm = let
             pkgs = import inputs.nixpkgs {
@@ -29,49 +34,30 @@
               p.rust-bin.stable.latest.default.override {
                 targets = [ "wasm32-unknown-unknown" ];
               });
-            src = lib.fileset.toSource {
-              root = ./.;
-              fileset = lib.fileset.unions [
-                (craneLib.fileset.commonCargoSources ./rust/core)
-                (craneLib.fileset.commonCargoSources ./rust/contacts)
-                ./web/packages/wasm
-              ];
+            # Crate (directory) names under rust/bindings/wasm, each of which
+            # ends up in web/packages/wasm/<name>/pkg.
+            crates = [ "prelogin" "photos" "auth" "cast" ];
+            commonArgs = {
+              src = lib.cleanSourceWith {
+                src = ./rust;
+                filter = path: type: baseNameOf path != "target";
+              };
+              pname = "ente-wasm";
+              version = "main";
+              CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+              cargoExtraArgs =
+                lib.concatMapStringsSep " " (c: "-p ente-${c}-wasm") crates;
+              doCheck = false;
             };
-            wasm-bindgen-cli = (pkgs.buildWasmBindgenCli rec {
-              src = pkgs.fetchCrate {
-                pname = "wasm-bindgen-cli";
-                version = "0.2.108";
-                hash = "sha256-UsuxILm1G6PkmVw0I/JF12CRltAfCJQFOaT4hFwvR8E=";
-              };
-
-              cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
-                inherit src;
-                inherit (src) pname version;
-                hash = "sha256-iqQiWbsKlLBiJFeqIYiXo3cqxGLSjNM8SOWXGM9u43E=";
-              };
-            });
-          in craneLib.buildPackage {
-            inherit src;
-            # https://github.com/ipetkov/crane/blob/master/docs/faq/workspace-not-at-source-root.md
-            cargoToml = ./web/packages/wasm/Cargo.toml;
-            cargoLock = ./web/packages/wasm/Cargo.lock;
-            postUnpack = ''
-              cd $sourceRoot/web/packages/wasm
-              sourceRoot="."
-            '';
-            postBuild = ''
-              mkdir pkg
-              ls pkg
-              ${wasm-bindgen-cli}/bin/wasm-bindgen --out-dir ./pkg target/wasm32-unknown-unknown/release/ente_wasm.wasm
-              ls pkg
-            '';
-            installPhaseCommand = ''
-              mkdir $out
-              cp -R pkg/* $out/
-            '';
-            cargoExtraArgs = "-p ente-wasm --target wasm32-unknown-unknown";
-            doCheck = false;
-          };
+          in craneLib.buildPackage (commonArgs // {
+            cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+            nativeBuildInputs = [ pkgs.wasm-bindgen-cli_0_2_125 ];
+            installPhaseCommand = lib.concatMapStringsSep "\n" (c: ''
+              mkdir -p $out/${c}
+              wasm-bindgen --target bundler --out-dir $out/${c} \
+                target/wasm32-unknown-unknown/release/ente_${c}_wasm.wasm
+            '') crates;
+          });
 
           ente-cli = buildGoModule {
             pname = "ente-cli";
@@ -79,7 +65,7 @@
             src = ./cli;
             nativeBuildInputs = [ pkg-config ];
             buildInputs = [ libsodium ];
-            vendorHash = "sha256-Gg1mifMVt6Ma8yQ/t0R5nf6NXbzLZBpuZrYsW48p0mw=";
+            vendorHash = "sha256-9O8Dj2ZnBXTPo/rDaamgw9Hlhjq0UaM9ppjTK0+GzFY=";
             doCheck = false;
             postInstall = "cp -R ./* $out/";
           };
@@ -90,80 +76,59 @@
             src = ./server;
             nativeBuildInputs = [ pkg-config ];
             buildInputs = [ libsodium ];
-            vendorHash = "sha256-qrcfNacMR2hwdtezwYrYTPpr1ALCwZktSW8UiyzGXjQ=";
+            vendorHash = "sha256-NADYbTkO0ng3lYll9+W7ICGOkUuYim8FRLtkoraMgRY=";
             doCheck = false;
             postInstall = "cp -R ./* $out/";
           };
 
-          ente-web = stdenv.mkDerivation (finalAttrs: {
+          ente-web = let
+            # Needs the ente-wasm crates built above (every app needs
+            # prelogin; photos, auth and cast also need their own).
+            apps = [ "photos" "albums" "accounts" "auth" "cast" "share" "embed" "memories" ];
+            # Apps whose package.json has a build:post step.
+            postBuildApps = [ "share" "memories" ];
+          in stdenv.mkDerivation (finalAttrs: {
             pname = "ente-web";
             version = "main";
             src = ./web;
 
-            nativeBuildInputs = [
-              yarn
-              nodejs
-              yarnConfigHook
-              writableTmpDirAsHomeHook
-              self'.packages.ente-wasm
-              wasm-bindgen-cli
-              wasm-pack
-            ];
-            doCheck = false;
-
-            # yarn.lock drifts from upstream: the key for base-x must be
-            # "base-x@5.0.1, base-x@^5.0.0:" (not just "base-x@^5.0.0:") so
-            # that fetchYarnDeps includes it for the resolutions pin in
-            # package.json. Reverse when upstream restores the multi-alias key.
-            yarnOfflineCache = fetchYarnDeps {
-              yarnLock = ./web/yarn.lock;
-              hash = "sha256-gc0TsT0pYHQfiwjOQHUqtuO65ib+mS8Ifc0TcBig2/s=";
+            npmDeps = fetchNpmDeps {
+              inherit (finalAttrs) src;
+              hash = "sha256-X7WaR9TGWqQptvGTznKSfCzbmmh7uvcNZLxVogFcP9k=";
             };
+
+            nativeBuildInputs = [ nodejs npmHooks.npmConfigHook ];
+            # Skip install scripts: wasm-pack's downloads a binary (we build
+            # the wasm ourselves) and exifreader's only customizes its bundle.
+            npmRebuildFlags = [ "--ignore-scripts" ];
+
+            env.NEXT_TELEMETRY_DISABLED = "1";
+            doCheck = false;
 
             buildPhase = ''
               runHook preBuild
 
-              mkdir packages/wasm/pkg
-              cp -R ${self'.packages.ente-wasm}/* packages/wasm/pkg
+              for c in ${self'.packages.ente-wasm}/*; do
+                mkdir -p packages/wasm/$(basename $c)/pkg
+                cp -R $c/* packages/wasm/$(basename $c)/pkg/
+              done
 
-              yarn workspace photos next build
-
-              yarn workspace albums next build
-
-              yarn workspace accounts next build
-
-              yarn workspace auth next build
-
-              yarn workspace cast next build
-
-              yarn workspace share next build && yarn workspace share build:post
-
-              yarn workspace embed next build
-
-              yarn workspace memories next build && yarn workspace memories build:post
+              ${lib.concatMapStringsSep "\n" (app: ''
+                npm exec --workspace ${app} -- next build --webpack
+              '') apps}
+              ${lib.concatMapStringsSep "\n"
+              (app: "npm run build:post --workspace ${app}") postBuildApps}
 
               runHook postBuild
             '';
 
             installPhase = ''
+              runHook preInstall
               mkdir -p $out
-
-              # Photos
-              cp -r apps/photos/out $out/photos
-              # Albums
-              cp -r apps/albums/out $out/albums
-              # Accounts
-              cp -r apps/accounts/out $out/accounts
-              # Auth
-              cp -r apps/auth/out $out/auth
-              # Cast
-              cp -r apps/cast/out $out/cast
-              # Public Locker
-              cp -r apps/share/out $out/share
-              # Embed
-              cp -r apps/embed/out $out/embed
-              # Memories
-              cp -r apps/memories/out $out/memories
+              ${lib.concatMapStringsSep "\n"
+              (app: "cp -r apps/${app}/out $out/${app}")
+              apps}
+              runHook postInstall
             '';
           });
         };
@@ -285,11 +250,10 @@
                   var args = Array.prototype.slice.call(arguments, 1);
                   Promise.resolve().then(function() { fn.apply(null, args); });
                 };
+                // Other app origins come from museum's `apps` config, which
+                // the web apps fetch at runtime.
                 window.process.env = {
                   NEXT_PUBLIC_ENTE_ENDPOINT: 'https://${cfg.domain}',
-                  NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT: 'https://albums.${cfg.domain}',
-                  NEXT_PUBLIC_ENTE_PHOTOS_ENDPOINT: 'https://photos.${cfg.domain}',
-                  NEXT_PUBLIC_ENTE_SHARE_ENDPOINT: 'https://share.${cfg.domain}',
                 };
               '';
             in {
