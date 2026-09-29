@@ -1,0 +1,1 @@
+- Improved continuity in long text conversations with saved summaries and retrieval of earlier details.

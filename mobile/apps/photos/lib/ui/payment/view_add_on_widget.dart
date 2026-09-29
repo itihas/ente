@@ -1,7 +1,7 @@
 import "package:ente_pure_utils/ente_pure_utils.dart";
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/material.dart";
 import "package:photos/gateways/storage_bonus/models/bonus.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/theme/colors.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/menu_item_widget/menu_item_widget_new.dart";
@@ -21,7 +21,7 @@ class ViewAddOnButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: MenuItemWidgetNew(
-        title: AppLocalizations.of(context).viewAddOnButton,
+        title: context.strings.viewAddOnButton,
         menuItemColor: colorScheme.fillFaint,
         pressedColor: colorScheme.fillFaintPressed,
         trailingWidget: Icon(

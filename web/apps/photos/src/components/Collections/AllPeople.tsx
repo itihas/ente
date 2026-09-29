@@ -1,4 +1,24 @@
 import {
+    CollectionTileButton,
+    CollectionTileTextOverlay,
+    CollectionDialogSearchField as SearchField,
+} from "@/components/CollectionDialog/Primitives";
+import {
+    collectionDialogBodyMutedSx,
+    collectionDialogDividerSx,
+    collectionDialogFullScreenQuery,
+    collectionDialogHeaderActionsSx,
+    collectionDialogHeaderRowSx,
+    collectionDialogHeaderSx,
+    collectionDialogIconButtonSx,
+    collectionDialogNoResultsSx,
+    collectionDialogPaperSx,
+    collectionDialogTitleSx,
+} from "@/components/CollectionDialog/styles";
+import { PeopleSortOptions } from "@/components/PeopleSortOptions";
+import { useWrapAsyncOperation } from "@/components/utils/use-wrap-async";
+import { sortPeople, type PeopleSortBy } from "@/utils/people-sort";
+import {
     ArrowDownDoubleIcon,
     ArrowUpDoubleIcon,
 } from "@hugeicons/core-free-icons";
@@ -10,24 +30,17 @@ import HideImageOutlinedIcon from "@mui/icons-material/HideImageOutlined";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import PushPinIcon from "@mui/icons-material/PushPin";
 import PushPinOutlinedIcon from "@mui/icons-material/PushPinOutlined";
-import SearchIcon from "@mui/icons-material/Search";
 import {
     Box,
     Button,
     Dialog,
-    DialogContent,
-    DialogTitle,
-    Divider,
-    InputAdornment,
+    IconButton,
     Stack,
-    TextField,
     Tooltip,
     Typography,
     styled,
     useMediaQuery,
 } from "@mui/material";
-import { FilledIconButton } from "ente-base/components/mui";
-import { DialogCloseIconButton } from "ente-base/components/mui/DialogCloseIconButton";
 import {
     OverflowMenu,
     OverflowMenuOption,
@@ -35,18 +48,7 @@ import {
 import { SingleInputDialog } from "ente-base/components/SingleInputDialog";
 import { useBaseContext } from "ente-base/context";
 import { SlideUpTransition } from "ente-new/photos/components/mui/SlideUpTransition";
-import {
-    sortPeople,
-    type PeopleSortBy,
-} from "ente-new/photos/components/people-sort";
-import { PeopleSortOptions } from "ente-new/photos/components/PeopleSortOptions";
-import {
-    ItemCard,
-    LargeTileButton,
-    LargeTileCreateNewButton,
-    LargeTileTextOverlay,
-} from "ente-new/photos/components/Tiles";
-import { useWrapAsyncOperation } from "ente-new/photos/components/utils/use-wrap-async";
+import { ItemCard } from "ente-new/photos/components/Tiles";
 import {
     addCGroup,
     addClusterToCGroup,
@@ -63,7 +65,14 @@ import type {
 } from "ente-new/photos/services/ml/people";
 import { t } from "i18next";
 import memoize from "memoize-one";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+    useCallback,
+    useEffect,
+    useId,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 import {
     VariableSizeList,
@@ -90,7 +99,8 @@ export const AllPeople: React.FC<AllPeopleProps> = ({
     peopleSortBy,
     onChangePeopleSortBy,
 }) => {
-    const fullScreen = useMediaQuery("(max-width: 428px)");
+    const fullScreen = useMediaQuery(collectionDialogFullScreenQuery);
+    const titleID = useId();
     const { showMiniDialog } = useBaseContext();
     const [searchTerm, setSearchTerm] = useState("");
     const [showingAllPeople, setShowingAllPeople] = useState(false);
@@ -134,11 +144,6 @@ export const AllPeople: React.FC<AllPeopleProps> = ({
 
     const hasSearchQuery = !!searchTerm.trim();
 
-    /**
-     * Preparing the additional faces list when showing
-     * more faces, excluding duplicates from the visible list
-     * and excluding hidden cgroups
-     */
     const extraPeople = useMemo(() => {
         const visiblePersonIDs = new Set(people.map(({ id }) => id));
         const extra = allPeople.filter(
@@ -189,13 +194,27 @@ export const AllPeople: React.FC<AllPeopleProps> = ({
 
     return (
         <>
-            <AllPeopleDialog
+            <Dialog
                 {...{ open, onClose, fullScreen }}
-                fullWidth
+                aria-labelledby={titleID}
+                maxWidth={false}
+                sx={{
+                    "& .MuiDialog-container": { justifyContent: "flex-end" },
+                    "& .MuiDialog-paper": {
+                        borderRadius: "32px",
+                        [`@media ${collectionDialogFullScreenQuery}`]: {
+                            borderRadius: 0,
+                        },
+                    },
+                }}
                 slots={{ transition: SlideUpTransition }}
-                slotProps={{ transition: { onExited: handleExited } }}
+                slotProps={{
+                    paper: { sx: collectionDialogPaperSx },
+                    transition: { onExited: handleExited },
+                }}
             >
                 <Title
+                    titleID={titleID}
                     onClose={onClose}
                     peopleCount={visiblePeopleCount}
                     totalCount={totalPeopleCount}
@@ -204,7 +223,7 @@ export const AllPeople: React.FC<AllPeopleProps> = ({
                     peopleSortBy={peopleSortBy}
                     onChangePeopleSortBy={onChangePeopleSortBy}
                 />
-                <Divider />
+                <Box sx={collectionDialogDividerSx} />
                 <AllPeopleContent
                     primaryPeople={primaryPeople}
                     expandedPeople={expandedPeople}
@@ -220,7 +239,7 @@ export const AllPeople: React.FC<AllPeopleProps> = ({
                     onAddName={setClusterToName}
                     onIgnorePerson={handleIgnorePerson}
                 />
-            </AllPeopleDialog>
+            </Dialog>
             <SingleInputDialog
                 open={!!personToRename}
                 onClose={() => setPersonToRename(undefined)}
@@ -243,61 +262,18 @@ export const AllPeople: React.FC<AllPeopleProps> = ({
     );
 };
 
-const Column3To2Breakpoint = 559;
-const PeopleRowItemSize = 154;
+const GridColumns = 3;
+const GridGap = 8;
+const GridPaddingInline = 20;
 const ShowMoreFacesButtonHeight = 56;
 const ShowMoreFacesButtonVerticalGap = 16;
 const ShowMoreFacesRowItemSize =
     ShowMoreFacesButtonHeight + 2 * ShowMoreFacesButtonVerticalGap;
 const ExpandedPeopleTopSpacing = 4;
-const PeopleListTopSpacing = 16;
 const personCardShellClassName = "all-people-person-card";
 
-const addTopSpacing = (
-    value: React.CSSProperties["top"] | React.CSSProperties["height"],
-) =>
-    typeof value == "number"
-        ? value + PeopleListTopSpacing
-        : value
-          ? `calc(${value} + ${PeopleListTopSpacing}px)`
-          : undefined;
-
-const peopleListInnerStyle = (
-    style: React.CSSProperties | undefined,
-): React.CSSProperties => {
-    return {
-        ...style,
-        boxSizing: "border-box",
-        position: "relative",
-        height: addTopSpacing(style?.height),
-    };
-};
-
-const peopleRowStyle = (style: React.CSSProperties): React.CSSProperties => {
-    return { ...style, top: addTopSpacing(style.top) };
-};
-
-const PeopleListInner = React.forwardRef<
-    HTMLDivElement,
-    React.ComponentPropsWithoutRef<"div">
->(({ style, ...props }, ref) => (
-    <div ref={ref} {...props} style={peopleListInnerStyle(style)} />
-));
-
-PeopleListInner.displayName = "PeopleListInner";
-
-const AllPeopleDialog = styled(Dialog)(({ theme }) => ({
-    "& .MuiDialog-container": { justifyContent: "flex-end" },
-    "& .MuiPaper-root": { maxWidth: "494px" },
-    "& .MuiDialogTitle-root": { padding: theme.spacing(2) },
-    "& .MuiDialogContent-root": { padding: theme.spacing(2) },
-    [theme.breakpoints.down(Column3To2Breakpoint)]: {
-        "& .MuiPaper-root": { width: "324px" },
-        "& .MuiDialogContent-root": { padding: 6 },
-    },
-}));
-
 type TitleProps = {
+    titleID: string;
     peopleCount: number;
     totalCount: number;
     searchTerm: string;
@@ -307,6 +283,7 @@ type TitleProps = {
 } & Pick<AllPeopleProps, "onClose">;
 
 const Title: React.FC<TitleProps> = ({
+    titleID,
     onClose,
     peopleCount,
     totalCount,
@@ -315,123 +292,45 @@ const Title: React.FC<TitleProps> = ({
     peopleSortBy,
     onChangePeopleSortBy,
 }) => (
-    <DialogTitle>
-        <Stack sx={{ gap: 1.5 }}>
-            <Stack direction="row" sx={{ gap: 1.5 }}>
-                <Stack sx={{ flex: 1 }}>
-                    <Box>
-                        <Typography variant="h5">{t("people")}</Typography>
-                        <Typography
-                            variant="small"
-                            sx={{ color: "text.muted", fontWeight: "regular" }}
-                        >
-                            {searchTerm
-                                ? `${peopleCount} / ${totalCount} ${t("people")}`
-                                : `${peopleCount} ${t("people")}`}
-                        </Typography>
-                    </Box>
-                </Stack>
+    <Stack sx={collectionDialogHeaderSx}>
+        <Stack direction="row" sx={collectionDialogHeaderRowSx}>
+            <Stack sx={{ minWidth: 0, gap: "2px" }}>
+                <Typography
+                    id={titleID}
+                    component="h2"
+                    sx={collectionDialogTitleSx}
+                >
+                    {t("people")}
+                </Typography>
+                <Typography sx={collectionDialogBodyMutedSx}>
+                    {searchTerm
+                        ? `${peopleCount} / ${totalCount} ${t("people")}`
+                        : `${peopleCount} ${t("people")}`}
+                </Typography>
+            </Stack>
+            <Stack direction="row" sx={collectionDialogHeaderActionsSx}>
                 <PeopleSortOptions
                     activeSortBy={peopleSortBy}
                     onChangeSortBy={onChangePeopleSortBy}
                     nestedInDialog
+                    variant="v2"
                 />
-                <FilledIconButton onClick={onClose}>
-                    <CloseIcon />
-                </FilledIconButton>
+                <IconButton
+                    aria-label={t("close")}
+                    onClick={onClose}
+                    sx={collectionDialogIconButtonSx}
+                >
+                    <CloseIcon sx={{ fontSize: 18 }} />
+                </IconButton>
             </Stack>
-            <SearchField value={searchTerm} onChange={onSearchChange} />
         </Stack>
-    </DialogTitle>
-);
-
-interface SearchFieldProps {
-    value: string;
-    onChange: (value: string) => void;
-}
-
-const SearchField: React.FC<SearchFieldProps> = ({ value, onChange }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        const timeout = window.setTimeout(() => {
-            inputRef.current?.focus();
-            inputRef.current?.select();
-        }, 0);
-
-        return () => window.clearTimeout(timeout);
-    }, []);
-
-    const handleClear = () => {
-        onChange("");
-        inputRef.current?.focus();
-    };
-
-    return (
-        <TextField
-            inputRef={inputRef}
-            fullWidth
-            size="small"
-            placeholder={`${t("search")} ${t("people").toLowerCase()}...`}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            autoFocus
-            slotProps={{
-                input: {
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon />
-                        </InputAdornment>
-                    ),
-                    endAdornment: value && (
-                        <InputAdornment
-                            position="end"
-                            sx={{ marginRight: "0 !important" }}
-                        >
-                            <CloseIcon
-                                fontSize="small"
-                                onClick={handleClear}
-                                sx={{
-                                    color: "stroke.muted",
-                                    cursor: "pointer",
-                                    "&:hover": { color: "text.base" },
-                                }}
-                            />
-                        </InputAdornment>
-                    ),
-                },
-            }}
-            sx={{
-                "& .MuiOutlinedInput-root": {
-                    backgroundColor: "background.searchInput",
-                    borderColor: "transparent",
-                    "&:hover": { borderColor: "accent.light" },
-                    "&.Mui-focused": {
-                        borderColor: "accent.main",
-                        boxShadow: "none",
-                    },
-                },
-                "& .MuiInputBase-input": {
-                    color: "text.base",
-                    paddingTop: "8.5px !important",
-                    paddingBottom: "8.5px !important",
-                },
-                "& .MuiInputAdornment-root": {
-                    color: "stroke.muted",
-                    marginTop: "0 !important",
-                    marginRight: "8px",
-                },
-                "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "transparent",
-                },
-                "& .MuiInputBase-input::placeholder": {
-                    color: "text.muted",
-                    opacity: 1,
-                },
-            }}
+        <SearchField
+            value={searchTerm}
+            onChange={onSearchChange}
+            placeholder={t("people_search_hint")}
         />
-    );
-};
+    </Stack>
+);
 
 interface AllPeopleContentProps {
     primaryPeople: Person[];
@@ -451,22 +350,23 @@ type PeopleListItem =
     | { type: "people"; people: Person[]; topSpacing?: boolean }
     | { type: "showMoreButton" };
 
-interface ItemData
-    extends Pick<
-        AllPeopleContentProps,
-        | "showingAllPeople"
-        | "onToggleShowingAllPeople"
-        | "onSelectPerson"
-        | "onRenamePerson"
-        | "onPinPerson"
-        | "onAddName"
-        | "onIgnorePerson"
-    > {
+interface ItemData extends Pick<
+    AllPeopleContentProps,
+    | "showingAllPeople"
+    | "onToggleShowingAllPeople"
+    | "onSelectPerson"
+    | "onRenamePerson"
+    | "onPinPerson"
+    | "onAddName"
+    | "onIgnorePerson"
+> {
+    tileSize: number;
     items: PeopleListItem[];
 }
 
 const createItemData = memoize(
     (
+        tileSize: number,
         items: PeopleListItem[],
         showingAllPeople: boolean,
         onToggleShowingAllPeople: () => void,
@@ -476,6 +376,7 @@ const createItemData = memoize(
         onAddName: (person: ClusterPerson) => void,
         onIgnorePerson: (person: ClusterPerson) => void,
     ) => ({
+        tileSize,
         items,
         showingAllPeople,
         onToggleShowingAllPeople,
@@ -503,13 +404,17 @@ const peopleListItems = (
     return items;
 };
 
-const peopleListItemSize = (item: PeopleListItem | undefined) => {
+const peopleListItemSize = (
+    item: PeopleListItem | undefined,
+    tileSize: number,
+) => {
     switch (item?.type) {
         case "showMoreButton":
             return ShowMoreFacesRowItemSize;
         default:
             return (
-                PeopleRowItemSize +
+                tileSize +
+                GridGap +
                 (item?.topSpacing ? ExpandedPeopleTopSpacing : 0)
             );
     }
@@ -519,6 +424,7 @@ const PeopleRow = React.memo(
     ({ data, index, style }: ListChildComponentProps<ItemData>) => {
         const {
             items,
+            tileSize,
             showingAllPeople,
             onToggleShowingAllPeople,
             onSelectPerson,
@@ -531,7 +437,7 @@ const PeopleRow = React.memo(
 
         if (item.type == "showMoreButton") {
             return (
-                <div style={peopleRowStyle(style)}>
+                <div style={style}>
                     <ShowMoreFacesButton
                         showingAllPeople={showingAllPeople}
                         onClick={onToggleShowingAllPeople}
@@ -541,18 +447,19 @@ const PeopleRow = React.memo(
         }
 
         return (
-            <div style={peopleRowStyle(style)}>
+            <div style={style}>
                 <Stack
                     direction="row"
                     sx={{
                         boxSizing: "border-box",
                         height: "100%",
-                        px: 2,
+                        "--tile-size": `${tileSize}px`,
+                        px: `${GridPaddingInline}px`,
                         pt: item.topSpacing
                             ? `${ExpandedPeopleTopSpacing}px`
                             : 0,
-                        pb: 0.5,
-                        gap: 0.5,
+                        pb: `${GridGap}px`,
+                        gap: `${GridGap}px`,
                     }}
                 >
                     {item.people.map((person) => (
@@ -586,9 +493,15 @@ const AllPeopleContent: React.FC<AllPeopleContentProps> = ({
     onAddName,
     onIgnorePerson,
 }) => {
-    const isTwoColumn = useMediaQuery(`(width < ${Column3To2Breakpoint}px)`);
-    const columns = isTwoColumn ? 2 : 3;
+    const columns = GridColumns;
     const listOuterRef = useRef<HTMLDivElement>(null);
+    const [scrollbarWidth, setScrollbarWidth] = useState(0);
+    const handleListOuterRef = useCallback((element: HTMLDivElement | null) => {
+        listOuterRef.current = element;
+        if (element) {
+            setScrollbarWidth(element.offsetWidth - element.clientWidth);
+        }
+    }, []);
 
     const shouldShowMoreFacesButton = showMoreFacesButton && !hasSearchQuery;
     const shouldShowExpandedPeople =
@@ -626,65 +539,63 @@ const AllPeopleContent: React.FC<AllPeopleContentProps> = ({
         }
     };
 
-    const itemData = createItemData(
-        items,
-        showingAllPeople,
-        handleToggleShowingAllPeople,
-        onSelectPerson,
-        onRenamePerson,
-        onPinPerson,
-        onAddName,
-        onIgnorePerson,
-    );
-
     if (hasSearchQuery && primaryPeople.length === 0) {
         return (
-            <DialogContent sx={{ height: "80svh" }}>
-                <CenteredMessage>
-                    <Typography color="text.muted">
-                        {t("no_results")}
-                    </Typography>
-                </CenteredMessage>
-            </DialogContent>
+            <Box sx={collectionDialogNoResultsSx}>
+                <Typography sx={collectionDialogBodyMutedSx}>
+                    {t("no_results")}
+                </Typography>
+            </Box>
         );
     }
 
-    const itemSize = (index: number) => peopleListItemSize(items[index]);
-    const listContentHeight =
-        PeopleListTopSpacing +
-        items.reduce((height, item) => height + peopleListItemSize(item), 0);
     const primaryRowCount = Math.ceil(primaryPeople.length / columns);
-    const listKey = `${columns}-${shouldShowMoreFacesButton ? "with-button" : "no-button"}-${primaryRowCount}`;
+    const listKey = `${shouldShowMoreFacesButton}-${primaryRowCount}`;
 
     return (
-        <DialogContent
-            sx={{
-                "&&": { padding: 0 },
-                height: hasSearchQuery
-                    ? "80svh"
-                    : `min(80svh, ${listContentHeight}px)`,
-                display: "flex",
-                flexDirection: "column",
-            }}
-        >
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-                <AutoSizer>
-                    {({ width, height }) => (
+        <Box sx={{ flex: 1, minHeight: 0, pt: "16px", pb: "20px" }}>
+            <AutoSizer>
+                {({ width, height }) => {
+                    const tileSize = Math.max(
+                        0,
+                        Math.floor(
+                            (width -
+                                scrollbarWidth -
+                                2 * GridPaddingInline -
+                                (GridColumns - 1) * GridGap) /
+                                GridColumns,
+                        ),
+                    );
+                    return (
                         <VariableSizeList
                             {...{ width, height }}
-                            outerRef={listOuterRef}
-                            key={listKey}
+                            outerRef={handleListOuterRef}
+                            // Keep the measured gutter stable as rows are added
+                            // or removed, including when searching for people.
+                            style={{ scrollbarGutter: "stable" }}
+                            key={`${listKey}-${tileSize}`}
                             itemCount={items.length}
-                            itemSize={itemSize}
-                            itemData={itemData}
-                            innerElementType={PeopleListInner}
+                            itemSize={(index) =>
+                                peopleListItemSize(items[index], tileSize)
+                            }
+                            itemData={createItemData(
+                                tileSize,
+                                items,
+                                showingAllPeople,
+                                handleToggleShowingAllPeople,
+                                onSelectPerson,
+                                onRenamePerson,
+                                onPinPerson,
+                                onAddName,
+                                onIgnorePerson,
+                            )}
                         >
                             {PeopleRow}
                         </VariableSizeList>
-                    )}
-                </AutoSizer>
-            </Box>
-        </DialogContent>
+                    );
+                }}
+            </AutoSizer>
+        </Box>
     );
 };
 
@@ -697,7 +608,12 @@ const ShowMoreFacesButton: React.FC<ShowMoreFacesButtonProps> = ({
     showingAllPeople,
     onClick,
 }) => (
-    <Box sx={{ px: 2, py: `${ShowMoreFacesButtonVerticalGap}px` }}>
+    <Box
+        sx={{
+            px: `${GridPaddingInline}px`,
+            py: `${ShowMoreFacesButtonVerticalGap}px`,
+        }}
+    >
         <Button
             fullWidth
             variant="text"
@@ -717,6 +633,7 @@ const ShowMoreFacesButton: React.FC<ShowMoreFacesButtonProps> = ({
                 color: "text.base",
                 backgroundColor: "fill.faint",
                 border: 0,
+                borderRadius: "16px",
                 height: `${ShowMoreFacesButtonHeight}px`,
                 minHeight: `${ShowMoreFacesButtonHeight}px`,
                 "&:hover": { backgroundColor: "fill.muted" },
@@ -728,13 +645,6 @@ const ShowMoreFacesButton: React.FC<ShowMoreFacesButtonProps> = ({
         </Button>
     </Box>
 );
-
-const CenteredMessage = styled(Box)({
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100%",
-});
 
 interface PersonCardProps {
     person: Person;
@@ -755,22 +665,24 @@ const PersonCard: React.FC<PersonCardProps> = ({
 }) => (
     <PersonCardShell className={personCardShellClassName}>
         <ItemCard
-            TileComponent={LargeTileButton}
+            TileComponent={CollectionTileButton}
             coverFile={person.displayFaceFile}
             coverFaceID={person.displayFaceID}
             onClick={() => onSelectPerson(person.id)}
         >
-            <LargeTileTextOverlay>
+            <CollectionTileTextOverlay>
                 {person.name && (
                     <Tooltip title={person.name} arrow>
                         <Typography
-                            variant="body"
                             sx={{
-                                maxWidth: "118px",
+                                fontSize: 14,
+                                lineHeight: "20px",
+                                fontWeight: 500,
+                                paddingRight: "18px",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 display: "-webkit-box",
-                                WebkitLineClamp: 2,
+                                WebkitLineClamp: 3,
                                 WebkitBoxOrient: "vertical",
                             }}
                         >
@@ -778,10 +690,17 @@ const PersonCard: React.FC<PersonCardProps> = ({
                         </Typography>
                     </Tooltip>
                 )}
-                <Typography variant="small" sx={{ opacity: 0.7 }}>
+                <Typography
+                    sx={{
+                        fontSize: 12,
+                        lineHeight: "16px",
+                        fontWeight: 500,
+                        opacity: 0.7,
+                    }}
+                >
                     {t("photos_count", { count: person.fileIDs.length })}
                 </Typography>
-            </LargeTileTextOverlay>
+            </CollectionTileTextOverlay>
             {person.isPinned && (
                 <PinnedIconContainer>
                     <PushPinIcon sx={{ fontSize: 20, color: "white" }} />
@@ -800,6 +719,9 @@ const PersonCard: React.FC<PersonCardProps> = ({
 
 const PersonCardShell = styled("div")`
     position: relative;
+    flex: none;
+    width: var(--tile-size);
+    height: var(--tile-size);
 `;
 
 const PinnedIconContainer = styled(Box)`
@@ -887,7 +809,37 @@ const PersonActionMenu: React.FC<PersonActionMenuProps> = ({
                     opacity: 0.9,
                     "&:hover": { backgroundColor: "transparent", opacity: 1 },
                 }}
-                menuPaperSxProps={{ minWidth: 176, width: 176 }}
+                menuPaperSxProps={(theme) => ({
+                    minWidth: 238,
+                    width: 238,
+                    mt: "6px",
+                    border: "1px solid #ececec",
+                    borderRadius: "16px",
+                    backgroundColor: "background.paper",
+                    boxShadow: "0 4px 4px rgba(0 0 0 / 0.16)",
+                    overflow: "hidden",
+                    "& .MuiList-root": { p: 0.75 },
+                    "& .MuiMenuItem-root": {
+                        minHeight: 40,
+                        height: 40,
+                        boxSizing: "border-box",
+                        py: "10px",
+                        px: "12px",
+                        borderRadius: "8px",
+                        color: "text.base",
+                        "&:hover": { backgroundColor: "fill.faintHover" },
+                    },
+                    "& .MuiTypography-root": {
+                        fontSize: 14,
+                        lineHeight: "20px",
+                        fontWeight: 500,
+                    },
+                    ...theme.applyStyles("dark", {
+                        borderColor: "rgba(255 255 255 / 0.12)",
+                        backgroundColor: "#282828",
+                        boxShadow: "0 4px 4px rgba(0 0 0 / 0.40)",
+                    }),
+                })}
             >
                 {menuOptions}
             </OverflowMenu>
@@ -929,7 +881,8 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({
     people,
     cluster,
 }) => {
-    const isFullScreen = useMediaQuery("(max-width: 490px)");
+    const isFullScreen = useMediaQuery(collectionDialogFullScreenQuery);
+    const titleID = useId();
     const [openNameInput, setOpenNameInput] = useState(false);
 
     const cgroupPeople: CGroupPerson[] = people.filter(
@@ -970,20 +923,64 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({
     return (
         <>
             <Dialog
-                open={open && !openNameInput && cgroupPeople.length > 0}
+                open={open && cgroupPeople.length > 0}
                 onClose={onClose}
-                fullWidth
                 fullScreen={isFullScreen}
-                slotProps={{ paper: { sx: { maxWidth: "490px" } } }}
+                aria-labelledby={titleID}
+                maxWidth={false}
+                sx={{
+                    "& .MuiDialog-paper": {
+                        borderRadius: "32px",
+                        [`@media ${collectionDialogFullScreenQuery}`]: {
+                            borderRadius: 0,
+                        },
+                    },
+                }}
+                slots={{ transition: SlideUpTransition }}
+                slotProps={{ paper: { sx: collectionDialogPaperSx } }}
             >
-                <DialogTitle_>
-                    <Typography variant="h3">{t("add_name")}</Typography>
-                    <DialogCloseIconButton {...{ onClose }} />
-                </DialogTitle_>
+                <Stack sx={collectionDialogHeaderSx}>
+                    <Stack direction="row" sx={collectionDialogHeaderRowSx}>
+                        <Typography id={titleID} sx={collectionDialogTitleSx}>
+                            {t("add_name")}
+                        </Typography>
+                        <IconButton
+                            aria-label={t("close")}
+                            onClick={onClose}
+                            sx={collectionDialogIconButtonSx}
+                        >
+                            <CloseIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                    </Stack>
+                </Stack>
+                <Box sx={collectionDialogDividerSx} />
                 <DialogContent_>
-                    <LargeTileCreateNewButton onClick={handleAddPerson}>
-                        {t("new_person")}
-                    </LargeTileCreateNewButton>
+                    <CollectionTileButton
+                        onClick={handleAddPerson}
+                        aria-label={t("new_person")}
+                        sx={(theme) => ({
+                            boxSizing: "border-box",
+                            border: "1px dashed",
+                            borderColor: "stroke.muted",
+                            color: "text.muted",
+                            "&:hover": { borderColor: "rgba(0 0 0 / 0.45)" },
+                            ...theme.applyStyles("dark", {
+                                "&:hover": {
+                                    borderColor: "rgba(255 255 255 / 0.45)",
+                                },
+                            }),
+                        })}
+                    >
+                        <AddIcon
+                            sx={{
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
+                                transform: "translate(-50%, -50%)",
+                                fontSize: 20,
+                            }}
+                        />
+                    </CollectionTileButton>
                     {cgroupPeople.map((person) => (
                         <PersonPickerCard
                             key={person.id}
@@ -996,6 +993,8 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({
 
             <SingleInputDialog
                 open={openNameInput}
+                variant="people"
+                sx={{ "& .MuiDialog-paper": { borderRadius: "32px" } }}
                 onClose={() => {
                     setOpenNameInput(false);
                     if (!cgroupPeople.length) {
@@ -1014,18 +1013,22 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({
     );
 };
 
-const DialogTitle_ = styled(Box)({
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 8px 6px 24px",
+const DialogContent_ = styled(Box)({
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gridAutoRows: "max-content",
+    alignContent: "start",
+    alignItems: "start",
+    gap: `${GridGap}px`,
+    // Keep the scroll track clear of the dialog's rounded bottom corners.
+    marginBlock: "16px 32px",
+    marginInlineEnd: "8px",
+    paddingInline: `${GridPaddingInline}px ${GridPaddingInline - 8}px`,
+    scrollbarGutter: "stable",
 });
-
-const DialogContent_ = styled(DialogContent)`
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-`;
 
 interface PersonPickerCardProps {
     person: Person;
@@ -1037,13 +1040,29 @@ const PersonPickerCard: React.FC<PersonPickerCardProps> = ({
     onPersonClick,
 }) => (
     <ItemCard
-        TileComponent={LargeTileButton}
+        TileComponent={CollectionTileButton}
         coverFile={person.displayFaceFile}
         coverFaceID={person.displayFaceID}
         onClick={() => onPersonClick(person.id)}
     >
-        <LargeTileTextOverlay>
-            <Typography>{person.name ?? ""}</Typography>
-        </LargeTileTextOverlay>
+        <CollectionTileTextOverlay>
+            <Tooltip title={person.name ?? ""} arrow>
+                <Typography
+                    sx={{
+                        fontSize: 14,
+                        lineHeight: "20px",
+                        fontWeight: 500,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                        overflowWrap: "anywhere",
+                    }}
+                >
+                    {person.name ?? ""}
+                </Typography>
+            </Tooltip>
+        </CollectionTileTextOverlay>
     </ItemCard>
 );

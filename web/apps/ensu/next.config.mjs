@@ -1,12 +1,8 @@
-/* eslint-env node */
-
 import nextConfig from "ente-base/next.config.base.js";
-import packageJson from "./package.json" with { type: "json" };
 
-/** @type {{ process?: { env?: Record<string, string> } }} */
+/** @type {{ process?: { env?: Record<string, string | undefined> } }} */
 const globalWithProcess = globalThis;
 const env = globalWithProcess.process?.env;
-const { version } = packageJson;
 const isTauriBuild = env?.ENTE_TAURI === "1";
 const rawBasePath = env?.ENTE_BASE_PATH ?? "";
 const normalizedBasePath = rawBasePath
@@ -15,11 +11,9 @@ const normalizedBasePath = rawBasePath
         : `/${rawBasePath}`
     : undefined;
 
-export default {
+/** @satisfies {import("next").NextConfig} */
+const config = {
     ...nextConfig,
-    eslint: { ignoreDuringBuilds: true },
-    typescript: { ignoreBuildErrors: true },
-    env: { ...(nextConfig.env ?? {}), NEXT_PUBLIC_ENSU_VERSION: version },
     ...(isTauriBuild ? { output: "export" } : {}),
     ...(normalizedBasePath
         ? {
@@ -29,3 +23,5 @@ export default {
           }
         : {}),
 };
+
+export default config;

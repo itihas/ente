@@ -4,9 +4,9 @@ import {
     setPublicAlbumsCredentials,
 } from "@/public-album/data/auth/public-link-credentials";
 import { blobCache, type BlobCache } from "ente-base/blob-cache";
+import { fetchPublicCollectionFile } from "ente-base/file-download";
 import {
     authenticatedPublicAlbumsRequestHeaders,
-    publicRequestHeaders,
     retryEnsuringHTTPOk,
     type PublicAlbumsCredentials,
 } from "ente-base/http";
@@ -74,7 +74,10 @@ class ThumbnailManager {
         return thumb;
     }
 
-    async thumbnailData(file: EnteFile, cachedOnly = false) {
+    async thumbnailData(
+        file: EnteFile,
+        cachedOnly = false,
+    ): Promise<Uint8Array<ArrayBuffer> | undefined> {
         await this.initThumbnailCacheIfNeeded();
 
         const key = file.id.toString();
@@ -108,11 +111,6 @@ class ThumbnailManager {
 
 export const thumbnailManager = new ThumbnailManager();
 
-type CaptureStackTrace = (
-    targetObject: object,
-    constructorOpt?: object,
-) => void;
-
 class NetworkThumbnailError extends Error {
     error: unknown;
 
@@ -121,10 +119,7 @@ class NetworkThumbnailError extends Error {
             `NetworkThumbnailError: ${e instanceof Error ? e.message : String(e)}`,
         );
 
-        const captureStackTrace = Reflect.get(Error, "captureStackTrace") as
-            | CaptureStackTrace
-            | undefined;
-        if (captureStackTrace) captureStackTrace(this, NetworkThumbnailError);
+        Error.captureStackTrace?.(this, NetworkThumbnailError);
 
         this.error = e;
     }
@@ -141,17 +136,9 @@ const publicAlbums_downloadThumbnail = async (
 ) => {
     const customOrigin = await customAPIOrigin();
 
-    const getThumbnail = async () => {
+    const getThumbnail = () => {
         if (customOrigin) {
-            const { accessToken, accessTokenJWT } = credentials;
-            const params = new URLSearchParams({
-                accessToken,
-                ...(accessTokenJWT && { accessTokenJWT }),
-            });
-            return fetch(
-                `${customOrigin}/public-collection/files/preview/${file.id}?${params.toString()}`,
-                { headers: publicRequestHeaders() },
-            );
+            return fetchPublicCollectionFile(file.id, "thumbnail", credentials);
         } else {
             return fetch(
                 `https://public-albums.ente.com/preview/?fileID=${file.id}`,

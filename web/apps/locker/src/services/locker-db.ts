@@ -1,10 +1,10 @@
-import { ensureLocalUser } from "ente-accounts-rs/services/user";
+import { ensureLocalUser } from "ente-accounts/services/user";
 import log from "ente-base/log";
 import { deleteDB, openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type {
     EncryptedCollectionRecord,
     EncryptedFileRecord,
-} from "./remote-cache";
+} from "./locker-cache";
 
 const LOCKER_DB_NAME_PREFIX = "ente-locker";
 const LOCKER_DB_VERSION = 2;
@@ -43,7 +43,7 @@ interface CachedLockerDB {
     dbPromise: ReturnType<typeof openLockerDB>;
 }
 
-export interface LockerDBSnapshot {
+interface LockerDBSnapshot {
     collections: Map<number, EncryptedCollectionRecord>;
     files: EncryptedFileRecord[];
     trashFiles: StoredTrashFileRecord[];

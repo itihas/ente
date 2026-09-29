@@ -17,6 +17,11 @@
                   android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
@@ -107,12 +112,6 @@
                    android:value="https://ed4ddd6309b847ba8849935e26e9b648@sentry.ente.io/9"/>
     </application>
 
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.SENDTO"/>
-            <data android:scheme="mailto"/>
-        </intent>
-    </queries>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission
             android:name="android.permission.READ_EXTERNAL_STORAGE"

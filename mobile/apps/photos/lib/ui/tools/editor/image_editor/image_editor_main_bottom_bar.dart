@@ -1,7 +1,8 @@
 import 'dart:math';
 
+import "package:ente_strings/ente_strings.dart";
 import 'package:flutter/material.dart';
-import "package:photos/generated/l10n.dart";
+import "package:hugeicons/hugeicons.dart";
 import "package:photos/ui/tools/editor/image_editor/circular_icon_button.dart";
 import "package:photos/ui/tools/editor/image_editor/image_editor_configs_mixin.dart";
 import "package:photos/ui/tools/editor/image_editor/image_editor_constants.dart";
@@ -36,9 +37,7 @@ class ImageEditorMainBottomBarState extends State<ImageEditorMainBottomBar>
       builder: (context, constraints) {
         return Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildFunctions(constraints),
-          ],
+          children: [_buildFunctions(constraints)],
         );
       },
     );
@@ -53,10 +52,7 @@ class ImageEditorMainBottomBarState extends State<ImageEditorMainBottomBar>
         layoutBuilder: (currentChild, previousChildren) => Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.bottomCenter,
-          children: <Widget>[
-            ...previousChildren,
-            if (currentChild != null) currentChild,
-          ],
+          children: <Widget>[...previousChildren, ?currentChild],
         ),
         duration: const Duration(milliseconds: 400),
         reverseDuration: const Duration(milliseconds: 0),
@@ -66,14 +62,14 @@ class ImageEditorMainBottomBarState extends State<ImageEditorMainBottomBar>
             child: SizeTransition(
               sizeFactor: animation,
               axis: Axis.vertical,
-              axisAlignment: -1,
+              alignment: AlignmentDirectional.topStart,
               child: child,
             ),
           );
         },
         switchInCurve: Curves.ease,
-        child: widget.editor.isSubEditorOpen &&
-                !widget.editor.isSubEditorClosing
+        child:
+            widget.editor.isSubEditorOpen && !widget.editor.isSubEditorClosing
             ? const SizedBox.shrink()
             : Align(
                 alignment: Alignment.center,
@@ -90,38 +86,36 @@ class ImageEditorMainBottomBarState extends State<ImageEditorMainBottomBar>
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         CircularIconButton(
-                          svgPath: "assets/image-editor/image-editor-crop.svg",
-                          label: AppLocalizations.of(context).crop,
+                          hugeIcon: HugeIcons.strokeRoundedCrop,
+                          label: context.strings.crop,
                           onTap: () {
                             widget.editor.openCropRotateEditor();
                           },
                         ),
                         CircularIconButton(
-                          svgPath:
-                              "assets/image-editor/image-editor-filter.svg",
-                          label: AppLocalizations.of(context).filter,
+                          hugeIcon: HugeIcons.strokeRoundedFilter,
+                          label: context.strings.filter,
                           onTap: () {
                             widget.editor.openFilterEditor();
                           },
                         ),
                         CircularIconButton(
-                          svgPath: "assets/image-editor/image-editor-tune.svg",
-                          label: AppLocalizations.of(context).adjust,
+                          hugeIcon: HugeIcons.strokeRoundedSlidersHorizontal,
+                          label: context.strings.adjust,
                           onTap: () {
                             widget.editor.openTuneEditor();
                           },
                         ),
                         CircularIconButton(
-                          svgPath: "assets/image-editor/image-editor-paint.svg",
-                          label: AppLocalizations.of(context).draw,
+                          hugeIcon: HugeIcons.strokeRoundedPaintBrush01,
+                          label: context.strings.draw,
                           onTap: () {
                             widget.editor.openPaintEditor();
                           },
                         ),
                         CircularIconButton(
-                          svgPath:
-                              "assets/image-editor/image-editor-sticker.svg",
-                          label: AppLocalizations.of(context).sticker,
+                          hugeIcon: HugeIcons.strokeRoundedSticker,
+                          label: context.strings.sticker,
                           onTap: () {
                             widget.editor.openEmojiEditor();
                           },

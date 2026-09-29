@@ -5,7 +5,9 @@ import "package:photos/models/ml/clip.dart";
 import "package:photos/models/ml/face/face.dart";
 import "package:photos/models/ml/face/face_with_embedding.dart";
 import "package:photos/models/ml/vector.dart";
+import "package:photos/services/filedata/model/file_data.dart";
 import "package:photos/services/machine_learning/face_ml/face_clustering/face_db_info_for_clustering.dart";
+import "package:photos/services/machine_learning/ml_result.dart";
 
 abstract class IMLDataDB<T> {
   Future<void> bulkInsertFaces(List<Face> faces);
@@ -15,6 +17,8 @@ abstract class IMLDataDB<T> {
   Future<Map<int, int>> faceIndexedFileIds({int minimumMlVersion});
   Future<int> getFaceIndexedFileCount({int minimumMlVersion});
   Future<Map<String, int>> clusterIdToFaceCount();
+  Future<Set<String>> getBadFaceSingletonClusterIDs();
+  Future<Set<String>> getClustersWithThreeOrMoreNotPersonFeedback();
   Future<Set<String>> getPersonIgnoredClusters(String personID);
   Future<Map<String, Set<String>>> getPersonToRejectedSuggestions();
   Future<Set<String>> getPersonClusterIDs(String personID);
@@ -38,7 +42,7 @@ abstract class IMLDataDB<T> {
   Future<List<DBPetFace>?> getPetFacesForFileID(T fileUploadID);
   Future<List<DBPetBody>?> getPetBodiesForFileID(T fileUploadID);
   Future<Map<int, List<FaceWithoutEmbedding>>>
-      getFileIDsToFacesWithoutEmbedding();
+  getFileIDsToFacesWithoutEmbedding();
   Future<Map<String, Iterable<String>>> getClusterToFaceIDs(
     Set<String> clusterIDs,
   );
@@ -68,7 +72,10 @@ abstract class IMLDataDB<T> {
   Future<int> getTotalFaceCount();
   Future<int> getErroredFaceCount();
   Future<Set<T>> getErroredFileIDs();
+  Future<void> pruneResolvedFaceErrorResults(List<T> fileIDs);
+  Future<Set<T>> getFileIDsWithErrorResults(List<T> fileIDs);
   Future<void> deleteFaceIndexForFiles(List<T> fileIDs);
+  Future<void> deleteUnclusteredFaceIndexForFiles(List<T> fileIDs);
   Future<int> getClusteredOrFacelessFileCount();
   Future<double> getClusteredToIndexableFilesRatio();
   Future<int> getUnclusteredFaceCount();
@@ -129,4 +136,85 @@ abstract class IMLDataDB<T> {
   Future<Map<int, int>> petIndexedFileIds({int minimumMlVersion});
   Future<int> getPetIndexedFileCount({int minimumMlVersion});
   Future<void> deletePetDataForFiles(List<int> fileIDs);
+
+  Future<Set<int>> getFullyIndexedFileIds({required bool includePets});
+
+  Future<void> checkMigrateFillClipVectorDB({bool force});
+  Future<void> checkMigrateFillClusterCentroidVectorDB({bool force});
+  Future<Map<String, int>> getClusterCentroidVectorIdMap(
+    Iterable<String> clusterIDs, {
+    bool createIfMissing,
+  });
+  Future<Set<String>> getClustersForMemoryLane(Set<String> assigned);
+  Future<List<String>> getFaceIDsForClusterOrderedByScore(
+    String clusterID, {
+    int limit,
+  });
+  Future<List<String>> getFaceIDsForPersonOrderedByScore(
+    String personID, {
+    int limit,
+  });
+  Future<String?> getFaceIdUsedForPersonOrCluster(String personOrClusterId);
+  Future<List<double>?> getRepeatedTextEmbeddingCache(String query);
+  Future<void> putFaceIdCachedForPersonOrCluster(
+    String personOrClusterId,
+    String faceID,
+  );
+  Future<void> putRepeatedTextEmbeddingCache(
+    String query,
+    List<double> embedding,
+  );
+  Future<void> removeFaceIdCachedForPersonOrCluster(String personOrClusterID);
+  Future<void> storePetBodyEmbeddings(
+    List<DBPetBody> dbPetBodies,
+    List<PetBodyResult> petBodies,
+  );
+  Future<void> storePetFaceEmbeddings(
+    List<DBPetFace> dbPetFaces,
+    List<PetFaceResult> petFaces,
+  );
+  Future<void> putFDStatus(List<FDStatus> fdStatusList);
+  Future<Map<int, PreviewInfo>> getFileIDsVidPreview();
+  Future<Set<int>> getFileIDsWithFDData({DataType? type});
+
+  Future<void> clearClusterCentroidVectorIdMappings();
+  Future<void> deleteClusterCentroidVectorIdMapping(String clusterID);
+  Future<int> getClipVectorizableFileCount({int minimumMlVersion});
+  Future<Map<String, String>> getFaceIdToPersonIdForFaces(
+    Iterable<String> faceIDs,
+  );
+
+  Future<void> clearNonPetTables();
+  Future<void> clearPetTables();
+  Future<void> resetClusterTables({required bool faces});
+  Future<void> upsertClusterSummaryRows(Map<String, (Uint8List, int)> summary);
+  Future<void> deleteClusterSummaryRow(String clusterID);
+  Future<void> insertClipRows(List<ClipEmbedding> embeddings);
+  Future<void> deleteClipRows(List<int> fileIDs);
+  Future<void> deleteAllClipRows();
+  Future<(List<(String, int?, int)>, List<(String, int?, int)>)>
+  getPetRowsForFiles(List<int> fileIDs);
+  Future<void> deletePetRowsForFiles({
+    required List<int> fileIDs,
+    required List<String> petFaceIds,
+    required List<String> petBodyIds,
+  });
+  Future<Map<String, int>> getPetFaceVectorIdMap(
+    Iterable<String> petFaceIds, {
+    bool createIfMissing,
+  });
+  Future<Map<String, int>> getPetBodyVectorIdMap(
+    Iterable<String> petBodyIds, {
+    bool createIfMissing,
+  });
+  Future<int> countClusterSummaries();
+  Future<List<(String, Uint8List)>> getClusterSummaryPage({
+    String? beforeClusterID,
+    required int limit,
+  });
+  Future<int> countClipRows();
+  Future<List<(int, Uint8List)>> getClipRowsPage({
+    required int limit,
+    required int offset,
+  });
 }

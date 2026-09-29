@@ -1,10 +1,10 @@
 import 'dart:math';
 
+import "package:ente_components/ente_components.dart";
 import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import "package:flutter_svg/svg.dart";
-import "package:photos/ente_theme_data.dart";
-import "package:photos/theme/ente_theme.dart";
+import "package:hugeicons/hugeicons.dart";
 import "package:photos/ui/tools/editor/image_editor/image_editor_configs_mixin.dart";
 import "package:photos/ui/tools/editor/image_editor/image_editor_constants.dart";
 import 'package:pro_image_editor/core/mixins/converted_configs.dart';
@@ -58,9 +58,7 @@ class _ImageEditorTuneBarState extends State<ImageEditorTuneBar>
       builder: (context, constraints) {
         return Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildFunctions(constraints),
-          ],
+          children: [_buildFunctions(constraints)],
         );
       },
     );
@@ -84,18 +82,21 @@ class _ImageEditorTuneBarState extends State<ImageEditorTuneBar>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(
-                      tuneEditor.tuneAdjustmentMatrix.length, (index) {
-                    final item = tuneEditor.tuneAdjustmentList[index];
-                    return TuneItem(
-                      icon: item.icon,
-                      label: item.label,
-                      isSelected: tuneEditor.selectedIndex == index,
-                      value: tuneEditor.tuneAdjustmentMatrix[index].value,
-                      max: item.max,
-                      min: item.min,
-                      onTap: () => _handleTuneItemTap(index),
-                    );
-                  }),
+                    tuneEditor.tuneAdjustmentMatrix.length,
+                    (index) {
+                      final item = tuneEditor.tuneAdjustmentList[index];
+                      return TuneItem(
+                        id: item.id,
+                        icon: item.icon,
+                        label: item.label,
+                        isSelected: tuneEditor.selectedIndex == index,
+                        value: tuneEditor.tuneAdjustmentMatrix[index].value,
+                        max: item.max,
+                        min: item.min,
+                        onTap: () => _handleTuneItemTap(index),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -125,6 +126,7 @@ class _ImageEditorTuneBarState extends State<ImageEditorTuneBar>
 }
 
 class TuneItem extends StatelessWidget {
+  final String id;
   final IconData icon;
   final String label;
   final bool isSelected;
@@ -135,6 +137,7 @@ class TuneItem extends StatelessWidget {
 
   const TuneItem({
     super.key,
+    required this.id,
     required this.icon,
     required this.label,
     required this.isSelected,
@@ -146,6 +149,9 @@ class TuneItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.componentColors;
+    final hugeIcon = _hugeIconForID(id);
+    final svgPath = _svgPathForID(id);
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -159,22 +165,41 @@ class TuneItem extends StatelessWidget {
               max: max,
               size: 60,
               icon: icon,
+              hugeIcon: hugeIcon,
+              svgPath: svgPath,
               isSelected: isSelected,
-              progressColor:
-                  Theme.of(context).colorScheme.imageEditorPrimaryColor,
-              svgPath:
-                  "assets/image-editor/image-editor-${label.toLowerCase()}.svg",
+              progressColor: colors.primary,
             ),
             const SizedBox(height: 8),
             Text(
               label,
-              style: getEnteTextTheme(context).small,
+              style: TextStyles.body.copyWith(color: colors.textBase),
               textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
     );
+  }
+
+  List<List<dynamic>>? _hugeIconForID(String id) {
+    return switch (id) {
+      "brightness" => HugeIcons.strokeRoundedSun01,
+      "contrast" => HugeIcons.strokeRoundedSlidersHorizontal,
+      "exposure" => HugeIcons.strokeRoundedCameraLens,
+      "saturation" => HugeIcons.strokeRoundedDroplet,
+      "temperature" => HugeIcons.strokeRoundedTemperature,
+      "sharpness" => HugeIcons.strokeRoundedFocusPoint,
+      "hue" => HugeIcons.strokeRoundedColors,
+      _ => null,
+    };
+  }
+
+  String? _svgPathForID(String id) {
+    return switch (id) {
+      "luminance" || "fade" => "assets/image-editor/image-editor-$id.svg",
+      _ => null,
+    };
   }
 }
 
@@ -183,6 +208,7 @@ class CircularProgressWithValue extends StatefulWidget {
   final double min;
   final double max;
   final IconData icon;
+  final List<List<dynamic>>? hugeIcon;
   final bool isSelected;
   final double size;
   final Color progressColor;
@@ -194,10 +220,11 @@ class CircularProgressWithValue extends StatefulWidget {
     required this.min,
     required this.max,
     required this.icon,
+    this.hugeIcon,
+    this.svgPath,
     required this.progressColor,
     this.isSelected = false,
     this.size = 60,
-    this.svgPath,
   });
 
   @override
@@ -220,14 +247,8 @@ class _CircularProgressWithValueState extends State<CircularProgressWithValue>
       animationBehavior: AnimationBehavior.preserve,
     );
 
-    _progressAnimation = Tween<double>(
-      begin: 0.0,
-      end: widget.value,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+    _progressAnimation = Tween<double>(begin: 0.0, end: widget.value).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
     _animationController.forward();
@@ -238,19 +259,17 @@ class _CircularProgressWithValueState extends State<CircularProgressWithValue>
     super.didUpdateWidget(oldWidget);
     if ((oldWidget.value < 0 && widget.value >= 0) ||
         (oldWidget.value > 0 && widget.value <= 0)) {
-      HapticFeedback.vibrate();
+      HapticFeedback.selectionClick();
     }
     if (oldWidget.value != widget.value) {
       _previousValue = oldWidget.value;
-      _progressAnimation = Tween<double>(
-        begin: _previousValue,
-        end: widget.value,
-      ).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: Curves.easeInOut,
-        ),
-      );
+      _progressAnimation =
+          Tween<double>(begin: _previousValue, end: widget.value).animate(
+            CurvedAnimation(
+              parent: _animationController,
+              curve: Curves.easeInOut,
+            ),
+          );
       _animationController.forward(from: 0.0);
     }
   }
@@ -295,10 +314,12 @@ class _CircularProgressWithValueState extends State<CircularProgressWithValue>
 
   @override
   Widget build(BuildContext context) {
-    final colorTheme = getEnteColorScheme(context);
-    final textTheme = getEnteTextTheme(context);
-    final displayValue =
-        _normalizeValueForDisplay(widget.value, widget.min, widget.max);
+    final colors = context.componentColors;
+    final displayValue = _normalizeValueForDisplay(
+      widget.value,
+      widget.min,
+      widget.max,
+    );
     final displayText = displayValue.toString();
     final prefix = displayValue > 0 ? "+" : "";
     final progressColor = widget.progressColor;
@@ -318,11 +339,11 @@ class _CircularProgressWithValueState extends State<CircularProgressWithValue>
               shape: BoxShape.circle,
               color: showValue || widget.isSelected
                   ? progressColor.withValues(alpha: 0.2)
-                  : Theme.of(context).colorScheme.editorBackgroundColor,
+                  : colors.fillLight,
               border: Border.all(
                 color: widget.isSelected
                     ? progressColor.withValues(alpha: 0.4)
-                    : Theme.of(context).colorScheme.editorBackgroundColor,
+                    : colors.fillLight,
                 width: 2,
               ),
             ),
@@ -330,11 +351,15 @@ class _CircularProgressWithValueState extends State<CircularProgressWithValue>
           AnimatedBuilder(
             animation: _progressAnimation,
             builder: (context, child) {
-              final animatedValue =
-                  displayValue == 0 ? 0.0 : _progressAnimation.value;
+              final animatedValue = displayValue == 0
+                  ? 0.0
+                  : _progressAnimation.value;
 
-              final isClockwise =
-                  _isClockwise(animatedValue, widget.min, widget.max);
+              final isClockwise = _isClockwise(
+                animatedValue,
+                widget.min,
+                widget.max,
+              );
               final progressValue = _normalizeValueForProgress(
                 animatedValue,
                 widget.min,
@@ -359,24 +384,26 @@ class _CircularProgressWithValueState extends State<CircularProgressWithValue>
             child: showValue
                 ? Text(
                     "$prefix$displayText",
-                    style: textTheme.smallBold,
+                    style: TextStyles.bodyBold.copyWith(color: colors.textBase),
                   )
                 : widget.svgPath != null
-                    ? SvgPicture.asset(
-                        widget.svgPath!,
-                        width: 22,
-                        height: 22,
-                        fit: BoxFit.scaleDown,
-                        colorFilter: ColorFilter.mode(
-                          colorTheme.tabIcon,
-                          BlendMode.srcIn,
-                        ),
-                      )
-                    : Icon(
-                        widget.icon,
-                        color: colorTheme.tabIcon,
-                        size: 20,
-                      ),
+                ? SvgPicture.asset(
+                    widget.svgPath!,
+                    width: 22,
+                    height: 22,
+                    fit: BoxFit.scaleDown,
+                    colorFilter: ColorFilter.mode(
+                      colors.iconColor,
+                      BlendMode.srcIn,
+                    ),
+                  )
+                : widget.hugeIcon != null
+                ? HugeIcon(
+                    icon: widget.hugeIcon!,
+                    color: colors.iconColor,
+                    size: 22,
+                  )
+                : Icon(widget.icon, color: colors.iconColor, size: 20),
           ),
         ],
       ),
@@ -399,7 +426,7 @@ class _TuneAdjustWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
+    final colors = context.componentColors;
     return SizedBox(
       height: 40,
       child: Stack(
@@ -410,24 +437,20 @@ class _TuneAdjustWidget extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
-                color: Theme.of(context).colorScheme.editorBackgroundColor,
+                color: colors.fillLight,
               ),
             ),
           ),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(25),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(25)),
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 thumbShape: const _ColorPickerThumbShape(),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                activeTrackColor:
-                    Theme.of(context).colorScheme.imageEditorPrimaryColor,
-                inactiveTrackColor:
-                    Theme.of(context).colorScheme.editorBackgroundColor,
-                trackShape: const _CenterBasedTrackShape(),
+                activeTrackColor: colors.primary,
+                inactiveTrackColor: colors.fillLight,
+                trackShape: _CenterBasedTrackShape(isBipolar: min < 0),
                 trackHeight: 24,
               ),
               child: Slider(
@@ -448,7 +471,7 @@ class _TuneAdjustWidget extends StatelessWidget {
                   height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: colorScheme.fillBase.withAlpha(30),
+                    color: colors.fillBase.withAlpha(30),
                   ),
                 ),
                 Container(
@@ -456,7 +479,7 @@ class _TuneAdjustWidget extends StatelessWidget {
                   height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: colorScheme.fillBase.withAlpha(30),
+                    color: colors.fillBase.withAlpha(30),
                   ),
                 ),
                 Container(
@@ -464,7 +487,7 @@ class _TuneAdjustWidget extends StatelessWidget {
                   height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: colorScheme.fillBase.withAlpha(30),
+                    color: colors.fillBase.withAlpha(30),
                   ),
                 ),
               ],
@@ -479,9 +502,11 @@ class _TuneAdjustWidget extends StatelessWidget {
 class _ColorPickerThumbShape extends SliderComponentShape {
   const _ColorPickerThumbShape();
 
+  static const double thumbRadius = 15.0;
+
   @override
   Size getPreferredSize(bool isEnabled, bool isDiscrete) {
-    return const Size(20, 20);
+    return const Size(thumbRadius * 2, thumbRadius * 2);
   }
 
   @override
@@ -510,7 +535,10 @@ class _ColorPickerThumbShape extends SliderComponentShape {
     );
 
     final constrainedCenter = Offset(
-      center.dx.clamp(trackRect.left + 15, trackRect.right - 15),
+      center.dx.clamp(
+        trackRect.left + thumbRadius,
+        trackRect.right - thumbRadius,
+      ),
       center.dy,
     );
 
@@ -518,7 +546,7 @@ class _ColorPickerThumbShape extends SliderComponentShape {
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(constrainedCenter, 15, paint);
+    canvas.drawCircle(constrainedCenter, thumbRadius, paint);
 
     final innerPaint = Paint()
       ..color = const Color.fromRGBO(8, 194, 37, 1)
@@ -528,9 +556,11 @@ class _ColorPickerThumbShape extends SliderComponentShape {
 }
 
 class _CenterBasedTrackShape extends SliderTrackShape {
-  const _CenterBasedTrackShape();
+  const _CenterBasedTrackShape({this.isBipolar = true});
 
   static const double horizontalPadding = 6.0;
+
+  final bool isBipolar;
 
   @override
   Rect getPreferredRect({
@@ -574,9 +604,11 @@ class _CenterBasedTrackShape extends SliderTrackShape {
     final double centerX = trackRect.left + trackRect.width / 2;
 
     final double clampedThumbDx = thumbCenter.dx.clamp(
-      trackRect.left,
-      trackRect.right,
+      trackRect.left + _ColorPickerThumbShape.thumbRadius,
+      trackRect.right - _ColorPickerThumbShape.thumbRadius,
     );
+
+    final double activeStartDx = isBipolar ? centerX : trackRect.left;
 
     final Paint inactivePaint = Paint()
       ..color = sliderTheme.inactiveTrackColor!
@@ -589,22 +621,23 @@ class _CenterBasedTrackShape extends SliderTrackShape {
 
     canvas.drawRRect(inactiveRRect, inactivePaint);
 
-    if (clampedThumbDx != centerX) {
+    if ((clampedThumbDx - activeStartDx).abs() >
+        _ColorPickerThumbShape.thumbRadius) {
       final Paint activePaint = Paint()
         ..color = sliderTheme.activeTrackColor!
         ..style = PaintingStyle.fill;
 
-      final Rect activeRect = clampedThumbDx >= centerX
+      final Rect activeRect = clampedThumbDx >= activeStartDx
           ? Rect.fromLTWH(
-              centerX,
+              activeStartDx,
               trackRect.top,
-              clampedThumbDx - centerX,
+              clampedThumbDx - activeStartDx,
               trackRect.height,
             )
           : Rect.fromLTWH(
               clampedThumbDx,
               trackRect.top,
-              centerX - clampedThumbDx,
+              activeStartDx - clampedThumbDx,
               trackRect.height,
             );
 

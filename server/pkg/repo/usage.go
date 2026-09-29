@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/stacktrace"
 	"github.com/lib/pq"
 )
 
-// UsageRepository defines the methods tracking and fetching usage related date
 type UsageRepository struct {
-	DB       *sql.DB
-	UserRepo *UserRepository
+	DB                           *sql.DB
+	UserRepo                     *UserRepository
+	QueueFileCountInitialization func(int64)
 }
 
 type LockerUsage struct {
@@ -32,7 +32,6 @@ type StorageWarningCandidate struct {
 	IsFamilyPlan bool
 }
 
-// GetUsage  gets the Storage usage of a user
 func (repo *UsageRepository) GetUsage(userID int64) (int64, error) {
 	row := repo.DB.QueryRow(`SELECT storage_consumed FROM usage WHERE user_id = $1`,
 		userID)
@@ -44,16 +43,29 @@ func (repo *UsageRepository) GetUsage(userID int64) (int64, error) {
 	return usage, stacktrace.Propagate(err, "")
 }
 
-// Create inserts a new entry for the given user. If entry already exists, it doesn't nothing
-func (repo *UsageRepository) Create(userID int64) error {
-	_, err := repo.DB.Exec(`INSERT INTO usage(user_id, storage_consumed) VALUES ($1,$2) ON CONFLICT DO NOTHING;`,
-		userID, //$1 user_id
-		0,      // $2 initial value for storage consumed
-	)
-	return stacktrace.Propagate(err, "failed to insert/update")
+func (repo *UsageRepository) GetStoredFileCounts(ctx context.Context, userID int64) (int64, int64, int64, error) {
+	var photos, locker sql.NullInt64
+	var storageConsumed int64
+	err := repo.DB.QueryRowContext(ctx, `SELECT storage_consumed, photos_file_count, locker_file_count
+		FROM usage WHERE user_id = $1`, userID).Scan(&storageConsumed, &photos, &locker)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, -1, -1, nil
+	}
+	if err != nil {
+		return 0, 0, 0, stacktrace.Propagate(err, "")
+	}
+	if !photos.Valid || !locker.Valid {
+		return storageConsumed, -1, -1, nil
+	}
+	return storageConsumed, photos.Int64, locker.Int64, nil
 }
 
-// GetCombinedUsage  gets the sum of Storage usage of the list of userIDS
+func (repo *UsageRepository) CreateTx(ctx context.Context, tx *sql.Tx, userID int64) error {
+	_, err := tx.ExecContext(ctx, `INSERT INTO usage(user_id, storage_consumed, photos_file_count, locker_file_count)
+		VALUES ($1, 0, 0, 0)`, userID)
+	return stacktrace.Propagate(err, "failed to insert usage")
+}
+
 func (repo *UsageRepository) GetCombinedUsage(ctx context.Context, userIDs []int64) (int64, error) {
 	row := repo.DB.QueryRowContext(ctx, `SELECT coalesce(sum(storage_consumed),0) FROM usage WHERE user_id = ANY($1)`,
 		pq.Array(userIDs))
@@ -107,36 +119,78 @@ func (repo *UsageRepository) GetStorageWarningCandidates(ctx context.Context, us
 }
 
 func (repo *UsageRepository) GetLockerUsage(ctx context.Context, userIDs []int64) (*LockerUsage, error) {
+	return repo.getLockerUsage(ctx, userIDs, true)
+}
+
+func (repo *UsageRepository) GetLockerStorageUsage(ctx context.Context, userIDs []int64) (*LockerUsage, error) {
+	return repo.getLockerUsage(ctx, userIDs, false)
+}
+
+func (repo *UsageRepository) getLockerUsage(ctx context.Context, userIDs []int64, includeFileCounts bool) (*LockerUsage, error) {
 	usage := &LockerUsage{}
 	if len(userIDs) == 0 {
 		return usage, nil
 	}
 
-	// Initialize map with all requested users
 	userMap := make(map[int64]*UserLockerUsage)
 	for _, userID := range userIDs {
-		userMap[userID] = &UserLockerUsage{
-			UserID:    userID,
-			FileCount: 0,
-			Usage:     0,
+		userMap[userID] = &UserLockerUsage{UserID: userID}
+	}
+
+	if includeFileCounts {
+		rows, err := repo.DB.QueryContext(ctx, `SELECT requested.user_id, u.locker_file_count
+			FROM unnest($1::bigint[]) AS requested(user_id)
+			LEFT JOIN usage AS u ON u.user_id = requested.user_id`, pq.Array(userIDs))
+		if err != nil {
+			return nil, stacktrace.Propagate(err, "")
+		}
+		defer rows.Close()
+		var uninitializedUserIDs []int64
+		for rows.Next() {
+			var userID int64
+			var fileCount sql.NullInt64
+			if err := rows.Scan(&userID, &fileCount); err != nil {
+				return nil, stacktrace.Propagate(err, "")
+			}
+			if fileCount.Valid {
+				userMap[userID].FileCount = fileCount.Int64
+			} else {
+				uninitializedUserIDs = append(uninitializedUserIDs, userID)
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return nil, stacktrace.Propagate(err, "")
+		}
+		if repo.QueueFileCountInitialization != nil {
+			for _, userID := range uninitializedUserIDs {
+				repo.QueueFileCountInitialization(userID)
+			}
+		}
+
+		if len(uninitializedUserIDs) > 0 {
+			rows, err = repo.DB.QueryContext(ctx, `SELECT c.owner_id, COUNT(DISTINCT cf.file_id)
+				FROM collections AS c
+				JOIN collection_files AS cf ON c.collection_id = cf.collection_id
+				WHERE c.app = 'locker' AND c.owner_id = ANY($1)
+					AND cf.f_owner_id = c.owner_id AND cf.is_deleted = FALSE
+				GROUP BY c.owner_id`, pq.Array(uninitializedUserIDs))
+			if err != nil {
+				return nil, stacktrace.Propagate(err, "")
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var userID, fileCount int64
+				if err := rows.Scan(&userID, &fileCount); err != nil {
+					return nil, stacktrace.Propagate(err, "")
+				}
+				userMap[userID].FileCount = fileCount
+			}
+			if err := rows.Err(); err != nil {
+				return nil, stacktrace.Propagate(err, "")
+			}
 		}
 	}
 
-	// Query 1: Get file counts (non-deleted only)
-	countQuery := `
-      SELECT 
-         c.owner_id,
-         COUNT(DISTINCT cf.file_id) AS file_count
-      FROM collections c
-      JOIN collection_files cf ON c.collection_id = cf.collection_id
-      WHERE c.app = 'locker'
-         AND c.owner_id = ANY($1)
-         AND cf.f_owner_id = c.owner_id
-         AND cf.is_deleted = false
-      GROUP BY c.owner_id;
-   `
-
-	// Query 2: Get total sizes (all files)
 	sizeQuery := `
       SELECT 
          unique_files.owner_id,
@@ -153,26 +207,7 @@ func (repo *UsageRepository) GetLockerUsage(ctx context.Context, userIDs []int64
       GROUP BY unique_files.owner_id;
    `
 
-	// Get counts
-	rows, err := repo.DB.QueryContext(ctx, countQuery, pq.Array(userIDs))
-	if err != nil {
-		return nil, stacktrace.Propagate(err, "")
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var ownerID, fileCount int64
-		if scanErr := rows.Scan(&ownerID, &fileCount); scanErr != nil {
-			return nil, stacktrace.Propagate(scanErr, "")
-		}
-		if user, exists := userMap[ownerID]; exists {
-			user.FileCount = fileCount
-		}
-	}
-	rows.Close()
-
-	// Get sizes
-	rows, err = repo.DB.QueryContext(ctx, sizeQuery, pq.Array(userIDs))
+	rows, err := repo.DB.QueryContext(ctx, sizeQuery, pq.Array(userIDs))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "")
 	}
@@ -188,7 +223,6 @@ func (repo *UsageRepository) GetLockerUsage(ctx context.Context, userIDs []int64
 		}
 	}
 
-	// Build result - now includes ALL requested users
 	for _, userID := range userIDs {
 		user := userMap[userID]
 		usage.Users = append(usage.Users, *user)
@@ -203,7 +237,6 @@ func (repo *UsageRepository) GetLockerUsage(ctx context.Context, userIDs []int64
 	return usage, nil
 }
 
-// StorageForFamilyAdmin calculates the total storage consumed by the family for a given adminID
 func (repo *UsageRepository) StorageForFamilyAdmin(adminID int64) (int64, error) {
 	query := `
 		SELECT COALESCE(SUM(storage_consumed), 0)

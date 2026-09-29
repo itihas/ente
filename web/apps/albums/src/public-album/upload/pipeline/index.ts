@@ -11,14 +11,8 @@ class UploadState {
 
 const _state = new UploadState();
 
-/**
- * The public albums uploader only handles browser-provided Files.
- */
 export type UploadItem = File;
 
-/**
- * Opaque folder-like context used when matching metadata JSON sidecars.
- */
 export type UploadPathPrefix = string;
 
 export const uploadPathPrefix = (pathOrName: string) => {

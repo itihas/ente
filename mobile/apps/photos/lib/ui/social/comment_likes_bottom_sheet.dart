@@ -1,12 +1,13 @@
 import "package:ente_icons/ente_icons.dart";
+import "package:ente_strings/ente_strings.dart";
+import "package:ente_ui/components/loading_widget.dart";
 import "package:flutter/material.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/models/api/collection/user.dart";
+import "package:photos/models/social/comment_author_utils.dart";
 import "package:photos/models/social/reaction.dart";
 import "package:photos/models/social/social_data_provider.dart";
 import "package:photos/services/collections_service.dart";
 import "package:photos/theme/ente_theme.dart";
-import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/components/buttons/icon_button_widget.dart";
 import "package:photos/ui/sharing/user_avator_widget.dart";
 import "package:photos/ui/social/social_actor_contact_navigation.dart";
@@ -14,7 +15,6 @@ import "package:photos/ui/social/widgets/resolved_social_user_name.dart";
 
 const _shrinkWrapThreshold = 30;
 
-/// Shows the likes bottom sheet for a comment
 Future<void> showCommentLikesBottomSheet(
   BuildContext context, {
   required List<Reaction> reactions,
@@ -87,23 +87,22 @@ class _CommentLikesBottomSheetState extends State<CommentLikesBottomSheet> {
 
   User _getUserForReaction(Reaction reaction) {
     if (reaction.isAnonymous) {
-      final anonID = reaction.anonUserID;
-      final displayName =
-          anonID != null ? (_anonDisplayNames[anonID] ?? anonID) : "Anonymous";
-      return User(
-        id: reaction.userID,
-        email: "${anonID ?? "anonymous"}@unknown.com",
-        name: displayName,
+      return anonymousSocialUser(
+        userID: reaction.userID,
+        anonUserID: reaction.anonUserID,
+        anonDisplayNames: _anonDisplayNames,
       );
     }
 
-    return CollectionsService.instance
-        .getFileOwner(reaction.userID, widget.collectionID);
+    return CollectionsService.instance.resolveUserIdentity(
+      reaction.userID,
+      widget.collectionID,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = context.strings;
     final colorScheme = getEnteColorScheme(context);
     final textTheme = getEnteTextTheme(context);
     final mediaQuery = MediaQuery.of(context);
@@ -113,10 +112,8 @@ class _CommentLikesBottomSheetState extends State<CommentLikesBottomSheet> {
         maxHeight: mediaQuery.size.height * _maxHeightFraction,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.backgroundBase,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        color: colorScheme.backgroundColour,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
@@ -147,8 +144,10 @@ class _CommentLikesBottomSheetState extends State<CommentLikesBottomSheet> {
               )
             else if (_likes.isEmpty)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 48,
+                  horizontal: 24,
+                ),
                 child: Text(
                   l10n.noLikesYet,
                   style: textTheme.smallMuted,
@@ -207,12 +206,7 @@ class _CommentLikeListItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          UserAvatarWidget(
-            user,
-            currentUserID: currentUserID,
-            type: AvatarType.lg,
-            addStroke: false,
-          ),
+          UserAvatarWidget(user, type: AvatarType.regular),
           const SizedBox(width: 12),
           Expanded(
             child: user.id == currentUserID
@@ -242,11 +236,7 @@ class _CommentLikeListItem extends StatelessWidget {
                     ),
                   ),
           ),
-          const Icon(
-            EnteIcons.likeFilled,
-            color: Color(0xFF08C225),
-            size: 20,
-          ),
+          const Icon(EnteIcons.likeFilled, color: Color(0xFF08C225), size: 20),
         ],
       ),
     );

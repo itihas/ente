@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ente_configuration/base_configuration.dart';
@@ -11,81 +10,78 @@ import 'package:tuple/tuple.dart';
 
 enum AvatarType { small, mini, tiny, extra }
 
+bool _usesBlackAvatar(int? userID, String email, BaseConfiguration config) {
+  return (userID != null &&
+          (userID < 0 || (userID > 0 && userID == config.getUserID()))) ||
+      email == config.getEmail();
+}
+
+void _preloadProfilePicture(int? userID, String email) {
+  ContactsDisplayService.instance.preloadProfilePicture(
+    contactUserId: userID,
+    email: email,
+  );
+}
+
 class UserAvatarWidget extends StatefulWidget {
-  final User user;
+  final int? userID;
+  final String email;
   final AvatarType type;
-  final int currentUserID;
-  final bool thumbnailView;
   final BaseConfiguration config;
 
-  const UserAvatarWidget(
-    this.user, {
+  UserAvatarWidget(
+    User user, {
     super.key,
-    this.currentUserID = -1,
     this.type = AvatarType.mini,
-    this.thumbnailView = false,
     required this.config,
-  });
+  }) : userID = user.id,
+       email = user.email;
+
+  UserAvatarWidget.suggestion(
+    UserSuggestion suggestion, {
+    super.key,
+    this.type = AvatarType.mini,
+    required this.config,
+  }) : userID = suggestion.userID,
+       email = suggestion.email;
 
   @override
   State<UserAvatarWidget> createState() => _UserAvatarWidgetState();
-
-  static const strokeWidth = 1.0;
 }
 
 class _UserAvatarWidgetState extends State<UserAvatarWidget> {
   @override
   void initState() {
     super.initState();
-    _preloadProfilePictureIfPossible();
+    _preloadProfilePicture(widget.userID, widget.email);
   }
 
   @override
   void didUpdateWidget(covariant UserAvatarWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.user.id != widget.user.id ||
-        oldWidget.user.email != widget.user.email) {
-      _preloadProfilePictureIfPossible();
+    if (oldWidget.userID != widget.userID || oldWidget.email != widget.email) {
+      _preloadProfilePicture(widget.userID, widget.email);
     }
-  }
-
-  void _preloadProfilePictureIfPossible() {
-    final displayService = ContactsDisplayService.instance;
-    if (displayService.hasResolvedProfilePicture(
-      contactUserId: widget.user.id,
-      email: widget.user.email,
-    )) {
-      return;
-    }
-    if (displayService.getCachedContact(
-          contactUserId: widget.user.id,
-          email: widget.user.email,
-        ) ==
-        null) {
-      return;
-    }
-    unawaited(
-      displayService.getProfilePictureBytes(
-        contactUserId: widget.user.id,
-        email: widget.user.email,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final double size = getAvatarSize(widget.type);
     return ValueListenableBuilder<int>(
-      valueListenable: ContactsDisplayService.instance.changes,
-      builder: (context, __, ___) {
-        _preloadProfilePictureIfPossible();
+      valueListenable: ContactsDisplayService.instance.changesFor(
+        contactUserId: widget.userID,
+        email: widget.email,
+      ),
+      builder: (context, _, _) {
+        _preloadProfilePicture(widget.userID, widget.email);
         return SizedBox(
           height: size,
           width: size,
           child: _CircularAvatar(
-            user: widget.user,
-            type: widget.type,
-            config: widget.config,
+            widget.userID,
+            widget.email,
+            widget.type,
+            widget.config,
           ),
         );
       },
@@ -94,41 +90,38 @@ class _UserAvatarWidgetState extends State<UserAvatarWidget> {
 }
 
 class _CircularAvatar extends StatelessWidget {
-  final User user;
+  final int? userID;
+  final String email;
   final AvatarType type;
   final BaseConfiguration config;
 
-  const _CircularAvatar({
-    required this.user,
-    required this.type,
-    required this.config,
-  });
+  const _CircularAvatar(this.userID, this.email, this.type, this.config);
 
   @override
   Widget build(BuildContext context) {
-    final profilePictureBytes =
-        ContactsDisplayService.instance.getCachedProfilePictureBytes(
-      contactUserId: user.id,
-      email: user.email,
-    );
+    final profilePictureBytes = ContactsDisplayService.instance
+        .getCachedProfilePictureBytes(contactUserId: userID, email: email);
     final avatarStyle = _getAvatarStyle(context, type);
     final double size = avatarStyle.item1;
     if (profilePictureBytes != null) {
-      return _CirclePhotoAvatar(bytes: profilePictureBytes, size: size);
+      return _CirclePhotoAvatar(profilePictureBytes, size);
     }
 
     final colorScheme = getEnteColorScheme(context);
-    final displayLabel = user.resolvedDisplayName;
-    final displayChar =
-        displayLabel.isEmpty ? " " : displayLabel.substring(0, 1);
-    final avatarSeed = user.resolvedEmail;
+    final identity = resolveUserIdentity(userID, email);
+    final displayLabel = identity.displayName;
+    final displayChar = displayLabel.isEmpty
+        ? " "
+        : displayLabel.substring(0, 1);
+    final avatarSeed = identity.email;
     Color decorationColor;
-    if ((user.id != null && user.id! < 0) || user.email == config.getEmail()) {
+    if (_usesBlackAvatar(userID, email, config)) {
       decorationColor = Colors.black;
     } else {
-      decorationColor = colorScheme.avatarColors[avatarSeed.length.remainder(
-        colorScheme.avatarColors.length,
-      )];
+      decorationColor =
+          colorScheme.avatarColors[avatarSeed.length.remainder(
+            colorScheme.avatarColors.length,
+          )];
     }
 
     return CircleAvatar(
@@ -182,60 +175,35 @@ class FirstLetterUserAvatar extends StatefulWidget {
 }
 
 class _FirstLetterUserAvatarState extends State<FirstLetterUserAvatar> {
-  late String? currentUserEmail;
-  late User user;
-
   @override
   void initState() {
     super.initState();
-    user = widget.user;
-    currentUserEmail = widget.config.getEmail();
-    _preloadProfilePictureIfPossible();
+    _preloadProfilePicture(widget.user.id, widget.user.email);
   }
 
   @override
   void didUpdateWidget(covariant FirstLetterUserAvatar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.user != widget.user) {
-      user = widget.user;
-      _preloadProfilePictureIfPossible();
+      _preloadProfilePicture(widget.user.id, widget.user.email);
     }
-  }
-
-  void _preloadProfilePictureIfPossible() {
-    final displayService = ContactsDisplayService.instance;
-    if (displayService.hasResolvedProfilePicture(
-      contactUserId: user.id,
-      email: user.email,
-    )) {
-      return;
-    }
-    if (displayService.getCachedContact(
-          contactUserId: user.id,
-          email: user.email,
-        ) ==
-        null) {
-      return;
-    }
-    unawaited(
-      displayService.getProfilePictureBytes(
-        contactUserId: user.id,
-        email: user.email,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = widget.user;
     return ValueListenableBuilder<int>(
-      valueListenable: ContactsDisplayService.instance.changes,
-      builder: (context, __, ___) {
-        _preloadProfilePictureIfPossible();
-        final profilePictureBytes =
-            ContactsDisplayService.instance.getCachedProfilePictureBytes(
-          contactUserId: user.id,
-          email: user.email,
-        );
+      valueListenable: ContactsDisplayService.instance.changesFor(
+        contactUserId: user.id,
+        email: user.email,
+      ),
+      builder: (context, _, _) {
+        _preloadProfilePicture(user.id, user.email);
+        final profilePictureBytes = ContactsDisplayService.instance
+            .getCachedProfilePictureBytes(
+              contactUserId: user.id,
+              email: user.email,
+            );
         if (profilePictureBytes != null) {
           return Image.memory(
             profilePictureBytes,
@@ -245,19 +213,20 @@ class _FirstLetterUserAvatarState extends State<FirstLetterUserAvatar> {
         }
 
         final colorScheme = getEnteColorScheme(context);
-        final displayLabel = user.resolvedDisplayName;
-        final displayChar =
-            displayLabel.isEmpty ? " " : displayLabel.substring(0, 1);
-        final avatarSeed = user.resolvedEmail;
+        final identity = resolveUserIdentity(user.id, user.email);
+        final displayLabel = identity.displayName;
+        final displayChar = displayLabel.isEmpty
+            ? " "
+            : displayLabel.substring(0, 1);
+        final avatarSeed = identity.email;
         Color decorationColor;
-        if ((user.id != null && user.id! < 0) ||
-            user.email == currentUserEmail) {
+        if (_usesBlackAvatar(user.id, user.email, widget.config)) {
           decorationColor = Colors.black;
         } else {
           decorationColor =
               colorScheme.avatarColors[avatarSeed.length.remainder(
-            colorScheme.avatarColors.length,
-          )];
+                colorScheme.avatarColors.length,
+              )];
         }
 
         return Container(
@@ -280,7 +249,7 @@ class _CirclePhotoAvatar extends StatelessWidget {
   final Uint8List bytes;
   final double size;
 
-  const _CirclePhotoAvatar({required this.bytes, required this.size});
+  const _CirclePhotoAvatar(this.bytes, this.size);
 
   @override
   Widget build(BuildContext context) {

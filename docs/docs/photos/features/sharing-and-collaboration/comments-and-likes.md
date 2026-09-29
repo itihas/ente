@@ -14,6 +14,7 @@ Ente lets you comment on and like shared photos and videos. Whether you're colla
 Comments and likes are available on:
 
 - **Shared albums**: Albums you've shared with other Ente users or that have been shared with you
+- **Shared memories on mobile**: While viewing a memory made from photos or videos in a shared album, you can comment and react without leaving the memory viewer
 - **Public links**: Albums shared via public links, including collect links
 - **Both authenticated and anonymous users**: Ente users can comment with their account, while public link visitors can comment anonymously
 
@@ -176,8 +177,7 @@ The Feed feature provides a centralized view of all social activity across your 
 
 **On mobile:**
 
-- Go to the "Sharing" tab
-- Tap "Feed" at the top
+- Open the **Feed** tab
 - Scroll through recent social activity
 
 Feed is available on public albums.

@@ -1,69 +1,63 @@
 import "package:photos/extensions/user_extension.dart";
 import "package:photos/models/api/collection/user.dart";
-import "package:photos/service_locator.dart" show flagService;
 import "package:photos/services/photos_contacts_service.dart";
+import "package:photos/utils/contact_string_util.dart";
 
-String resolveDisplayName(User user) {
-  final savedName = _savedContactName(user);
-  if (savedName != null) {
-    return savedName;
-  }
+typedef ResolvedUserIdentity = ({
+  String displayName,
+  bool isResolved,
+  String? knownEmail,
+});
 
-  final personName = user.displayName?.trim();
-  if (personName != null && personName.isNotEmpty) {
-    return personName;
-  }
-
-  return resolveKnownEmail(user) ?? "Someone";
+// Precedence: saved contact name → linked person name or local label → known
+// email → "Someone".
+ResolvedUserIdentity resolveSuggestionIdentity(UserSuggestion suggestion) {
+  final contact = PhotosContactsService.instance.getCachedContact(
+    contactUserId: suggestion.userID,
+    email: suggestion.email,
+  );
+  final knownEmail =
+      knownContactEmailOrNull(contact?.email) ??
+      knownContactEmailOrNull(suggestion.email);
+  final resolvedDisplayName =
+      trimToNull(contact?.name) ??
+      trimToNull(suggestion.displayName) ??
+      knownEmail;
+  return (
+    displayName: resolvedDisplayName ?? "Someone",
+    isResolved: resolvedDisplayName != null,
+    knownEmail: knownEmail,
+  );
 }
 
-String? resolveKnownEmail(User user) {
-  if (flagService.enableContact && user.id != null && user.id! > 0) {
-    final savedEmail = _knownEmailOrNull(
-      PhotosContactsService.instance.getCachedResolvedEmailByUserId(user.id),
-    );
-    if (savedEmail != null) {
-      return savedEmail;
-    }
-  }
+String resolveSuggestionDisplayName(UserSuggestion suggestion) =>
+    resolveSuggestionIdentity(suggestion).displayName;
 
-  return _knownEmailOrNull(user.email);
-}
+String resolveDisplayName(User user) =>
+    resolveSuggestionDisplayName(UserSuggestion.fromUser(user));
 
-bool matchesResolvedContactQuery(User user, String lowerCaseQuery) {
+String? resolveKnownSuggestionEmail(UserSuggestion suggestion) =>
+    resolveSuggestionIdentity(suggestion).knownEmail;
+
+String? resolveKnownEmail(User user) =>
+    resolveKnownSuggestionEmail(UserSuggestion.fromUser(user));
+
+bool matchesResolvedSuggestionQuery(
+  UserSuggestion suggestion,
+  String lowerCaseQuery,
+) {
   if (lowerCaseQuery.isEmpty) {
     return true;
   }
-
-  final resolvedName = resolveDisplayName(user).toLowerCase();
-  final resolvedEmail = (resolveKnownEmail(user) ?? user.email).toLowerCase();
-  return resolvedName.contains(lowerCaseQuery) ||
-      resolvedEmail.contains(lowerCaseQuery);
+  final identity = resolveSuggestionIdentity(suggestion);
+  return identity.displayName.toLowerCase().contains(lowerCaseQuery) ||
+      (identity.knownEmail ?? suggestion.email).toLowerCase().contains(
+        lowerCaseQuery,
+      );
 }
 
-String? _savedContactName(User user) {
-  if (!flagService.enableContact || user.id == null || user.id! <= 0) {
-    return null;
-  }
-
-  final savedName = PhotosContactsService.instance
-      .getCachedSavedNameByUserId(user.id)
-      ?.trim();
-  if (savedName == null || savedName.isEmpty) {
-    return null;
-  }
-  return savedName;
-}
-
-String? _knownEmailOrNull(String? email) {
-  if (email == null) {
-    return null;
-  }
-
-  final trimmed = email.trim();
-  if (trimmed.isEmpty || trimmed == "unknown@unknown.com") {
-    return null;
-  }
-
-  return trimmed.endsWith("@unknown.com") ? null : trimmed;
-}
+bool matchesResolvedContactQuery(User user, String lowerCaseQuery) =>
+    matchesResolvedSuggestionQuery(
+      UserSuggestion.fromUser(user),
+      lowerCaseQuery,
+    );

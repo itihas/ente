@@ -26,3 +26,13 @@ flutter run --flavor independent -d sdk
 ```
 
 The above is macOS-specific, but swap `brew` for your package manager (unless `brew` is your package manager) and skip the JDK symlink step and it should work on Linux too.
+
+## App logs
+
+With ADB authorized, open the app with `internalUser` enabled and unlock the device. Export up to 40 MiB of saved logs, newest files first:
+
+```sh
+adb shell dumpsys activity io.ente.photos/io.ente.photos.MainActivity --ente-logs > ente-logs.txt
+```
+
+For independent builds, change the package before `/` to `io.ente.photos.independent`. For Android logs, use `adb logcat -d`.

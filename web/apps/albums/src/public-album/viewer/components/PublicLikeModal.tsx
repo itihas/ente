@@ -7,13 +7,9 @@ import {
     styled,
     Typography,
 } from "@mui/material";
-import { type ModalVisibilityProps } from "ente-base/components/utils/modal";
+import type { ModalVisibilityProps } from "ente-base/components/utils/modal";
 import { t } from "i18next";
 import React from "react";
-
-// =============================================================================
-// Icons
-// =============================================================================
 
 const LikeIllustration: React.FC = () => (
     <svg
@@ -78,30 +74,12 @@ const LikeIllustration: React.FC = () => (
     </svg>
 );
 
-// =============================================================================
-// Types
-// =============================================================================
-
 export interface PublicLikeModalProps extends ModalVisibilityProps {
-    /**
-     * Called when user clicks "Like anonymously".
-     */
     onLikeAnonymously: () => void;
-    /**
-     * Called when user clicks "Join album to like".
-     */
     onJoinAlbumToLike: () => void;
-    /**
-     * Whether the "Join album" option is enabled for this public link.
-     * When false, the "Join album and like" button will be hidden.
-     */
     enableJoin?: boolean;
 }
 
-/**
- * Modal dialog for liking a photo in a public album.
- * Shows options to like anonymously or sign in to like.
- */
 export const PublicLikeModal: React.FC<PublicLikeModalProps> = ({
     open,
     onClose,
@@ -161,10 +139,6 @@ export const PublicLikeModal: React.FC<PublicLikeModalProps> = ({
         </StyledDialog>
     );
 };
-
-// =============================================================================
-// Styled Components
-// =============================================================================
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
     "& .MuiDialog-paper": {

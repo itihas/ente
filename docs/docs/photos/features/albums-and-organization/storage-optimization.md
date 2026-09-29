@@ -15,7 +15,7 @@ Once your photos are safely backed up to Ente, you can free up storage space on 
 
 **On mobile (iOS and Android):**
 
-Open `Settings > Backup > Free up space > Free up device space`, review how much space will be freed, and confirm to delete backed-up photos from your device.
+Open `Settings > Free up space > Free up device space`, review how much space will be freed, and confirm to delete backed-up photos from your device.
 
 <div align="center">
 
@@ -31,7 +31,8 @@ The app will delete all photos and videos that have been successfully backed up 
 
 - Your photos remain in Ente and can be viewed anytime
 - Photos are automatically cached when you view them in the app
-- You may need to clear your device's trash/recently deleted folder to fully reclaim the space
+- On Android, **Free up device space** removes backed-up photos permanently from your device without moving them to trash
+- On iOS, empty Apple Photos' **Recently Deleted** album to fully reclaim the space
 
 **What gets deleted:**
 
@@ -55,6 +56,14 @@ When you free up space, photos are removed from your device but stay in Ente. To
     - Long press the thumbnail and choose download option
     - Open the photo, choose the three dots at top right and choose download option.
 
+## Manage device cache
+
+Ente saves thumbnails and previews on your device so photos and videos open faster. You can review this storage under `Settings > Free up space > Manage device cache`.
+
+Tap **Clear caches** to remove files that Ente can recreate. This does not remove files shown under **Pending sync** because Ente still needs them to finish your backup.
+
+Storage may grow during a large or interrupted backup. Learn [why backups need temporary space and how to reduce it](/photos/faq/backup-and-sync#backup-device-storage).
+
 ## Remove exact duplicates
 
 If you have an existing library with duplicate photos across different albums, you can use the manual deduplication tool to keep only one copy while maintaining your album structure.
@@ -73,7 +82,7 @@ The deduplication tool:
 
 **On mobile:**
 
-Open `Settings > Backup > Free up space > Remove duplicates`, review the duplicates found, and confirm to remove them.
+Open `Settings > Free up space > Remove duplicates`, review the duplicates found, and confirm to remove them.
 
 **On desktop:**
 
@@ -87,7 +96,9 @@ Open `Settings > Free up space > Deduplicate files`, review the duplicates found
 - Your photos remain visible in all their original albums
 - Storage quota is reduced by the space occupied by removed duplicates
 
-> **Note**: This tool only removes exact duplicates (same file hash). For similar but not identical photos, use the "Similar images" feature below.
+> [!NOTE]
+>
+> This tool only removes exact duplicates (same file hash). For similar but not identical photos, use the "Similar images" feature below.
 
 ## Remove similar images
 
@@ -107,7 +118,7 @@ The similar images feature:
 
 **On mobile:**
 
-Open `Settings > Backup > Free up space > Similar images`, review each group of similar photos, choose which to keep and which to delete, and confirm your selections.
+Open `Settings > Free up space > Similar images`, review each group of similar photos, choose which to keep and which to delete, and confirm your selections.
 
 **On desktop:**
 
@@ -149,7 +160,7 @@ The large files feature:
 
 **On mobile:**
 
-Open `Settings > Backup > Free up space > Large files` to see your largest files sorted by size.
+Open `Settings > Free up space > Large files` to see your largest files sorted by size.
 
 **On desktop:**
 
@@ -190,7 +201,7 @@ When a suggestion is made:
 
 **On mobile:**
 
-Open `Settings > Backup > Free up space > Delete suggestions` to see photos that have been suggested for deletion.
+Open `Settings > Free up space > Delete suggestions` to see photos that have been suggested for deletion.
 
 For each suggestion, you can:
 
@@ -207,7 +218,9 @@ Accepting suggestions helps you:
 
 Rejecting suggestions keeps the photo in your account. The photo was already removed from the shared album when the suggestion was made.
 
-> **Note**: Delete suggestions is currently available on mobile apps only.
+> [!NOTE]
+>
+> Delete suggestions is currently available on mobile apps only.
 
 Learn more about [suggest deletion](/photos/features/sharing-and-collaboration/collaboration#suggest-deletion) in the collaboration guide.
 
@@ -225,13 +238,13 @@ Learn more about [suggest deletion](/photos/features/sharing-and-collaboration/c
 - Use "Free up space" to reclaim device storage
 - Photos remain in Ente and can be re-downloaded anytime
 
-**Trash:**
+**Ente Trash:**
 
 - Items in trash count against your cloud storage quota
 - Permanently delete items or empty trash to free up space
 - Items are automatically deleted after 30 days
 
-Learn more in [deletion feature guide](/photos/features/albums-and-organization/deleting).
+On Android 11 and newer, photos deleted from your device's gallery through Ente remain in Android's system trash until permanently deleted. They still take up space on your device during this time. Learn how to restore them or empty trash in the [Android Device Trash Guide](/photos/features/albums-and-organization/deleting#android-device-trash).
 
 ## Related topics
 

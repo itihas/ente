@@ -1,0 +1,62 @@
+[package]
+name = "ente-ensu"
+edition.workspace = true
+
+[dependencies]
+ente-assets.workspace = true
+ente-core.workspace = true
+ente-ensu-crypto.workspace = true
+ente-image.workspace = true
+memmap2 = "0.9.9"
+regex.workspace = true
+rubato = { version = "5.0.0", optional = true }
+rusqlite = { workspace = true, default-features = true, optional = true }
+self_cell = "1.0.0"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt", "time"] }
+transcribe-rs = { git = "https://github.com/cjpais/transcribe-rs.git", rev = "efc66111d519a434e28d51d94740008a7ce29360", default-features = false, features = ["onnx", "vad-silero"], optional = true }
+url.workspace = true
+uuid = { workspace = true, features = ["v4", "rng-getrandom"] }
+zeroize.workspace = true
+zstd = "0.13.3"
+
+[dev-dependencies]
+tempfile.workspace = true
+
+# Keep `mtmd` on every platform for multimodal support.
+# macOS disables OpenMP because Apple's clang lacks libomp. llama.cpp uses its
+# own thread pool, Accelerate, and Metal on arm64 instead.
+[target.'cfg(target_os = "macos")'.dependencies]
+llama-cpp-2 = { version = "=0.1.144", default-features = false, features = ["mtmd"] }
+
+# Linux Vulkan needs a system Vulkan loader and glslc.
+[target.'cfg(target_os = "linux")'.dependencies]
+llama-cpp-2 = { version = "=0.1.144", features = ["mtmd", "vulkan"] }
+
+# Other platforms stay on CPU. Android keeps the shared C++ runtime; Windows
+# avoids Vulkan's VULKAN_SDK requirement.
+[target.'cfg(all(not(target_os = "macos"), not(target_os = "linux")))'.dependencies]
+llama-cpp-2 = { version = "=0.1.144", features = ["mtmd"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+ort = { workspace = true, features = ["load-dynamic"], optional = true }
+
+# The iOS app links Ente's custom ONNX Runtime XCFramework via SPM, so ort-sys
+# must not download/link pyke's binaries.
+[target.'cfg(target_os = "ios")'.dependencies]
+ort-sys = { workspace = true, features = ["disable-linking"], optional = true }
+
+[features]
+default = ["sqlite"]
+sqlite = ["dep:rusqlite"]
+transcription = [
+    "dep:ort",
+    "dep:ort-sys",
+    "dep:rubato",
+    "dep:transcribe-rs",
+]
+
+[lints]
+workspace = true

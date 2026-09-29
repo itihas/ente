@@ -1,61 +1,238 @@
 {
-  "networkHostLookUpErr": "Tidak dapat terhubung ke Ente. Mohon periksa kembali koneksi internet Anda dan hubungi tim bantuan kami jika galat masih ada.",
-  "@networkHostLookUpErr": {
-    "description": "Error message shown when the app cannot connect to Ente due to network host lookup failure"
+  "about": "Tentang",
+  "account": "Akun",
+  "activeSessions": "Sesi aktif",
+  "@activeSessions": {
+    "description": "Title for active sessions page"
   },
-  "networkConnectionRefusedErr": "Sepertinya ada yang salah. Mohon coba lagi setelah beberapa waktu. Jika galat masih ada, Anda dapat menghubungi tim bantuan kami.",
-  "@networkConnectionRefusedErr": {
-    "description": "Error message shown when the app cannot connect to Ente due to connection refused"
-  },
-  "itLooksLikeSomethingWentWrongPleaseRetryAfterSome": "Sepertinya ada yang salah. Mohon coba lagi setelah beberapa waktu. Jika galat masih ada, Anda dapat menghubungi tim bantuan kami.",
-  "@itLooksLikeSomethingWentWrongPleaseRetryAfterSome": {
-    "description": "Generic error message for temporary issues"
-  },
-  "error": "Kesalahan",
-  "@error": {
-    "description": "Generic error title"
-  },
-  "ok": "Oke",
-  "@ok": {
-    "description": "Generic OK button label"
-  },
-  "faq": "Pertanyaan yang sering ditanyakan",
-  "@faq": {
-    "description": "FAQ link label"
-  },
-  "contactSupport": "Hubungi dukungan",
-  "@contactSupport": {
-    "description": "Contact support button label"
-  },
-  "emailYourLogs": "Kirimkan log Anda melalui surel",
-  "@emailYourLogs": {
-    "description": "Title for emailing logs dialog"
-  },
-  "pleaseSendTheLogsTo": "Mohon kirim log ke {toEmail}",
-  "@pleaseSendTheLogsTo": {
-    "description": "Message asking user to send logs to email address",
+  "addANewEmail": "Tambah email baru",
+  "addCode": "Tambahkan kode",
+  "addCollaborator": "Tambah kolaborator",
+  "addedAs": "Ditambahkan sebagai",
+  "addedBy": "Ditambahkan oleh {emailOrName}",
+  "@addedBy": {
     "placeholders": {
-      "toEmail": {
-        "type": "String",
-        "description": "Email address to send logs to"
-      }
+      "emailOrName": {}
     }
   },
-  "copyEmailAddress": "Salin alamat surel",
-  "@copyEmailAddress": {
-    "description": "Button to copy email address to clipboard"
+  "addedSuccessfullyTo": "Berhasil ditambahkan ke {albumName}",
+  "@addedSuccessfullyTo": {
+    "placeholders": {
+      "albumName": {}
+    }
   },
-  "exportLogs": "Ekspor log",
-  "@exportLogs": {
-    "description": "Button to export logs"
+  "addFromDevice": "Tambahkan dari perangkat",
+  "addingToFavorites": "Menambahkan ke favorit...",
+  "addLocation": "Tambah tempat",
+  "addLocationButton": "Tambah",
+  "addMore": "Tambah lagi",
+  "addOnValidTill": "Add-on {storageAmount} kamu berlaku sampai {endDate}",
+  "@addOnValidTill": {
+    "placeholders": {
+      "endDate": {},
+      "storageAmount": {}
+    }
   },
+  "addPhotos": "Tambah foto",
+  "addSelected": "Tambahkan yang dipilih",
+  "addToAlbum": "Tambah ke album",
+  "addToEnte": "Tambah ke Ente",
+  "addToHiddenAlbum": "Tambah ke album tersembunyi",
+  "addViewer": "Tambahkan pemirsa",
+  "advanced": "Lanjutan",
+  "after1Day": "Setelah 1 hari",
+  "after1Hour": "Setelah 1 jam",
+  "after1Month": "Setelah 1 bulan",
+  "after1Week": "Setelah 1 minggu",
+  "after1Year": "Setelah 1 tahun",
+  "albumOwner": "Pemilik",
+  "@albumOwner": {
+    "description": "Role of the album owner"
+  },
+  "albums": "Album",
+  "albumTitle": "Judul album",
+  "albumUpdated": "Album diperbarui",
+  "algorithm": "Algoritma",
+  "all": "Semua",
+  "allClear": "✨ Sudah bersih",
+  "allMemoriesPreserved": "Semua kenangan terpelihara",
+  "allowAddingPhotos": "Izinkan menambah foto",
+  "@allowAddingPhotos": {
+    "description": "Switch button to enable uploading photos to a public link"
+  },
+  "allowDownloads": "Izinkan pengunduhan",
+  "allowPermBody": "Ijinkan akses ke foto Anda dari Pengaturan agar Ente dapat menampilkan dan mencadangkan pustaka Anda.",
+  "allowPermTitle": "Izinkan akses ke foto",
+  "androidBiometricHint": "Verifikasikan identitas Anda",
+  "@androidBiometricHint": {
+    "description": "Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters."
+  },
+  "androidCancelButton": "Batalkan",
+  "@androidCancelButton": {
+    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
+  },
+  "androidSignInTitle": "Autentikasi diperlukan",
+  "@androidSignInTitle": {
+    "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
+  },
+  "aNewVersionOfEnteIsAvailable": "Versi baru dari Ente telah tersedia.",
+  "appleId": "ID Apple",
+  "appLock": "Kunci aplikasi",
+  "@appLock": {
+    "description": "App lock setting title"
+  },
+  "appLockDescription": "Pilih layar kunci bawaan gawai Anda ATAU layar kunci kustom dengan PIN atau kata sandi.",
+  "@appLockDescription": {
+    "description": "Description of app lock feature"
+  },
+  "appLockNotEnabled": "Kunci aplikasi tidak diaktifkan",
+  "appLockNotEnabledDescription": "Mohon nyalakan pengunci apl di Keamanan > Pengunci Apl",
+  "appLockOfflineModeWarning": "Anda telah memilih untuk mengunci aplikasi tanpa cadangan apa pun. Jika Anda lupa kode Pengunci Apl Anda, Anda tidak akan dapat mengakses data-data Anda.",
+  "apply": "Terapkan",
+  "applyCodeTitle": "Terapkan kode",
+  "appstoreSubscription": "Langganan AppStore",
+  "archive": "Arsip",
+  "@archive": {
+    "description": "Action of 'Archiving' an element"
+  },
+  "archiveAlbum": "Arsipkan album",
+  "archiving": "Mengarsipkan...",
+  "areYouSureThatYouWantToLeaveTheFamily": "Apakah kamu yakin ingin meninggalkan paket keluarga ini?",
+  "areYouSureYouWantToCancel": "Apakah kamu yakin ingin membatalkan?",
+  "areYouSureYouWantToChangeYourPlan": "Apakah kamu yakin ingin mengubah paket kamu?",
+  "areYouSureYouWantToExit": "Apakah kamu yakin ingin keluar?",
+  "areYouSureYouWantToRenew": "Apakah kamu yakin ingin memperpanjang?",
+  "askCancelReason": "Langganan kamu telah dibatalkan. Apakah kamu ingin membagikan alasannya?",
+  "authenticateGeneric": "Harap lakukan autentikasi",
+  "authenticating": "Autentikasi...",
+  "authenticationSuccessful": "Autentikasi berhasil!",
+  "@authenticationSuccessful": {
+    "description": "Success message when authentication is successful"
+  },
+  "authToConfigureTwofactorAuthentication": "Harap autentikasi untuk mengatur autentikasi dua langkah",
+  "authToExportCodes": "Mohon autentikasikan untuk mengekspor kode-kode Anda",
+  "authToInitiateSignIn": "Harap lakukan autentikasi untuk memulai proses masuk untuk pencadangan.",
+  "authToViewPasskeyGeneric": "Mohon autentikasikan untuk menampilkan kunci sandi",
+  "authToViewSecrets": "Harap lakukan autentikasi untuk melihat rahasia Anda",
+  "@authToViewSecrets": {
+    "description": "Message prompting authentication to view secrets"
+  },
+  "authToViewTrashedFiles": "Silakan autentikasi untuk melihat file anda yang ada di tong sampah",
+  "authToViewYourHiddenFiles": "Harap autentikasi untuk melihat file tersembunyi kamu",
+  "authToViewYourMemories": "Harap autentikasi untuk melihat kenanganmu",
+  "autoCastDialogBody": "Perangkat Cast yang tersedia akan ditampilkan di sini.",
+  "autoCastiOSPermission": "Pastikan izin Jaringan Lokal untuk app Ente Foto aktif di Pengaturan.",
+  "autoLock": "Kunci otomatis",
+  "@autoLock": {
+    "description": "Auto lock setting title"
+  },
+  "autoLockFeatureDescription": "Durasi waktu aplikasi akan terkunci setelah aplikasi ditutup",
+  "@autoLockFeatureDescription": {
+    "description": "Description of auto lock feature"
+  },
+  "autoPair": "Taut otomatis",
+  "backedUpFolders": "Folder yang dicadangkan",
+  "backup": "Pencadangan",
+  "backupFailed": "Pencadangan gagal",
+  "backupOverMobileData": "Cadangkan dengan data seluler",
+  "backupSettings": "Pengaturan pencadangan",
+  "backupStatus": "Status pencadangan",
+  "backupStatusDescription": "Item yang sudah dicadangkan akan terlihat di sini",
+  "backupVideos": "Cadangkan video",
+  "bothIssuerAndAccountCanNotBeEmpty": "Nama penerbit dan akun tidak boleh kosong",
+  "cachedData": "Data cache",
+  "calculating": "Menghitung...",
   "cancel": "Batal",
   "@cancel": {
     "description": "Cancel button label"
   },
-  "reportABug": "Laporkan bug",
-  "@reportABug": {
-    "description": "Label for reporting a bug"
+  "cancelOtherSubscription": "Harap batalkan langganan kamu di {paymentProvider} terlebih dahulu",
+  "@cancelOtherSubscription": {
+    "description": "The text to display when the user has an existing subscription from a different payment provider",
+    "type": "text",
+    "placeholders": {
+      "paymentProvider": {
+        "example": "Apple",
+        "type": "String"
+      }
+    }
+  },
+  "cancelSubscription": "Batalkan langganan",
+  "cannotAddMorePhotosAfterBecomingViewer": "{user} tidak akan dapat menambahkan foto lagi ke album ini\n\nIa masih dapat menghapus foto yang ditambahkan olehnya sendiri",
+  "@cannotAddMorePhotosAfterBecomingViewer": {
+    "placeholders": {
+      "user": {}
+    }
+  },
+  "cannotDeleteSharedFiles": "Tidak dapat menghapus file berbagi",
+  "canNotOpenBody": "Maaf, album ini tidak dapat dibuka di aplikasi.",
+  "canNotOpenTitle": "Tidak dapat membuka album ini",
+  "canOnlyCreateLinkForFilesOwnedByYou": "Hanya dapat membuat tautan untuk file yang dimiliki oleh anda",
+  "canOnlyRemoveFilesOwnedByYou": "Hanya dapat menghapus berkas yang dimiliki oleh mu",
+  "castIPMismatchBody": "Harap pastikan kamu berada pada jaringan yang sama dengan TV-nya.",
+  "castIPMismatchTitle": "Gagal mentransmisikan album",
+  "changeLocationOfSelectedItems": "Ubah lokasi pada item terpilih?",
+  "changePermissionsQuestion": "Ubah izin?",
+  "checkInboxAndSpamFolder": "Silakan periksa kotak masuk (serta kotak spam) untuk menyelesaikan verifikasi",
+  "@checkInboxAndSpamFolder": {
+    "description": "Message asking user to check inbox and spam folder"
+  },
+  "checkStatus": "Periksa status",
+  "@checkStatus": {
+    "description": "Check status button label"
+  },
+  "clearCaches": "Bersihkan cache",
+  "close": "Tutup",
+  "codeAppliedPageTitle": "Kode diterapkan",
+  "codeChangeLimitReached": "Maaf, kamu telah mencapai batas perubahan kode.",
+  "codeCopiedToClipboard": "Kode tersalin ke papan klip",
+  "codeIssuerHint": "Penerbit",
+  "collaborator": "Kolaborator",
+  "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum": "Kolaborator bisa menambahkan foto dan video ke album bersama ini.",
+  "collageLayout": "Tata letak",
+  "collageSaved": "Kolase tersimpan ke galeri",
+  "collectPhotos": "Kumpulkan foto",
+  "color": "Warna",
+  "compactMode": "Mode ringkas",
+  "confirm2FADisable": "Apakah kamu yakin ingin menonaktifkan autentikasi dua langkah?",
+  "confirmPlanChange": "Konfirmasi perubahan paket",
+  "confirmRecoveryKey": "Konfirmasi kunci pemulihan",
+  "confirmUpdatingkey": "Anda yakin ingin memutakhirkan kunci rahasia ini?",
+  "confirmYourRecoveryKey": "Konfirmasi kunci pemulihan kamu",
+  "connectToDevice": "Hubungkan ke perangkat",
+  "contacts": "Kontak",
+  "contactSupport": "Hubungi dukungan",
+  "@contactSupport": {
+    "description": "Contact support button label"
+  },
+  "convertToAlbum": "Ubah menjadi album",
+  "copied": "Disalin",
+  "copiedNextToClipboard": "Kode berikutnya telah disalin ke papan klip",
+  "copiedToClipboard": "Disalin ke papan klip",
+  "copyLink": "Salin link",
+  "copypasteThisCodentoYourAuthenticatorApp": "Salin lalu tempel kode ini\ndi app autentikator kamu",
+  "couldNotBackUpTryLater": "Kami tidak dapat mencadangkan data kamu.\nKami akan coba lagi nanti.",
+  "couldNotFreeUpSpace": "Tidak dapat membersihkan ruang",
+  "couldNotUpdateSubscription": "Tidak dapat memperbarui langganan",
+  "count": "Jumlah",
+  "crashAndErrorReporting": "Pelaporan Kerusakan & Kesalahan",
+  "crashReporting": "Pelaporan crash",
+  "create": "Buat",
+  "createAccount": "Buat akun",
+  "@createAccount": {
+    "description": "Create account button label"
+  },
+  "createAlbumActionHint": "Tekan dan tahan foto lalu klik + untuk membuat album baru",
+  "createCollaborativeLink": "Buat link kolaborasi",
+  "createCollage": "Buat kolase",
+  "createNewTag": "Buat tanda baru",
+  "createPublicLink": "Buat link publik",
+  "creatingLink": "Membuat link...",
+  "criticalUpdateAvailable": "Tersedia pemutakhiran kritis",
+  "crop": "Potong",
+  "custom": "Kustom",
+  "@custom": {
+    "description": "Label for setting custom value for link expiry"
   },
   "customEndpoint": "Terhubung ke {endpoint}",
   "@customEndpoint": {
@@ -67,473 +244,288 @@
       }
     }
   },
-  "save": "Simpan",
-  "@save": {
-    "description": "Label for save button"
-  },
-  "send": "Kirim",
-  "@send": {
-    "description": "Label for send button"
-  },
-  "saveOrSendDescription": "Anda ingin menyimpan kode ke penyimpanan Anda (folder pilihan bawaan adalah folder Downloads) atau Anda ingin kirimkan ke aplikasi lain?",
-  "@saveOrSendDescription": {
-    "description": "Description text asking user if they want to save to storage or share with other apps"
-  },
-  "saveOnlyDescription": "Anda ingin menyimpan kode ke penyimpanan Anda (folder pilihan bawaan adalah folder Downloads)",
-  "@saveOnlyDescription": {
-    "description": "Description text asking user if they want to save to storage (for platforms that don't support sharing)"
-  },
-  "enterNewEmailHint": "Masukkan alamat email baru anda",
-  "@enterNewEmailHint": {
-    "description": "Hint text for entering new email address"
-  },
-  "email": "Email",
-  "@email": {
-    "description": "Email field label"
-  },
-  "verify": "Verifikasi",
-  "@verify": {
-    "description": "Verify button label"
-  },
-  "invalidEmailTitle": "Alamat email tidak valid",
-  "@invalidEmailTitle": {
-    "description": "Title for invalid email error dialog"
-  },
-  "invalidEmailMessage": "Harap masukkan alamat email yang valid.",
-  "@invalidEmailMessage": {
-    "description": "Message for invalid email error dialog"
-  },
-  "pleaseWait": "Mohon tunggu...",
-  "@pleaseWait": {
-    "description": "Please wait message"
-  },
-  "verifyPassword": "Verifikasi kata sandi",
-  "@verifyPassword": {
-    "description": "Verify password button label"
-  },
-  "incorrectPasswordTitle": "Kata sandi salah",
-  "@incorrectPasswordTitle": {
-    "description": "Title for incorrect password error"
-  },
-  "pleaseTryAgain": "Harap coba lagi",
-  "@pleaseTryAgain": {
-    "description": "Message asking user to try again"
-  },
-  "enterPassword": "Masukkan kata sandi",
-  "@enterPassword": {
-    "description": "Enter password field label"
-  },
-  "enterYourPasswordHint": "Masukkan kata sandi Anda",
-  "@enterYourPasswordHint": {
-    "description": "Hint for password field"
-  },
-  "activeSessions": "Sesi aktif",
-  "@activeSessions": {
-    "description": "Title for active sessions page"
-  },
-  "oops": "Ups",
-  "@oops": {
-    "description": "Oops error title"
-  },
-  "somethingWentWrongPleaseTryAgain": "Ada yang salah. Mohon coba kembali",
-  "@somethingWentWrongPleaseTryAgain": {
-    "description": "Generic error message"
-  },
-  "thisWillLogYouOutOfThisDevice": "Langkah ini akan mengeluarkan Anda dari gawai ini!",
-  "@thisWillLogYouOutOfThisDevice": {
-    "description": "Warning message for logging out of current device"
-  },
-  "thisWillLogYouOutOfTheFollowingDevice": "Langkah ini akan mengeluarkan Anda dari gawai berikut:",
-  "@thisWillLogYouOutOfTheFollowingDevice": {
-    "description": "Warning message for logging out of another device"
-  },
-  "terminateSession": "Akhiri sesi?",
-  "@terminateSession": {
-    "description": "Title for terminate session dialog"
-  },
-  "terminate": "Akhiri",
-  "@terminate": {
-    "description": "Terminate button label"
-  },
-  "thisDevice": "Gawai ini",
-  "@thisDevice": {
-    "description": "Label for current device"
-  },
-  "createAccount": "Buat akun",
-  "@createAccount": {
-    "description": "Create account button label"
-  },
-  "weakStrength": "Lemah",
-  "@weakStrength": {
-    "description": "Weak password strength label"
-  },
-  "moderateStrength": "Sedang",
-  "@moderateStrength": {
-    "description": "Moderate password strength label"
-  },
-  "strongStrength": "Kuat",
-  "@strongStrength": {
-    "description": "Strong password strength label"
+  "darkTheme": "Gelap",
+  "dayToday": "Hari Ini",
+  "dayYesterday": "Kemarin",
+  "decrypting": "Mendekripsi...",
+  "decryptingVideo": "Mendekripsi video...",
+  "deduplicateCodes": "Hapus kode duplikat",
+  "deduplicateFiles": "Hilangkan duplikasi file",
+  "delete": "Hapus",
+  "@delete": {
+    "description": "Delete button label"
   },
   "deleteAccount": "Hapus akun",
   "@deleteAccount": {
     "description": "Delete account button label"
   },
-  "deleteAccountQuery": "Kami akan merasa kehilangan Anda. Apakah Anda menghadapi masalah?",
-  "@deleteAccountQuery": {
-    "description": "Message asking user why they want to delete account"
-  },
-  "yesSendFeedbackAction": "Ya, kirim umpan balik",
-  "@yesSendFeedbackAction": {
-    "description": "Button to confirm sending feedback"
-  },
-  "noDeleteAccountAction": "Tidak, hapus akun",
-  "@noDeleteAccountAction": {
-    "description": "Button to proceed with account deletion"
-  },
-  "initiateAccountDeleteTitle": "Harap autentikasi untuk memulai penghapusan akun",
-  "@initiateAccountDeleteTitle": {
-    "description": "Title for authentication dialog before account deletion"
-  },
-  "confirmAccountDeleteTitle": "Konfirmasikan penghapusan akun",
-  "@confirmAccountDeleteTitle": {
-    "description": "Title for account deletion confirmation dialog"
-  },
-  "confirmAccountDeleteMessage": "Akun ini terhubung dengan aplikasi Ente yang lain (jika Anda pakai).\n\nData yang Anda unggah di seluruh aplikasi Ente akan dijadwalkan untuk dihapus. Akun Anda juga akan dihapus secara permanen.",
-  "@confirmAccountDeleteMessage": {
-    "description": "Message warning about account deletion consequences"
-  },
-  "delete": "Hapus",
-  "@delete": {
-    "description": "Delete button label"
-  },
-  "createNewAccount": "Buat akun baru",
-  "@createNewAccount": {
-    "description": "Create new account button label"
-  },
-  "password": "Kata Sandi",
-  "@password": {
-    "description": "Password field label"
-  },
-  "confirmPassword": "Konfirmasi kata sandi",
-  "@confirmPassword": {
-    "description": "Confirm password field label"
-  },
-  "passwordStrength": "Tingkat kekuatan kata sandi: {passwordStrengthValue}",
-  "@passwordStrength": {
-    "description": "Text to indicate the password strength",
+  "deleteAlbum": "Hapus album",
+  "deleteAlbumDialog": "Hapus foto (dan video) yang ada dalam album ini dari <bold>semua</bold> album lain yang juga menampungnya?",
+  "deleteAlbumsDialogBody": "Ini akan menghapus semua album kosong. Ini berguna ketika anda ingin mengurangi kekacauan di daftar album anda.",
+  "deleteAll": "Hapus semua",
+  "deleteCodeAuthMessage": "Autentikasikan untuk menghapus kode",
+  "deleteCodeMessage": "Apakah Anda yakin ingin menghapus kode ini? Tindakan ini tidak dapat dibatalkan.",
+  "deleteCodeTitle": "Hapus kode?",
+  "deleteDuplicates": "Hapus duplikat",
+  "deleteEmptyAlbums": "Hapus album kosong",
+  "deleteEmptyAlbumsWithQuestionMark": "Hapus album yang kosong?",
+  "deleteFromBoth": "Hapus dari keduanya",
+  "deleteFromDevice": "Hapus dari perangkat ini",
+  "deleteFromEnte": "Hapus dari Ente",
+  "deletePhotos": "Hapus foto",
+  "deleteProgress": "Menghapus {currentlyDeleting} / {totalCount}",
+  "@deleteProgress": {
     "placeholders": {
-      "passwordStrengthValue": {
-        "description": "The strength of the password as a string",
-        "type": "String",
-        "example": "Weak or Moderate or Strong"
-      }
+      "currentlyDeleting": {},
+      "totalCount": {}
     }
   },
-  "hearUsWhereTitle": "Dari mana Anda menemukan Ente? (opsional)",
-  "@hearUsWhereTitle": {
-    "description": "Title asking how user heard about Ente"
-  },
-  "hearUsExplanation": "Kami tidak melacak penginstalan aplikasi kami. Akan sangat membantu kami bila Anda memberitahu kami dari mana Anda mengetahui Ente!",
-  "@hearUsExplanation": {
-    "description": "Explanation for asking how user heard about Ente"
-  },
-  "signUpTerms": "Saya menyetujui <u-terms>syarat dan ketentuan</u-terms> serta <u-policy>kebijakan privasi</u-policy> Ente",
-  "@signUpTerms": {
-    "description": "Terms agreement text for sign up"
-  },
-  "termsOfServicesTitle": "Ketentuan",
-  "@termsOfServicesTitle": {
-    "description": "Terms of service title"
-  },
-  "privacyPolicyTitle": "Kebijakan Privasi",
-  "@privacyPolicyTitle": {
-    "description": "Privacy policy title"
-  },
-  "ackPasswordLostWarning": "Saya mengerti bahwa jika saya lupa kata sandi saya, data saya dapat hilang karena data saya <underline>terenkripsi secara end-to-end</underline>.",
-  "@ackPasswordLostWarning": {
-    "description": "Warning about password loss"
-  },
-  "encryption": "Enkripsi",
-  "@encryption": {
-    "description": "Encryption label"
-  },
-  "logInLabel": "Masuk akun",
-  "@logInLabel": {
-    "description": "Log in button label"
-  },
-  "welcomeBack": "Selamat datang kembali!",
-  "@welcomeBack": {
-    "description": "Welcome back message"
-  },
-  "loginTerms": "Dengan menekan masuk akun, saya menyetujui <u-terms>syarat dan ketentuan</u-terms> serta <u-policy>kebijakan privasi</u-policy> Ente",
-  "@loginTerms": {
-    "description": "Terms agreement text for login"
-  },
-  "noInternetConnection": "Tiada koneksi internet",
-  "@noInternetConnection": {
-    "description": "No internet connection error message"
-  },
-  "pleaseCheckYourInternetConnectionAndTryAgain": "Mohon periksa koneksi internet Anda dan coba kembali.",
-  "@pleaseCheckYourInternetConnectionAndTryAgain": {
-    "description": "Message asking user to check internet connection"
-  },
-  "verificationFailedPleaseTryAgain": "Gagal memverifikasi. Mohon coba lagi",
-  "@verificationFailedPleaseTryAgain": {
-    "description": "Verification failed error message"
-  },
-  "recreatePasswordTitle": "Membuat kembali kata sandi",
-  "@recreatePasswordTitle": {
-    "description": "Title for recreate password dialog"
-  },
-  "recreatePasswordBody": "Gawai Anda saat ini tidak dapat memverifikasi kata sandi Anda. Namun, kami dapat membuat ulang dengan cara yang dapat digunakan pada semua gawai.\n\nMohon masuk log dengan kunci pemulihan dan buat ulang kata sandi Anda (kata sandi yang sama diperbolehkan).",
-  "@recreatePasswordBody": {
-    "description": "Body text for recreate password dialog"
-  },
-  "useRecoveryKey": "Gunakan kunci pemulihan",
-  "@useRecoveryKey": {
-    "description": "Use recovery key button label"
-  },
-  "forgotPassword": "Lupa kata sandi",
-  "@forgotPassword": {
-    "description": "Forgot password link label"
-  },
-  "changeEmail": "Ubah alamat email",
-  "@changeEmail": {
-    "description": "Change email button label"
-  },
-  "verifyEmail": "Verifikasi email",
-  "@verifyEmail": {
-    "description": "Verify email title"
-  },
-  "weHaveSendEmailTo": "Kami telah mengirimkan sebuah posel ke <green>{email}</green>",
-  "@weHaveSendEmailTo": {
-    "description": "Text to indicate that we have sent a mail to the user",
-    "placeholders": {
-      "email": {
-        "description": "The email address of the user",
-        "type": "String",
-        "example": "example@ente.com"
-      }
-    }
-  },
-  "toResetVerifyEmail": "Untuk mengatur ulang kata sandi, mohon verifikasi surel Anda terlebih dahulu.",
-  "@toResetVerifyEmail": {
-    "description": "Message asking user to verify email before password reset"
-  },
-  "checkInboxAndSpamFolder": "Mohon cek",
-  "@checkInboxAndSpamFolder": {
-    "description": "Message asking user to check inbox and spam folder"
-  },
-  "tapToEnterCode": "Ketuk untuk memasukkan kode",
-  "@tapToEnterCode": {
-    "description": "Hint for entering verification code"
-  },
-  "sendEmail": "Kirim surel",
-  "resendEmail": "Kirim ulang surel",
-  "@resendEmail": {
-    "description": "Resend email button label"
-  },
-  "passKeyPendingVerification": "Verifikasi tertunda",
-  "@passKeyPendingVerification": {
-    "description": "Message when passkey verification is pending"
-  },
-  "loginSessionExpired": "Sesi sudah berakhir",
-  "@loginSessionExpired": {
-    "description": "Login session expired title"
-  },
-  "loginSessionExpiredDetails": "Sesi Anda sudah berakhir. Mohon masuk log kembali.",
-  "@loginSessionExpiredDetails": {
-    "description": "Login session expired details"
-  },
-  "passkeyAuthTitle": "Verifikasi passkey",
-  "@passkeyAuthTitle": {
-    "description": "Passkey authentication title"
-  },
-  "waitingForVerification": "Menantikan verifikasi...",
-  "@waitingForVerification": {
-    "description": "Waiting for verification message"
-  },
-  "tryAgain": "Coba lagi",
-  "@tryAgain": {
-    "description": "Try again button label"
-  },
-  "checkStatus": "Periksa status",
-  "@checkStatus": {
-    "description": "Check status button label"
-  },
-  "loginWithTOTP": "Masuk menggunakan TOTP",
-  "@loginWithTOTP": {
-    "description": "Login with TOTP button label"
-  },
-  "recoverAccount": "Pulihkan akun",
-  "@recoverAccount": {
-    "description": "Recover account button label"
-  },
-  "setPasswordTitle": "Atur kata sandi",
-  "@setPasswordTitle": {
-    "description": "Set password title"
-  },
-  "changePasswordTitle": "Ubah kata sandi",
-  "@changePasswordTitle": {
-    "description": "Change password title"
-  },
-  "resetPasswordTitle": "Atur ulang kata sandi",
-  "@resetPasswordTitle": {
-    "description": "Reset password title"
-  },
-  "encryptionKeys": "Kunci enkripsi",
-  "@encryptionKeys": {
-    "description": "Encryption keys title"
-  },
-  "enterPasswordToEncrypt": "Masukkan kata sandi yang dapat kami gunakan untuk mengenkripsi data Anda",
-  "@enterPasswordToEncrypt": {
-    "description": "Prompt to enter password for encryption"
-  },
-  "enterNewPasswordToEncrypt": "Masukkan kata sandi baru yang dapat kami gunakan untuk mengenkripsi data Anda",
-  "@enterNewPasswordToEncrypt": {
-    "description": "Prompt to enter new password for encryption"
-  },
-  "passwordWarning": "Kami tidak menyimpan kata sandi Anda. Jika Anda lupa, <underline>kami tidak dapat mendekripsi data Anda</underline>",
-  "@passwordWarning": {
-    "description": "Warning about password storage"
-  },
-  "howItWorks": "Cara kerjanya",
-  "@howItWorks": {
-    "description": "How it works button label"
-  },
-  "generatingEncryptionKeys": "Sedang membuat kunci enkripsi...",
-  "@generatingEncryptionKeys": {
-    "description": "Generating encryption keys message"
-  },
-  "passwordChangedSuccessfully": "Kata sandi sukses diubah",
-  "@passwordChangedSuccessfully": {
-    "description": "Password changed successfully message"
-  },
-  "signOutFromOtherDevices": "Keluar dari gawai yang lain",
-  "@signOutFromOtherDevices": {
-    "description": "Sign out from other devices title"
-  },
-  "signOutOtherBody": "Jika Anda pikir seseorang mungkin mengetahui kata sandi Anda, Anda dapat mengeluarkan akun Anda pada semua gawai",
-  "@signOutOtherBody": {
-    "description": "Sign out other devices explanation"
-  },
-  "signOutOtherDevices": "Keluar akun pada gawai yang lain",
-  "@signOutOtherDevices": {
-    "description": "Sign out other devices button label"
-  },
-  "doNotSignOut": "Jangan keluar",
-  "@doNotSignOut": {
-    "description": "Do not sign out button label"
-  },
-  "generatingEncryptionKeysTitle": "Sedang membuat kunci enkripsi...",
-  "@generatingEncryptionKeysTitle": {
-    "description": "Generating encryption keys title"
-  },
-  "continueLabel": "Lanjutkan",
-  "@continueLabel": {
-    "description": "Continue button label"
-  },
-  "insecureDevice": "Perangkat tidak aman",
-  "@insecureDevice": {
-    "description": "Insecure device warning title"
-  },
-  "sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": "Maaf, kami tidak dapat membuat kunci yang aman pada perangkat ini.\n\nHarap mendaftar dengan perangkat lain.",
-  "@sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": {
-    "description": "Error message for insecure device"
-  },
-  "recoveryKeyCopiedToClipboard": "Kunci pemulihan disalin ke papan klip",
-  "@recoveryKeyCopiedToClipboard": {
-    "description": "Recovery key copied message"
-  },
-  "recoveryKey": "Kunci pemulihan",
-  "@recoveryKey": {
-    "description": "Recovery key label"
-  },
-  "recoveryKeyOnForgotPassword": "Jika Anda lupa kata sandi, satu-satunya cara memulihkan data Anda adalah dengan kunci ini.",
-  "@recoveryKeyOnForgotPassword": {
-    "description": "Recovery key importance explanation"
-  },
-  "recoveryKeySaveDescription": "Kami tidak menyimpan kunci ini, jadi harap simpan kunci yang berisi 24 kata ini dengan aman.",
-  "@recoveryKeySaveDescription": {
-    "description": "Recovery key save description"
-  },
-  "doThisLater": "Lakukan lain kali",
-  "@doThisLater": {
-    "description": "Do this later button label"
-  },
-  "saveKey": "Simpan kunci",
-  "@saveKey": {
-    "description": "Save key button label"
-  },
-  "recoveryKeySaved": "Kunci pemulihan sudah tersimpan di folder 'Downloads'!",
-  "@recoveryKeySaved": {
-    "description": "Recovery key saved confirmation message"
-  },
-  "noRecoveryKeyTitle": "Tidak punya kunci pemulihan?",
-  "@noRecoveryKeyTitle": {
-    "description": "No recovery key title"
-  },
-  "twoFactorAuthTitle": "Autentikasi dua langkah",
-  "@twoFactorAuthTitle": {
-    "description": "Two-factor authentication title"
-  },
-  "enterCodeHint": "Masukkan kode 6 digit dari aplikasi autentikator Anda",
-  "@enterCodeHint": {
-    "description": "Hint for entering 2FA code"
-  },
-  "lostDeviceTitle": "Perangkat hilang?",
-  "@lostDeviceTitle": {
-    "description": "Lost device title"
-  },
-  "enterRecoveryKeyHint": "Masukkan kunci pemulihan Anda",
-  "@enterRecoveryKeyHint": {
-    "description": "Hint for entering recovery key"
-  },
-  "recover": "Pulihkan",
-  "@recover": {
-    "description": "Recover button label"
-  },
-  "loggingOut": "Mengeluarkan akun...",
-  "@loggingOut": {
-    "description": "Message shown while logging out"
-  },
-  "immediately": "Segera",
-  "@immediately": {
-    "description": "Immediately option for auto lock timing"
-  },
-  "appLock": "Kunci aplikasi",
-  "@appLock": {
-    "description": "App lock setting title"
-  },
-  "autoLock": "Kunci otomatis",
-  "@autoLock": {
-    "description": "Auto lock setting title"
-  },
-  "noSystemLockFound": "Tidak ditemukan kunci sistem",
-  "@noSystemLockFound": {
-    "description": "Error when no system lock is found"
-  },
-  "deviceLockEnablePreSteps": "Pasang kunci sandi atau kunci layar pada pengaturan sistem untuk menyalakan Pengunci Gawai.",
-  "@deviceLockEnablePreSteps": {
-    "description": "Instructions for enabling device lock"
-  },
-  "appLockDescription": "Pilih layar kunci bawaan gawai Anda ATAU layar kunci kustom dengan PIN atau kata sandi.",
-  "@appLockDescription": {
-    "description": "Description of app lock feature"
+  "deleteSharedAlbum": "Hapus album bersama?",
+  "deleteSharedAlbumDialogBody": "Album ini akan di hapus untuk semua\n\nKamu akan kehilangan akses ke foto yang di bagikan dalam album ini yang di miliki oleh pengguna lain",
+  "deleteTagMessage": "Apakah Anda yakin ingin menghapus tanda ini? Tindakan ini tidak dapat dibatalkan.",
+  "deleteTagTitle": "Hapus tanda?",
+  "deselectAll": "Batalkan semua pilihan",
+  "details": "Rincian",
+  "developerSettings": "Pengaturan pengembang",
+  "@developerSettings": {
+    "description": "Label for developer settings"
   },
   "deviceLock": "Kunci perangkat",
   "@deviceLock": {
     "description": "Device lock option title"
   },
-  "pinLock": "PIN",
-  "@pinLock": {
-    "description": "PIN lock option title"
+  "deviceLockEnablePreSteps": "Pasang kunci sandi atau kunci layar pada pengaturan sistem untuk menyalakan Pengunci Gawai.",
+  "@deviceLockEnablePreSteps": {
+    "description": "Instructions for enabling device lock"
   },
-  "autoLockFeatureDescription": "Durasi waktu aplikasi akan terkunci setelah aplikasi ditutup",
-  "@autoLockFeatureDescription": {
-    "description": "Description of auto lock feature"
+  "deviceNotFound": "Perangkat tidak ditemukan",
+  "didYouKnow": "Tahukah kamu?",
+  "digits": "Digit",
+  "disableDownloadWarningBody": "Orang yang melihat masih bisa mengambil tangkapan layar atau menyalin foto kamu menggunakan alat eksternal",
+  "disableDownloadWarningTitle": "Perlu diketahui",
+  "disableLinkMessage": "Ini akan menghapus link publik yang digunakan untuk mengakses \"{albumName}\".",
+  "@disableLinkMessage": {
+    "placeholders": {
+      "albumName": {}
+    }
   },
+  "disableTwofactor": "Nonaktifkan autentikasi dua langkah",
+  "disablingTwofactorAuthentication": "Menonaktifkan autentikasi dua langkah...",
+  "discover": "Temukan",
+  "@discover": {
+    "description": "The text to display for the discover section under which we show receipts, screenshots, sunsets, greenery, etc."
+  },
+  "discover_babies": "Bayi",
+  "discover_celebrations": "Perayaan",
+  "discover_food": "Makanan",
+  "discover_greenery": "Hijau-hijauan",
+  "discover_hills": "Bukit",
+  "discover_identity": "Identitas",
+  "discover_memes": "Meme",
+  "discover_notes": "Catatan",
+  "discover_pets": "Hewan",
+  "discover_receipts": "Tanda Terima",
+  "discover_screenshots": "Tangkapan layar",
+  "discover_selfies": "Swafoto",
+  "discover_sunset": "Senja",
+  "discover_visiting_cards": "Kartu nama",
+  "discover_wallpapers": "Gambar latar",
+  "distanceInKMUnit": "km",
+  "@distanceInKMUnit": {
+    "description": "Unit for distance in km"
+  },
+  "done": "Selesai",
+  "doNotSignOut": "Jangan keluar",
+  "@doNotSignOut": {
+    "description": "Do not sign out button label"
+  },
+  "doThisLater": "Lakukan lain kali",
+  "@doThisLater": {
+    "description": "Do this later button label"
+  },
+  "doubleTapToViewHiddenCode": "Ketuk dua kali untuk memasukkan kode baru",
+  "download": "Unduh",
+  "downloadFailed": "Gagal mengunduh",
+  "downloading": "Mengunduh...",
+  "downloadUpdate": "Unduh pemutakhiran",
+  "doYouWantToDiscardTheEditsYouHaveMade": "Apakah kamu ingin membuang edit yang telah kamu buat?",
+  "dropSupportEmail": "Silakan kirimkan email ke {supportEmail} dari alamat email terdaftar kamu",
+  "@dropSupportEmail": {
+    "placeholders": {
+      "supportEmail": {
+        "description": "The support email address",
+        "type": "String",
+        "example": "support@ente.com"
+      }
+    }
+  },
+  "duplicateCodes": "Kode duplikat",
+  "duplicateFileCountWithStorageSaved": "Kamu telah menghapus {count, plural, other{{count} file duplikat}} dan membersihkan ({storageSaved}!)",
+  "@duplicateFileCountWithStorageSaved": {
+    "description": "The text to display when the user has successfully cleaned up duplicate files",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "1",
+        "type": "int"
+      },
+      "storageSaved": {
+        "example": "1.2 GB",
+        "type": "String"
+      }
+    }
+  },
+  "duplicateItemsGroup": "{count} berkas, masing-masing {formattedSize}",
+  "@duplicateItemsGroup": {
+    "description": "Display the number of duplicate files and their size",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "12",
+        "type": "int"
+      },
+      "formattedSize": {
+        "example": "2.3 MB",
+        "type": "String"
+      }
+    }
+  },
+  "editCodeAuthMessage": "Autentikasikan untuk menyunting kode",
+  "editLocation": "Edit lokasi",
+  "editOrder": "Ubah pesanan",
+  "editsSaved": "Perubahan tersimpan",
+  "editsToLocationWillOnlyBeSeenWithinEnte": "Perubahan lokasi hanya akan terlihat di Ente",
+  "editTag": "Ubah tanda",
+  "eligible": "memenuhi syarat",
+  "emailAlreadyRegistered": "Email sudah terdaftar.",
+  "@emailAlreadyRegistered": {
+    "description": "Error message when email is already registered"
+  },
+  "emailNoEnteAccountPhotos": "{email} tidak punya akun Ente.\n\nUndang dia untuk berbagi foto.",
+  "@emailNoEnteAccountPhotos": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "emailNotRegistered": "Email belum terdaftar.",
+  "@emailNotRegistered": {
+    "description": "Error message when email is not registered"
+  },
+  "emailUsMessage": "Harap kirim email kepada kami di {email}",
+  "@emailUsMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "emailVerificationEnableWarning": "Untuk menghindari terkunci dari akun Anda, pastikan untuk menyimpan salinan 2FA email Anda di luar Ente Auth sebelum mengaktifkan verifikasi email.",
+  "emailVerificationToggle": "Verifikasi email",
+  "empty": "Kosongkan",
+  "emptyTrashQuestion": "Kosongkan sampah?",
+  "enableMaps": "Aktifkan peta",
+  "encrypted": "Terenkripsi",
+  "encryptingBackup": "Mengenkripsi cadangan...",
+  "encryptionKeys": "Kunci enkripsi",
+  "@encryptionKeys": {
+    "description": "Encryption keys title"
+  },
+  "endpointUpdatedMessage": "Endpoint berhasil diubah",
+  "@endpointUpdatedMessage": {
+    "description": "Success message when endpoint is updated"
+  },
+  "enterAlbumName": "Masukkan nama album",
+  "enterCode": "Masukkan kode",
+  "enterCodeDescription": "Masukkan kode yang diberikan temanmu untuk memperoleh kuota gratis untuk kalian berdua",
+  "enterCodeHint": "Masukkan kode 6 digit dari aplikasi autentikator Anda",
+  "@enterCodeHint": {
+    "description": "Hint for entering 2FA code"
+  },
+  "enterDetailsManually": "Masukkan rincian secara manual",
+  "enterEmail": "Masukkan email",
+  "enterFileName": "Masukkan nama file",
+  "enterNewEmailHint": "Masukkan alamat email baru anda",
+  "@enterNewEmailHint": {
+    "description": "Hint text for entering new email address"
+  },
+  "enterRecoveryKeyHint": "Masukkan kunci pemulihan Anda",
+  "@enterRecoveryKeyHint": {
+    "description": "Hint for entering recovery key"
+  },
+  "enterReferralCode": "Masukkan kode rujukan",
+  "enterThe6digitCodeFromnyourAuthenticatorApp": "Masukkan kode 6 angka dari\napp autentikator kamu",
+  "enterValidEmail": "Harap masukkan alamat email yang sah.",
+  "enterYourNewEmailAddress": "Masukkan alamat email baru anda",
+  "enterYourPassword": "Masukkan sandi kamu",
+  "enterYourPasswordHint": "Masukkan kata sandi Anda",
+  "@enterYourPasswordHint": {
+    "description": "Hint for password field"
+  },
+  "enterYourRecoveryKey": "Masukkan kunci pemulihan kamu",
+  "error": "Kesalahan",
+  "@error": {
+    "description": "Generic error title"
+  },
+  "errorGenericBody": "Terjadi kesalahan yang tidak terduga saat mengimpor.",
+  "errorGenericTitle": "Terjadi kesalahan",
+  "errorInvalidQRCodeBody": "Kode QR yang dipindai bukan akun 2FA yang valid.",
+  "errorNoQRCode": "Kode QR tidak ditemukan",
+  "exif": "EXIF",
+  "expiredLinkInfo": "Link ini telah kedaluwarsa. Silakan pilih waktu kedaluwarsa baru atau nonaktifkan waktu kedaluwarsa.",
+  "export": "Ekspor",
+  "exportCodes": "Ekspor kode",
+  "exportDialogDesc": "Data ekspor yang terenkripsi akan dilindungi kata sandi yang Anda pilih.",
+  "exportLogs": "Ekspor log",
+  "@exportLogs": {
+    "description": "Button to export logs"
+  },
+  "exportWarningDesc": "Berkas yang diekspor mengandung informasi yang bersifat sensitif. TOLONG SIMPAN BAIK-BAIK BERKAS INI.",
+  "exportYourData": "Ekspor data kamu",
+  "failedToApplyCode": "Gagal menerapkan kode",
+  "failedToCancel": "Gagal membatalkan",
+  "failedToDownloadVideo": "Gagal mengunduh video",
+  "failedToFetchOriginalForEdit": "Gagal memuat file asli untuk mengedit",
+  "failedToFetchReferralDetails": "Tidak dapat mengambil kode rujukan. Harap ulang lagi nanti.",
+  "failedToLoadAlbums": "Gagal memuat album",
+  "failedToRenew": "Gagal memperpanjang",
+  "failedToVerifyPaymentStatus": "Gagal memeriksa status pembayaran",
+  "faqs": "Tanya Jawab Umum",
+  "favorite": "Favorit",
+  "fileInfoAddDescHint": "Tambahkan keterangan...",
+  "fileSavedToGallery": "File tersimpan ke galeri",
+  "filesDeleted": "File terhapus",
+  "filesSavedToGallery": "File tersimpan ke galeri",
+  "fileTypes": "Jenis file",
+  "flip": "Balik",
+  "focusOnSearchBar": "Buka pencarian begitu aplikasi dibuka",
+  "freeStorageOffer": "Potongan 10% di <bold-green>ente</bold-green> photos",
+  "freeStorageOfferDescription": "Gunakan kode \"AUTH\" untuk mendapatkan potongan 10% untuk tahun pertama",
+  "freeTrial": "Percobaan gratis",
+  "freeUpAmount": "Bersihkan {sizeInMBorGB}",
+  "@freeUpAmount": {
+    "placeholders": {
+      "sizeInMBorGB": {}
+    }
+  },
+  "freeUpDeviceSpace": "Bersihkan penyimpanan perangkat",
+  "freeUpSpace": "Bersihkan ruang",
+  "general": "Umum",
+  "generatingEncryptionKeysTitle": "Sedang membuat kunci enkripsi...",
+  "@generatingEncryptionKeysTitle": {
+    "description": "Generating encryption keys title"
+  },
+  "getStarted": "Mulai",
+  "giveUsAStarOnGithub": "Beri kami bintang di GitHub",
+  "googlePlayId": "ID Google Play",
+  "grantFullAccessPrompt": "Harap berikan akses ke semua foto di app Pengaturan",
+  "grantPermission": "Berikan izin",
+  "hearUsWhereOptionalTitle": "Dari mana Anda menemukan Ente? (opsional)",
+  "@hearUsWhereOptionalTitle": {
+    "description": "Title asking how user heard about Ente"
+  },
+  "help": "Bantuan",
+  "hidden": "Tersembunyi",
+  "hide": "Sembunyikan",
   "hideContent": "Sembunyikan isi",
   "@hideContent": {
     "description": "Hide content setting title"
@@ -546,45 +538,422 @@
   "@hideContentDescriptioniOS": {
     "description": "Description of hide content feature on iOS"
   },
-  "tooManyIncorrectAttempts": "Terlalu banyak percobaan yang salah",
-  "@tooManyIncorrectAttempts": {
-    "description": "Message shown when too many incorrect attempts are made"
+  "hiding": "Menyembunyikan...",
+  "hintForDesktop": "Klik kanan kode untuk mengedit atau menghapus.",
+  "hintForMobile": "Tekan lama kode untuk mengedit atau menghapusnya.",
+  "hostedAtOsmFrance": "Dihosting oleh OSM France",
+  "howItWorks": "Cara kerjanya",
+  "@howItWorks": {
+    "description": "How it works button label"
   },
-  "tapToUnlock": "Ketuk untuk membuka",
-  "@tapToUnlock": {
-    "description": "Message prompting user to tap to unlock"
+  "howToViewShareeVerificationID": "Silakan minta dia untuk menekan lama alamat email-nya di layar pengaturan, dan pastikan bahwa ID di perangkatnya sama.",
+  "ignore": "Abaikan",
+  "immediately": "Segera",
+  "@immediately": {
+    "description": "Immediately option for auto lock timing"
   },
-  "areYouSureYouWantToLogout": "Anda yakin ingin keluar dari akun ini?",
-  "@areYouSureYouWantToLogout": {
-    "description": "Confirmation message before logout"
+  "import2FasGuide": "Gunakan opsi \"Settings->Backup -Export\" di 2FAS.\n\nJika cadangan Anda terenkripsi, Anda perlu memasukkan kata sandi untuk mendekripsi cadangan",
+  "importAccountPageTitle": "Masukkan rincian akun",
+  "importAegisGuide": "Gunakan opsi \"Export the vault\" di Pengaturan Aegis.\n\nJika brankas Anda terenkripsi, Anda perlu memasukkan kata sandi brankas untuk mendekripsi brankas.",
+  "importBitwardenGuide": "Gunakan opsi \"Export vault\" di Bitwarden dan impor file JSON yang tidak terenkripsi.",
+  "importCodeDelimiterInfo": "Kode dapat dipisahkan dengan koma atau baris baru",
+  "importCodes": "Impor kode",
+  "importEnteEncGuide": "Pilih file enkripsi JSON yang telah diekspor dari Ente",
+  "importEnterSetupKey": "Masukkan kunci penyiapan",
+  "importFailureDesc": "Berkas yang dipilih tidak dapat diurai",
+  "importFromGallery": "Impor dari galeri",
+  "importInstruction": "Harap pilih file yang berisi daftar kode Anda dalam format berikut",
+  "importLabel": "Impor",
+  "importLastpassGuide": "Gunakan opsi \"Transfer accounts\" di Pengaturan Lastpass Authenticator dan tekan \"Export accounts to file\". Impor file JSON yang diunduh.",
+  "importRaivoGuide": "Gunakan opsi \"Export OTPs to Zip archive\" pada pengaturan Raivo.\n\nEkstrak file zip dan impor file JSON tersebut.",
+  "importSelectAppExport": "Pilih berkas eksporan dari {appName}",
+  "@importSelectAppExport": {
+    "placeholders": {
+      "appName": {}
+    }
   },
-  "yesLogout": "Ya, keluar akun",
-  "@yesLogout": {
-    "description": "Confirmation button for logout"
+  "importSelectJsonFile": "Pilih berkas JSON",
+  "importSuccessDesc": "Sebanyak {count} kode telah Anda impor!",
+  "@importSuccessDesc": {
+    "placeholders": {
+      "count": {
+        "description": "The number of codes imported",
+        "type": "int",
+        "example": "1"
+      }
+    }
   },
-  "authToViewSecrets": "Harap lakukan autentikasi untuk melihat rahasia Anda",
-  "@authToViewSecrets": {
-    "description": "Message prompting authentication to view secrets"
+  "importSuccessTitle": "Yey! :>",
+  "importTypeEnteEncrypted": "Eksporan Ente terenkripsi",
+  "incorrectCode": "Kode salah",
+  "@incorrectCode": {
+    "description": "Error message when code is incorrect"
   },
+  "incorrectDetails": "Rincian salah",
+  "incorrectRecoveryKey": "Kunci pemulihan salah",
+  "@incorrectRecoveryKey": {
+    "description": "Error message when recovery key is incorrect"
+  },
+  "incorrectRecoveryKeyBody": "Kunci pemulihan yang kamu masukkan salah",
+  "incorrectRecoveryKeyTitle": "Kunci pemulihan salah",
+  "insecureDevice": "Perangkat tidak aman",
+  "@insecureDevice": {
+    "description": "Insecure device warning title"
+  },
+  "invalidEmailAddress": "Alamat email tidak sah",
+  "invalidEmailMessage": "Harap masukkan alamat email yang valid.",
+  "@invalidEmailMessage": {
+    "description": "Message for invalid email error dialog"
+  },
+  "invalidEmailTitle": "Alamat email tidak valid",
+  "@invalidEmailTitle": {
+    "description": "Title for invalid email error dialog"
+  },
+  "invalidEndpoint": "Endpoint tidak sah",
+  "@invalidEndpoint": {
+    "description": "Error message when endpoint is invalid"
+  },
+  "invalidEndpointMessage": "Maaf, endpoint yang kamu masukkan tidak sah. Harap masukkan endpoint yang sah dan coba lagi.",
+  "@invalidEndpointMessage": {
+    "description": "Detailed error message when endpoint is invalid"
+  },
+  "invalidKey": "Kunci tidak sah",
+  "invalidQRCode": "Kode QR tidak valid",
+  "invalidRecoveryKey": "Kunci pemulihan yang kamu masukkan tidak sah. Pastikan kunci tersebut berisi 24 kata, dan teliti ejaan masing-masing kata.\n\nJika kamu memasukkan kode pemulihan lama, pastikan kode tersebut berisi 64 karakter, dan teliti setiap karakter yang ada.",
+  "invite": "Undang",
+  "inviteToEnte": "Undang ke Ente",
+  "ok": "Oke",
+  "@ok": {
+    "description": "Generic OK button label"
+  },
+  "itemCount": "{count, plural, other{{count} item}}",
+  "@itemCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "itemsShowTheNumberOfDaysRemainingBeforePermanentDeletion": "Item menampilkan jumlah hari yang tersisa sebelum dihapus permanen",
+  "itemsWillBeRemovedFromAlbum": "Item yang dipilih akan dihapus dari album ini",
+  "iUnderStand": "Saya mengerti",
+  "@iUnderStand": {
+    "description": "Text for the button to confirm the user understands the warning"
+  },
+  "kiloMeterUnit": "km",
+  "language": "Bahasa",
+  "lastUpdated": "Terakhir diperbarui",
+  "leave": "Tinggalkan",
+  "leaveAlbum": "Tinggalkan album",
+  "leaveFamily": "Tinggalkan keluarga",
+  "leaveSharedAlbum": "Tinggalkan album bersama?",
+  "left": "Kiri",
+  "linkCopiedToClipboard": "Link tersalin ke papan klip",
+  "linkDeviceLimit": "Batas perangkat",
+  "linkEnabled": "Aktif",
+  "linkExpired": "Kedaluwarsa",
+  "linkExpiresOn": "Link akan kedaluwarsa pada {expiryTime}",
+  "@linkExpiresOn": {
+    "placeholders": {
+      "expiryTime": {}
+    }
+  },
+  "linkExpiry": "Waktu kedaluwarsa link",
+  "linkHasExpired": "Link telah kedaluwarsa",
+  "linkNeverExpires": "Tidak pernah",
+  "loadingExifData": "Memuat data EXIF...",
+  "loadingGallery": "Memuat galeri...",
+  "loadingModel": "Mengunduh model...",
+  "loadingYourPhotos": "Memuat fotomu...",
+  "loadMessage1": "Kamu bisa membagikan langgananmu dengan keluarga",
+  "loadMessage3": "Kami menyimpan 3 salinan dari data kamu, salah satunya di tempat pengungsian bawah tanah",
+  "loadMessage7": "App seluler kami berjalan di latar belakang untuk mengenkripsi dan mencadangkan foto yang kamu potret",
+  "loadMessage8": "{webUrl} menyediakan alat pengunggah yang bagus",
+  "@loadMessage8": {
+    "description": "Loading screen message about the web uploader.",
+    "placeholders": {
+      "webUrl": {
+        "type": "String",
+        "example": "photos.ente.com"
+      }
+    }
+  },
+  "loadMessage9": "Kami menggunakan Xchacha20Poly1305 untuk mengenkripsi data-mu dengan aman",
+  "localGallery": "Galeri lokal",
+  "locationName": "Nama tempat",
+  "lockButtonLabel": "Kunci",
+  "loggingOut": "Mengeluarkan akun...",
+  "@loggingOut": {
+    "description": "Message shown while logging out"
+  },
+  "logInLabel": "Masuk akun",
+  "@logInLabel": {
+    "description": "Log in button label"
+  },
+  "loginSessionExpiredDetails": "Sesi kamu telah berakhir. Silakan masuk akun kembali.",
+  "@loginSessionExpiredDetails": {
+    "description": "Login session expired details"
+  },
+  "loginWithAuthAccount": "Masuk dengan akun Auth anda",
+  "loginWithTOTP": "Masuk menggunakan TOTP",
+  "@loginWithTOTP": {
+    "description": "Login with TOTP button label"
+  },
+  "logout": "Keluar akun",
+  "logsDialogBody": "Ini akan mengirimkan log untuk membantu kami memperbaiki masalah anda. Harap diperhatikan bahwa nama file akan disertakan untuk membantu melacak masalah pada file tertentu.",
+  "@logsDialogBody": {
+    "description": "Body text for the logs dialog explaining what will be sent"
+  },
+  "longPressAnEmailToVerifyEndToEndEncryption": "Tekan dan tahan email untuk membuktikan enkripsi ujung ke ujung.",
+  "lostDevice": "Perangkat hilang?",
+  "lostDeviceTitle": "Perangkat hilang?",
+  "@lostDeviceTitle": {
+    "description": "Lost device title"
+  },
+  "machineLearning": "Pemelajaran mesin",
+  "manage": "Atur",
+  "manageDeviceStorage": "Mengelola cache perangkat",
+  "manageFamily": "Atur keluarga",
+  "manageLink": "Atur link",
+  "manageParticipants": "Atur",
+  "manageSubscription": "Atur langganan",
+  "manualSort": "Kustom",
+  "map": "Peta",
+  "@map": {
+    "description": "Label for the map view"
+  },
+  "maps": "Peta",
+  "memoryCount": "{count, plural, =0{tidak ada memori} one{{formattedCount} memori} other{{formattedCount} memori}}",
+  "@memoryCount": {
+    "description": "The text to display the number of memories",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "1",
+        "type": "int"
+      },
+      "formattedCount": {
+        "type": "String",
+        "example": "11.513, 11,511"
+      }
+    }
+  },
+  "minimizeAppOnCopy": "Minimkan layar aplikasi saat sedang menyalin",
+  "mlConsent": "Aktifkan pemelajaran mesin",
+  "mlConsentConfirmation": "Saya memahami, dan bersedia mengaktifkan pemelajaran mesin",
+  "mlConsentDescription": "Jika kamu mengaktifkan pemelajaran mesin, Ente akan memproses informasi seperti geometri wajah dari file yang ada, termasuk file yang dibagikan kepadamu.\n\nIni dijalankan pada perangkatmu, dan setiap informasi biometrik yang dibuat akan terenkripsi ujung ke ujung.",
+  "mlConsentPrivacy": "Klik di sini untuk detail lebih lanjut tentang fitur ini pada kebijakan privasi kami",
+  "moderateStrength": "Sedang",
+  "@moderateStrength": {
+    "description": "Moderate password strength label"
+  },
+  "moments": "Momen",
+  "monthly": "Bulanan",
+  "@monthly": {
+    "description": "The text to display for monthly plans",
+    "type": "text"
+  },
+  "mostFrequentlyUsed": "Sering digunakan",
+  "mostRecentlyUsed": "Baru digunakan",
+  "movedSuccessfullyTo": "Berhasil dipindahkan ke {albumName}",
+  "@movedSuccessfullyTo": {
+    "placeholders": {
+      "albumName": {}
+    }
+  },
+  "movedToTrash": "Pindah ke sampah",
+  "moveToAlbum": "Pindahkan ke album",
+  "moveToHiddenAlbum": "Pindahkan ke album tersembunyi",
+  "movingFilesToAlbum": "Memindahkan file ke album...",
+  "name": "Nama",
+  "networkConnectionRefusedErr": "Tidak dapat terhubung dengan Ente, silakan coba lagi setelah beberapa saat. Jika masalah berlanjut, harap hubungi dukungan.",
+  "@networkConnectionRefusedErr": {
+    "description": "Error message shown when the app cannot connect to Ente due to connection refused"
+  },
+  "networkHostLookUpErr": "Tidak dapat terhubung dengan Ente, harap periksa pengaturan jaringan kamu dan hubungi dukungan jika masalah berlanjut.",
+  "@networkHostLookUpErr": {
+    "description": "Error message shown when the app cannot connect to Ente due to network host lookup failure"
+  },
+  "never": "Tidak pernah",
+  "newAlbum": "Album baru",
+  "newest": "Terbaru",
   "next": "Selanjutnya",
   "@next": {
     "description": "Next button label"
   },
-  "setNewPassword": "Pasang kata sandi baru",
-  "@setNewPassword": {
-    "description": "Set new password title"
+  "nextTotpTitle": "berikutnya",
+  "no": "Tidak",
+  "noDeviceFound": "Tidak ditemukan perangkat",
+  "noDeviceLimit": "Tidak ada",
+  "@noDeviceLimit": {
+    "description": "Text to indicate that there is limit on number of devices"
   },
-  "enterPin": "Masukkan PIN",
-  "@enterPin": {
-    "description": "Enter PIN prompt"
+  "noDeviceThatCanBeDeleted": "Tidak ada file yang perlu dihapus dari perangkat ini",
+  "noExifData": "Tidak ada data EXIF",
+  "noInternetConnection": "Tidak ada koneksi internet",
+  "@noInternetConnection": {
+    "description": "No internet connection error message"
   },
-  "setNewPin": "Pasang PIN yang baru",
-  "@setNewPin": {
-    "description": "Set new PIN title"
+  "noPhotosFoundHere": "Tidak ada foto di sini",
+  "noRecoveryKeyNoDecryption": "Karena sifat protokol enkripsi ujung ke ujung kami, data kamu tidak dapat didekripsi tanpa sandi atau kunci pemulihan kamu",
+  "@noRecoveryKeyNoDecryption": {
+    "description": "Explanation that data cannot be decrypted without password or recovery key"
   },
-  "confirm": "Konfirmasikan",
-  "@confirm": {
-    "description": "Confirm button label"
+  "noRecoveryKeyTitle": "Tidak punya kunci pemulihan?",
+  "@noRecoveryKeyTitle": {
+    "description": "No recovery key title"
+  },
+  "noResult": "Tidak ada hasil",
+  "noResultsFound": "Tidak ditemukan hasil",
+  "noSystemLockFound": "Tidak ditemukan kunci sistem",
+  "@noSystemLockFound": {
+    "description": "Error when no system lock is found"
+  },
+  "notes": "Catatan",
+  "notesLengthLimit": "Catatan dapat memiliki panjang maksimal {count} karakter",
+  "@notesLengthLimit": {
+    "description": "Text to indicate the maximum number of characters allowed for notes",
+    "placeholders": {
+      "count": {
+        "description": "The maximum number of characters allowed for notes",
+        "type": "int",
+        "example": "100"
+      }
+    }
+  },
+  "nothingToSeeHere": "Tidak ada apa-apa di sini",
+  "notifications": "Notifikasi",
+  "offlineModeWarning": "Anda telah memilih pilihan 'Gunakan tanpa pencadangan'. Mohon lakukan pencadangan secara manual demi memastikan bahwa kode-kode Anda aman.",
+  "onEnte": "Di <branding>ente</branding>",
+  "@onEnte": {
+    "description": "The text displayed above albums backed up to Ente",
+    "type": "text"
+  },
+  "onlyFamilyAdminCanChangeCode": "Harap hubungi {familyAdminEmail} untuk mengubah kode kamu.",
+  "@onlyFamilyAdminCanChangeCode": {
+    "placeholders": {
+      "familyAdminEmail": {}
+    }
+  },
+  "oopsCouldNotSaveEdits": "Aduh, tidak dapat menyimpan perubahan",
+  "oopsSomethingWentWrong": "Aduh, terjadi kesalahan",
+  "openstreetmapContributors": "Kontributor OpenStreetMap",
+  "optionalAsShortAsYouLike": "Opsional, pendek pun tak apa...",
+  "orPickAnExistingOne": "Atau pilih yang sudah ada",
+  "pair": "Tautkan",
+  "passkeyAuthTitle": "Verifikasi passkey",
+  "@passkeyAuthTitle": {
+    "description": "Passkey authentication title"
+  },
+  "passKeyPendingVerification": "Verifikasi tertunda",
+  "@passKeyPendingVerification": {
+    "description": "Message when passkey verification is pending"
+  },
+  "passwordEmptyError": "Kata sandi tidak boleh kosong",
+  "passwordForDecryptingExport": "Kata sandi untuk mendekripsi ekspor",
+  "passwordLock": "Kunci dengan sandi",
+  "passwordStrength": "Tingkat kekuatan kata sandi: {passwordStrengthValue}",
+  "@passwordStrength": {
+    "description": "Text to indicate the password strength",
+    "placeholders": {
+      "passwordStrengthValue": {
+        "description": "The strength of the password as a string",
+        "type": "String",
+        "example": "Weak or Moderate or Strong"
+      }
+    }
+  },
+  "passwordToEncryptExport": "Kata sandi untuk mengenkripsi data yang diekspor",
+  "paymentDetails": "Rincian pembayaran",
+  "paymentFailed": "Pembayaran gagal",
+  "paymentFailedMessage": "Sayangnya, pembayaranmu gagal. Silakan hubungi tim bantuan agar dapat kami bantu!",
+  "paymentFailedTalkToProvider": "Harap hubungi dukungan {providerName} jika kamu dikenai biaya",
+  "@paymentFailedTalkToProvider": {
+    "description": "The text to display when the payment failed",
+    "type": "text",
+    "placeholders": {
+      "providerName": {
+        "example": "AppStore|PlayStore",
+        "type": "String"
+      }
+    }
+  },
+  "pendingSync": "Sinkronisasi tertunda",
+  "pendingSyncs": "Peringatan",
+  "pendingSyncsWarningBody": "Ada sebagian kode yang belum dicadangkan.\n\nMohon pastikan bahwa Anda telah mencadangkan kode-kode ini sebelum Anda keluar log.",
+  "people": "Orang",
+  "period": "Periode",
+  "permanentlyDelete": "Hapus secara permanen",
+  "permDeleteWarning": "Semua item di sampah akan dihapus secara permanen\n\nTindakan ini tidak dapat dibatalkan",
+  "photoGridSize": "Ukuran kotak foto",
+  "photos": "Foto",
+  "photosAddedByYouWillBeRemovedFromTheAlbum": "Foto yang telah kamu tambahkan akan dihapus dari album ini",
+  "pinLock": "PIN",
+  "@pinLock": {
+    "description": "PIN lock option title"
+  },
+  "pinnedCodeMessage": "{code} telah disematkan",
+  "@pinnedCodeMessage": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "pinText": "Sematkan",
+  "plainHTML": "HTML Sederhana",
+  "plainText": "Teks biasa",
+  "playstoreSubscription": "Langganan PlayStore",
+  "pleaseContactSupportIfTheProblemPersists": "Silakan hubungi tim bantuan jika masalah terus terjadi",
+  "pleaseEmailUsAt": "Silakan kirimi kami email di {toEmail}",
+  "@pleaseEmailUsAt": {
+    "placeholders": {
+      "toEmail": {}
+    }
+  },
+  "pleaseGrantPermissions": "Harap berikan izin",
+  "pleaseVerifyDetails": "Mohon periksa kembali data Anda dan coba kembali",
+  "pleaseVerifyTheCodeYouHaveEntered": "Harap periksa kode yang kamu masukkan",
+  "pleaseWaitDeletingAlbum": "Harap tunggu, sedang menghapus album",
+  "pleaseWaitForSometimeBeforeRetrying": "Harap tunggu beberapa saat sebelum mencoba lagi",
+  "preparingLogs": "Menyiapkan log...",
+  "preserveMore": "Amankan lebih banyak",
+  "pressAndHoldToPlayVideoDetailed": "Tekan dan tahan gambar untuk memutar video",
+  "privacy": "Privasi",
+  "privacyPolicyTitle": "Kebijakan Privasi",
+  "@privacyPolicyTitle": {
+    "description": "Privacy policy title"
+  },
+  "publicLinkEnabled": "Link publik aktif",
+  "raiseTicket": "Buat tiket dukungan",
+  "@raiseTicket": {
+    "description": "Button text for raising a support tickets in case of unhandled errors during backup",
+    "type": "text"
+  },
+  "rateUs": "Beri kami nilai",
+  "rawCodeData": "Data kode mentah",
+  "recover": "Pulihkan",
+  "@recover": {
+    "description": "Recover button label"
+  },
+  "recoverAccount": "Pulihkan akun",
+  "@recoverAccount": {
+    "description": "Recover account button label"
+  },
+  "recoveryKey": "Kunci pemulihan",
+  "@recoveryKey": {
+    "description": "Recovery key label"
+  },
+  "recoveryKeySaved": "Kunci pemulihan sudah tersimpan di folder 'Downloads'!",
+  "@recoveryKeySaved": {
+    "description": "Recovery key saved confirmation message"
+  },
+  "recoveryKeySaveDescription": "Kami tidak menyimpan kunci ini, jadi harap simpan kunci yang berisi 24 kata ini dengan aman.",
+  "@recoveryKeySaveDescription": {
+    "description": "Recovery key save description"
+  },
+  "recoveryKeySuccessBody": "Bagus! Kunci pemulihan kamu sah. Terima kasih telah melakukan verifikasi.\n\nHarap simpan selalu kunci pemulihan kamu dengan aman.",
+  "recoveryKeyVerified": "Kunci pemulihan terverifikasi",
+  "recoverySuccessful": "Pemulihan berhasil!",
+  "recreatePasswordBody": "Perangkat ini tidak cukup kuat untuk memverifikasi kata sandi kamu, tetapi kami dapat membuat ulang kata sandi kamu sehingga dapat digunakan di semua perangkat.\n\nSilakan masuk menggunakan kunci pemulihan dan buat ulang kata sandi kamu (kamu dapat menggunakan kata sandi yang sama lagi jika mau).",
+  "@recreatePasswordBody": {
+    "description": "Body text for recreate password dialog"
   },
   "reEnterPassword": "Masukkan kembali kata sandi",
   "@reEnterPassword": {
@@ -594,131 +963,458 @@
   "@reEnterPin": {
     "description": "Re-enter PIN prompt"
   },
-  "androidBiometricHint": "Verifikasikan identitas Anda",
-  "@androidBiometricHint": {
-    "description": "Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricNotRecognized": "Tidak dikenal. Coba lagi.",
-  "@androidBiometricNotRecognized": {
-    "description": "Message to let the user know that authentication was failed. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricSuccess": "Sukses",
-  "@androidBiometricSuccess": {
-    "description": "Message to let the user know that authentication was successful. It is used on Android side. Maximum 60 characters."
-  },
-  "androidCancelButton": "Batalkan",
-  "@androidCancelButton": {
-    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
-  },
-  "androidSignInTitle": "Autentikasi diperlukan",
-  "@androidSignInTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricRequiredTitle": "Biometrik diperlukan",
-  "@androidBiometricRequiredTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user has not set up biometric authentication on their device. It is used on Android side. Maximum 60 characters."
-  },
-  "androidDeviceCredentialsRequiredTitle": "Kredensial perangkat diperlukan",
-  "@androidDeviceCredentialsRequiredTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user has not set up credentials authentication on their device. It is used on Android side. Maximum 60 characters."
-  },
-  "androidDeviceCredentialsSetupDescription": "Kredensial perangkat diperlukan",
-  "@androidDeviceCredentialsSetupDescription": {
-    "description": "Message advising the user to go to the settings and configure device credentials on their device. It shows in a dialog on Android side."
-  },
-  "goToSettings": "Pergi ke pengaturan",
-  "@goToSettings": {
-    "description": "Message showed on a button that the user can click to go to settings pages from the current dialog. It is used on both Android and iOS side. Maximum 30 characters."
-  },
-  "androidGoToSettingsDescription": "Tidak ada autentikasi biometrik pada gawai Anda. Buka 'Pengaturan > Keamanan' untuk menambahkan autentikasi biometrik pada gawai Anda.",
-  "@androidGoToSettingsDescription": {
-    "description": "Message advising the user to go to the settings and configure biometric on their device. It shows in a dialog on Android side."
-  },
-  "iOSLockOut": "Autentikasi biometrik dimatikan. Kunci dan buka layar Anda untuk menyalakan autentikasi biometrik.",
-  "@iOSLockOut": {
-    "description": "Message advising the user to re-enable biometrics on their device. It shows in a dialog on iOS side."
-  },
-  "iOSOkButton": "Oke",
-  "@iOSOkButton": {
-    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters."
-  },
-  "emailAlreadyRegistered": "Email sudah terdaftar.",
-  "@emailAlreadyRegistered": {
-    "description": "Error message when email is already registered"
-  },
-  "emailNotRegistered": "Email belum terdaftar.",
-  "@emailNotRegistered": {
-    "description": "Error message when email is not registered"
-  },
-  "thisEmailIsAlreadyInUse": "Surel ini sudah dipakai!",
-  "@thisEmailIsAlreadyInUse": {
-    "description": "Error message when email is already in use"
-  },
-  "emailChangedTo": "Surel sudah diganti menjadi {newEmail}",
-  "@emailChangedTo": {
-    "description": "Message when email has been changed",
+  "referrals": "Referensi",
+  "referralsAreCurrentlyPaused": "Rujukan sedang dijeda",
+  "remindToEmptyDeviceTrash": "Kosongkan juga “Baru Dihapus” dari “Pengaturan” -> “Penyimpanan” untuk memperoleh ruang yang baru saja dibersihkan",
+  "remindToEmptyEnteTrash": "Kosongkan juga \"Sampah\" untuk memperoleh ruang yang baru dikosongkan",
+  "remoteImages": "Gambar jarak jauh",
+  "remoteThumbnails": "Thumbnail jarak jauh",
+  "remoteVideos": "Video jarak jauh",
+  "remove": "Hapus",
+  "removeAlbumParticipantBody": "{userEmail} akan dikeluarkan dari album berbagi ini\n\nSemua foto yang ia tambahkan juga akan dihapus dari album ini",
+  "@removeAlbumParticipantBody": {
     "placeholders": {
-      "newEmail": {
-        "description": "The new email address",
-        "type": "String",
-        "example": "new@example.com"
+      "userEmail": {}
+    }
+  },
+  "removeFromAlbum": "Hapus dari album",
+  "removeFromAlbumTitle": "Hapus dari album?",
+  "removeFromFavorite": "Hapus dari favorit",
+  "removeLink": "Hapus link",
+  "removeParticipant": "Hapus peserta",
+  "@removeParticipant": {
+    "description": "menuSectionTitle for removing a participant"
+  },
+  "removePersonLabel": "Hapus label orang",
+  "removePublicLink": "Hapus link publik",
+  "removeWithQuestionMark": "Hapus?",
+  "removingFromFavorites": "Menghapus dari favorit...",
+  "rename": "Ubah nama",
+  "renameAlbum": "Ubah nama album",
+  "renameFile": "Ubah nama file",
+  "renewsOn": "Langganan akan diperpanjang pada {endDate}",
+  "@renewsOn": {
+    "placeholders": {
+      "endDate": {}
+    }
+  },
+  "renewSubscription": "Perpanjang langganan",
+  "reportABug": "Laporkan bug",
+  "@reportABug": {
+    "description": "Label for reporting a bug"
+  },
+  "resetIgnoredFiles": "Atur ulang file yang diabaikan",
+  "restore": "Pulihkan",
+  "@restore": {
+    "description": "Display text for an action which triggers a restore of item from trash",
+    "type": "text"
+  },
+  "restoreToAlbum": "Pulihkan ke album",
+  "restoringFiles": "Memulihkan file...",
+  "retry": "Coba lagi",
+  "right": "Kanan",
+  "ritualAlbumSelectionPlaceholder": "Pilih album",
+  "ritualSelectAlbumTitle": "Pilih album",
+  "rotate": "Putar",
+  "save": "Simpan",
+  "@save": {
+    "description": "Label for save button"
+  },
+  "saveCollage": "Simpan kolase",
+  "saveKey": "Simpan kunci",
+  "@saveKey": {
+    "description": "Save key button label"
+  },
+  "saveOnlyDescription": "Anda ingin menyimpan kode ke penyimpanan Anda (folder pilihan bawaan adalah folder Downloads)",
+  "@saveOnlyDescription": {
+    "description": "Description text asking user if they want to save to storage (for platforms that don't support sharing)"
+  },
+  "saveOrSendDescription": "Anda ingin menyimpan kode ke penyimpanan Anda (folder pilihan bawaan adalah folder Downloads) atau Anda ingin kirimkan ke aplikasi lain?",
+  "@saveOrSendDescription": {
+    "description": "Description text asking user if they want to save to storage or share with other apps"
+  },
+  "saveYourRecoveryKeyIfYouHaventAlready": "Jika belum, simpan kunci pemulihan kamu",
+  "saving": "Menyimpan...",
+  "savingEdits": "Menyimpan edit...",
+  "scan": "Pindai",
+  "scanACode": "Pindai kode",
+  "scanAQrCode": "Pindai kode QR",
+  "scanCode": "Pindai kode",
+  "scanThisBarcodeWithnyourAuthenticatorApp": "Pindai barcode ini dengan\napp autentikator kamu",
+  "searchAlbumsEmptySection": "Album",
+  "searchByAlbumNameHint": "Nama album",
+  "searchFileTypesAndNamesEmptySection": "Nama dan jenis file",
+  "searchHint": "Cari...",
+  "searchHint2": "Tanggal, keterangan foto",
+  "searchHint3": "Album, nama dan jenis file",
+  "searchHint5": "Segera tiba: Penelusuran wajah & ajaib ✨",
+  "searchResultCount": "{count, plural, other{{count} hasil ditemukan}}",
+  "@searchResultCount": {
+    "description": "Text to tell user how many results were found for their search query",
+    "placeholders": {
+      "count": {
+        "example": "1|2|3",
+        "type": "int"
       }
     }
   },
-  "authenticationFailedPleaseTryAgain": "Gagal mengautentikasi. Mohon coba lagi",
-  "@authenticationFailedPleaseTryAgain": {
-    "description": "Error message when authentication fails"
+  "secret": "Rahasia",
+  "secretCanNotBeEmpty": "Rahasia tidak boleh kosong",
+  "security": "Keamanan",
+  "selectAll": "Pilih semua",
+  "selectALocation": "Pilih lokasi",
+  "selectALocationFirst": "Pilih lokasi terlebih dahulu",
+  "selectedFilesAreNotOnEnte": "File terpilih tidak tersimpan di Ente",
+  "selectedPhotos": "{count} terpilih",
+  "@selectedPhotos": {
+    "description": "Display the number of selected photos",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "5",
+        "type": "int"
+      }
+    }
   },
-  "authenticationSuccessful": "Sukses mengautentikasi!",
-  "@authenticationSuccessful": {
-    "description": "Success message when authentication is successful"
+  "selectedPhotosWithYours": "{count} dipilih ({yourCount} milikmu)",
+  "@selectedPhotosWithYours": {
+    "description": "Display the number of selected photos, including the number of selected photos owned by the user",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "12",
+        "type": "int"
+      },
+      "yourCount": {
+        "example": "2",
+        "type": "int"
+      }
+    }
+  },
+  "selectExportFormat": "Pilih format pengeksporan",
+  "selectFile": "Pilih file",
+  "selectFoldersForBackup": "Pilih folder yang perlu dicadangkan",
+  "selectItemsToAdd": "Pilih item untuk ditambahkan",
+  "selectLanguage": "Pilih bahasa",
+  "selectMorePhotos": "Pilih lebih banyak foto",
+  "send": "Kirim",
+  "@send": {
+    "description": "Label for send button"
+  },
+  "sendInvite": "Kirim undangan",
+  "sendLink": "Kirim link",
+  "sendLogsDescription": "Ini akan mengirimkan catatan untuk membantu kami memecahkan masalah Anda. Meskipun kami mengambil langkah-langkah untuk memastikan informasi sensitif tidak tercatat, kami menyarankan Anda untuk melihat catatan ini sebelum membagikannya.",
+  "serverEndpoint": "Endpoint server",
+  "@serverEndpoint": {
+    "description": "Label for server endpoint setting"
   },
   "sessionExpired": "Sesi berakhir",
   "@sessionExpired": {
     "description": "Error message when session has expired"
   },
-  "incorrectRecoveryKey": "Kunci pemulihan takbenar",
-  "@incorrectRecoveryKey": {
-    "description": "Error message when recovery key is incorrect"
+  "setAPassword": "Atur sandi",
+  "setAs": "Pasang sebagai",
+  "setCover": "Ubah sampul",
+  "@setCover": {
+    "description": "Text to set cover photo for an album"
   },
-  "theRecoveryKeyYouEnteredIsIncorrect": "Kunci pemulihan yang Anda masukkan takbenar",
+  "setNewPassword": "Pasang kata sandi baru",
+  "@setNewPassword": {
+    "description": "Set new password title"
+  },
+  "setNewPin": "Pasang PIN yang baru",
+  "@setNewPin": {
+    "description": "Set new PIN title"
+  },
+  "settings": "Pengaturan",
+  "setupComplete": "Penyiapan selesai",
+  "share": "Bagikan",
+  "shareALink": "Bagikan link",
+  "shareCodes": "Bagikan kode",
+  "shareCodesDuration": "Pilih durasi untuk berbagi kode.",
+  "sharedAlbumSectionDescription": "Buat album bersama dan kolaborasi dengan pengguna Ente lain, termasuk pengguna paket gratis.",
+  "shareLink": "Bagikan link",
+  "shareWithNonenteUsers": "Bagikan ke pengguna non-Ente",
+  "sharing": "Membagikan...",
+  "shouldHideCode": "Sembunyikan kode",
+  "showLargeIcons": "Perbesar ikon",
+  "showMemories": "Lihat kenangan",
+  "showQRAuthMessage": "Autentikasikan untuk menampilkan kode Respons Cepat (QR)",
+  "signInToBackup": "Masuk untuk mencadangkan kode-kode Anda",
+  "signOutOtherBody": "Jika kamu merasa ada yang mengetahui sandimu, kamu bisa mengeluarkan akunmu secara paksa dari perangkat lain.",
+  "@signOutOtherBody": {
+    "description": "Sign out other devices explanation"
+  },
+  "singIn": "Masuk",
+  "skip": "Lewati",
+  "someoneSharingAlbumsWithYouShouldSeeTheSameId": "Orang yang membagikan album denganmu bisa melihat ID yang sama di perangkat mereka.",
+  "somethingWentWrong": "Terjadi kesalahan",
+  "somethingWentWrongMessage": "Terjadi kesalahan, silakan coba lagi",
+  "somethingWentWrongParsingCode": "Kode {x} tidak dapat kami urai.",
+  "@somethingWentWrongParsingCode": {
+    "placeholders": {
+      "x": {}
+    }
+  },
+  "sorry": "Maaf",
+  "sorryBackupFailedDesc": "Maaf, kami tidak dapat mencadangkan berkas ini sekarang, kami akan mencobanya kembali nanti.",
+  "sorryCouldNotAddToFavorites": "Maaf, tidak dapat menambahkan ke favorit!",
+  "sorryCouldNotRemoveFromFavorites": "Maaf, tidak dapat menghapus dari favorit!",
+  "sorryTheCodeYouveEnteredIsIncorrect": "Maaf, kode yang kamu masukkan salah",
+  "@sorryTheCodeYouveEnteredIsIncorrect": {
+    "description": "Detailed error message when code is incorrect"
+  },
+  "sortAlbumsBy": "Urut berdasarkan",
+  "sortNewestFirst": "Terbaru dulu",
+  "sortOldestFirst": "Terlama dulu",
+  "startBackup": "Mulai pencadangan",
+  "stopCastingBody": "Apakah kamu ingin menghentikan transmisi?",
+  "stopCastingTitle": "Hentikan transmisi",
+  "storage": "Penyimpanan",
+  "storageBreakupFamily": "Keluarga",
+  "storageBreakupYou": "Kamu",
+  "@storageBreakupYou": {
+    "description": "Label to indicate how much storage you are using when you are part of a family plan"
+  },
+  "storageLimitExceeded": "Batas penyimpanan terlampaui",
+  "strongStrength": "Kuat",
+  "@strongStrength": {
+    "description": "Strong password strength label"
+  },
+  "subscribe": "Berlangganan",
+  "subscribeToEnableSharing": "Anda memerlukan langganan berbayar yang aktif untuk bisa berbagi.",
+  "subscription": "Langganan",
+  "subWillBeCancelledOn": "Langganan kamu akan dibatalkan pada {endDate}",
+  "@subWillBeCancelledOn": {
+    "placeholders": {
+      "endDate": {}
+    }
+  },
+  "success": "Berhasil",
+  "successfullyArchived": "Berhasil diarsipkan",
+  "successfullyHid": "Berhasil disembunyikan",
+  "successfullyUnarchived": "Berhasil dikeluarkan dari arsip",
+  "suggestFeatures": "Sarankan fitur",
+  "support": "Dukungan",
+  "supportEnte": "Dukung <bold-green>ente</bold-green>",
+  "syncing": "Menyinkronkan...",
+  "syncProgress": "{completed}/{total} memori tersimpan",
+  "@syncProgress": {
+    "description": "Text to tell user how many memories have been preserved",
+    "placeholders": {
+      "completed": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "syncStopped": "Sinkronisasi terhenti",
+  "systemTheme": "Sistem",
+  "tag": "Tanda",
+  "tags": "Tanda",
+  "tapToCopy": "ketuk untuk salin",
+  "tapToUnlock": "Ketuk untuk membuka",
+  "@tapToUnlock": {
+    "description": "Message prompting user to tap to unlock"
+  },
+  "tellUsWhatYouThink": "Berikan pendapatmu",
+  "terminate": "Akhiri",
+  "@terminate": {
+    "description": "Terminate button label"
+  },
+  "terminateSession": "Akhiri sesi?",
+  "@terminateSession": {
+    "description": "Title for terminate session dialog"
+  },
+  "termsOfServicesTitle": "Ketentuan",
+  "@termsOfServicesTitle": {
+    "description": "Terms of service title"
+  },
+  "thankYou": "Terima kasih",
+  "thankYouForSubscribing": "Terima kasih telah berlangganan!",
+  "theme": "Tema",
+  "theRecoveryKeyYouEnteredIsIncorrect": "Kunci pemulihan yang kamu masukkan salah",
   "@theRecoveryKeyYouEnteredIsIncorrect": {
     "description": "Detailed error message when recovery key is incorrect"
   },
+  "theseItemsWillBeDeletedFromYourDevice": "Item ini akan dihapus dari perangkat ini.",
+  "thisCanBeUsedToRecoverYourAccountIfYou": "Ini dapat digunakan untuk memulihkan akunmu jika kehilangan metode autentikasi dua langkah kamu",
+  "thisImageHasNoExifData": "Gambar ini tidak memiliki data exif",
+  "thisIsPersonVerificationId": "Ini adalah ID Verifikasi milik {email}",
+  "@thisIsPersonVerificationId": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "someone@ente.com"
+      }
+    }
+  },
+  "thisIsYourVerificationId": "Ini adalah ID Verifikasi kamu",
+  "todaysLogs": "Log hari ini",
+  "toEnableAppLockPleaseSetupDevicePasscodeOrScreen": "Untuk mengaktifkan kunci aplikasi, harap atur kode sandi perangkat atau kunci layar di pengaturan sistem Anda.",
+  "tooManyIncorrectAttempts": "Terlalu banyak percobaan yang salah",
+  "@tooManyIncorrectAttempts": {
+    "description": "Message shown when too many incorrect attempts are made"
+  },
+  "totalSize": "Ukuran total",
+  "trash": "Sampah",
+  "trashCode": "Hapus kode?",
+  "trashCodeMessage": "Apakah anda yakin ingin menghapus kode untuk {account}?",
+  "@trashCodeMessage": {
+    "placeholders": {
+      "account": {}
+    }
+  },
+  "trim": "Pangkas",
+  "tryAgain": "Coba lagi",
+  "@tryAgain": {
+    "description": "Try again button label"
+  },
+  "twofactor": "Autentikasi dua langkah",
+  "twofactorAuthenticationHasBeenDisabled": "Autentikasi dua langkah telah dinonaktifkan",
   "twofactorAuthenticationSuccessfullyReset": "Autentikasi dwifaktor sukses diatur ulang",
   "@twofactorAuthenticationSuccessfullyReset": {
     "description": "Message when two-factor authentication is successfully reset"
   },
-  "yourVerificationCodeHasExpired": "Kode verifikasi Anda telah kedaluwarsa",
-  "@yourVerificationCodeHasExpired": {
-    "description": "Error message when verification code has expired"
+  "twoFactorAuthTitle": "Autentikasi dua langkah",
+  "@twoFactorAuthTitle": {
+    "description": "Two-factor authentication title"
   },
-  "incorrectCode": "Kode takbenar",
-  "@incorrectCode": {
-    "description": "Error message when code is incorrect"
+  "twofactorSetup": "Penyiapan autentikasi dua langkah",
+  "type": "Tipe",
+  "unarchive": "Keluarkan dari arsip",
+  "@unarchive": {
+    "description": "Action of 'Unarchiving' an element"
   },
-  "sorryTheCodeYouveEnteredIsIncorrect": "Maaf, kode yang Anda masukkan takbenar",
-  "@sorryTheCodeYouveEnteredIsIncorrect": {
-    "description": "Detailed error message when code is incorrect"
+  "unarchiveAlbum": "Keluarkan album dari arsip",
+  "unarchiving": "Mengeluarkan dari arsip...",
+  "uncategorized": "Tak Berkategori",
+  "unhide": "Tampilkan",
+  "unhideToAlbum": "Tampikan ke album",
+  "unhidingFilesToAlbum": "Tampilkan berkas ke album",
+  "unlock": "Buka",
+  "@unlock": {
+    "description": "Short action label used as the system authentication reason when unlocking the app"
   },
-  "developerSettings": "Pengaturan Pengembang",
-  "@developerSettings": {
-    "description": "Label for developerSettings"
+  "unpinnedCodeMessage": "{code} telah dilepas",
+  "@unpinnedCodeMessage": {
+    "placeholders": {
+      "code": {}
+    }
   },
-  "serverEndpoint": "Peladen endpoint",
-  "@serverEndpoint": {
-    "description": "Label for serverEndpoint"
+  "unpinText": "Awasematkan",
+  "unselectAll": "Batalkan semua pilihan",
+  "updatingFolderSelection": "Memperbaharui pilihan folder...",
+  "upgrade": "Tingkatkan",
+  "uploadingFilesToAlbum": "Mengunggah file ke album...",
+  "uploadingMultipleMemories": "Menyimpan {count} memori...",
+  "@uploadingMultipleMemories": {
+    "description": "Text to tell user how many memories are being preserved",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
   },
-  "invalidEndpoint": "Endpoint takvalid",
-  "@invalidEndpoint": {
-    "description": "Label for invalidEndpoint"
+  "uploadingSingleMemory": "Menyimpan 1 memori...",
+  "useOffline": "Gunakan tanpa pencadangan",
+  "useRecoveryKey": "Gunakan kunci pemulihan",
+  "@useRecoveryKey": {
+    "description": "Use recovery key button label"
   },
-  "invalidEndpointMessage": "Maaf, endpoint yang Anda masukkan takvalid. Mohon masukkan endpoint yang valid, lalu coba kembali.",
-  "@invalidEndpointMessage": {
-    "description": "Label for invalidEndpointMessage"
+  "useSelectedPhoto": "Gunakan foto terpilih",
+  "validTill": "Berlaku hingga {endDate}",
+  "@validTill": {
+    "placeholders": {
+      "endDate": {}
+    }
   },
-  "endpointUpdatedMessage": "Endpoint berhasil diubah",
-  "@endpointUpdatedMessage": {
-    "description": "Label for endpointUpdatedMessage"
-  }
+  "verify": "Verifikasi",
+  "@verify": {
+    "description": "Verify button label"
+  },
+  "verifyEmail": "Verifikasi email",
+  "@verifyEmail": {
+    "description": "Verify email title"
+  },
+  "verifying": "Memverifikasi...",
+  "verifyingRecoveryKey": "Memverifikasi kunci pemulihan...",
+  "videos": "Video",
+  "viewActiveSessions": "Lihat sesi aktif",
+  "viewAllExifData": "Lihat seluruh data EXIF",
+  "viewer": "Pemirsa",
+  "viewLargeFiles": "File berukuran besar",
+  "viewLogs": "Lihat log",
+  "@viewLogs": {
+    "description": "Button to view logs"
+  },
+  "viewLogsAction": "Lihat catatan",
+  "viewRawCodes": "Lihat kode mentah",
+  "visitWebToManage": "Silakan buka {webUrl} untuk mengatur langgananmu",
+  "@visitWebToManage": {
+    "description": "Shown when a Stripe subscriber needs to manage their subscription on the web.",
+    "placeholders": {
+      "webUrl": {
+        "type": "String",
+        "example": "photos.ente.com"
+      }
+    }
+  },
+  "waitingForVerification": "Menunggu verifikasi...",
+  "@waitingForVerification": {
+    "description": "Waiting for verification message"
+  },
+  "waitingForWifi": "Menunggu WiFi...",
+  "warning": "Peringatan",
+  "weakStrength": "Lemah",
+  "@weakStrength": {
+    "description": "Weak password strength label"
+  },
+  "weAreOpenSource": "Kode sumber kami terbuka!",
+  "weDontSupportEditingPhotosAndAlbumsThatYouDont": "Kami belum mendukung pengeditan foto dan album yang bukan milik anda",
+  "whatsNew": "Hal yang baru",
+  "yearly": "Tahunan",
+  "@yearly": {
+    "description": "The text to display for yearly plans",
+    "type": "text"
+  },
+  "yearsAgo": "{count, plural, other{{count} tahun lalu}}",
+  "@yearsAgo": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "yes": "Ya",
+  "yesCancel": "Ya, batalkan",
+  "yesConvertToViewer": "Ya, ubah ke pemirsa",
+  "yesDelete": "Ya, hapus",
+  "yesDiscardChanges": "Ya, buang perubahan",
+  "yesRemove": "Ya, hapus",
+  "yesRenew": "Ya, perpanjang",
+  "you": "Kamu",
+  "youCannotDowngradeToThisPlan": "Kamu tidak dapat turun ke paket ini",
+  "youCannotShareWithYourself": "Kamu tidak bisa berbagi dengan dirimu sendiri",
+  "youHaveSuccessfullyFreedUp": "Kamu telah berhasil membersihkan {storageSaved}!",
+  "@youHaveSuccessfullyFreedUp": {
+    "description": "The text to display when the user has successfully freed up storage",
+    "type": "text",
+    "placeholders": {
+      "storageSaved": {
+        "example": "1.2 GB",
+        "type": "String"
+      }
+    }
+  },
+  "yourMap": "Peta kamu",
+  "yourPlanWasSuccessfullyDowngraded": "Paket kamu berhasil di turunkan",
+  "yourPlanWasSuccessfullyUpgraded": "Paket kamu berhasil ditingkatkan",
+  "yourPurchaseWasSuccessful": "Pembelianmu berhasil",
+  "yourSubscriptionHasExpired": "Langgananmu telah berakhir",
+  "yourSubscriptionWasUpdatedSuccessfully": "Langgananmu telah berhasil diperbarui",
+  "youveNoDuplicateCodesThatCanBeCleared": "Anda tidak memiliki kode duplikat yang dapat dihapus",
+  "youveNoDuplicateFilesThatCanBeCleared": "Anda tidak memiliki file duplikat yang dapat dihapus",
+  "youveNoFilesInThisAlbumThatCanBeDeleted": "Anda tidak memiliki file di album ini yang dapat dihapus",
+  "zoomOutToSeePhotos": "Perkecil peta untuk melihat foto lainnya"
 }

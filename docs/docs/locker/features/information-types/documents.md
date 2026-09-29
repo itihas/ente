@@ -5,9 +5,7 @@ description: Upload and store important files like passports, contracts, and tax
 
 # Document
 
-Documents let you upload and store files securely with end-to-end encryption.
-Store PDFs, images, scanned documents, and other important files that you need
-to keep safe and accessible.
+Documents let you upload and store files securely with end-to-end encryption. Store PDFs, images, scanned documents, and other important files that you need to keep safe and accessible.
 
 ## Use cases
 
@@ -20,15 +18,28 @@ to keep safe and accessible.
 - Medical records and prescriptions
 - Property documents
 
-## Uploading a document
+## Scanning a document
+
+Document scanning is available in the Locker mobile app on Android and iOS.
+
+1. Tap the camera button on the home screen
+2. Point the camera at the page. Keep **Auto** enabled for automatic capture, or switch to **Manual** and tap the shutter button
+3. Repeat for any additional pages, then tap the check-mark button
+4. Review the scan. You can adjust the crop, rotate or delete pages, add another page, and rename the PDF
+5. Tap **Save to Ente**
+6. Select one or more collections, or leave them unselected to save to **Uncategorized**
+7. Tap **Save**
+
+Locker combines all scanned pages into one PDF before uploading it.
+
+## Uploading an existing file
 
 1. Open Ente Locker
 2. Tap the **+** button
-3. Select **Document**
-4. Choose a file from your device
-5. Add a title for the document
-6. Select one or more collections
-7. Tap **Save**
+3. Select **File**
+4. Choose one or more files from your device
+5. Select one or more collections, or leave them unselected to save to **Uncategorized**
+6. Tap **Save**
 
 ## Supported file formats
 
@@ -44,8 +55,7 @@ Check the app for the complete list of supported formats.
 
 ### Secure viewing
 
-View your uploaded documents directly within the app. Documents are decrypted
-on your device for viewing and remain encrypted in storage.
+View your uploaded documents directly within the app. Documents are decrypted on your device for viewing and remain encrypted in storage.
 
 ### Document details
 
@@ -56,8 +66,7 @@ Each document can include:
 
 ### Search
 
-Find documents quickly by searching for their titles. Use descriptive names
-when uploading to make documents easier to find later.
+Find documents quickly by searching for their titles. Use descriptive names when uploading to make documents easier to find later.
 
 ## Organization tips
 
@@ -77,8 +86,7 @@ Share documents via public links:
 2. Tap the share button
 3. Tap **Share link**
 
-To share documents with another Ente user, add them to a collection and share
-the collection.
+To share documents with another Ente user, add them to a collection and share the collection.
 
 Learn more about [Sharing](/locker/features/sharing/).
 
@@ -94,8 +102,7 @@ Uploaded documents count toward your storage quota. Consider:
 
 - **Use descriptive titles**: Make documents easy to find with clear names
 - **Organize with collections**: Group related documents together
-- **Keep originals safe**: Locker is for secure backup, not a replacement for
-  physical document storage
+- **Keep originals safe**: Locker is for secure backup, not a replacement for physical document storage
 
 ## Related FAQs
 

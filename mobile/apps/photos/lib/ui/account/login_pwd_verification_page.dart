@@ -1,27 +1,18 @@
 import "package:dio/dio.dart";
+import "package:ente_components/ente_components.dart";
 import "package:ente_crypto/ente_crypto.dart";
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
 import 'package:photos/core/configuration.dart';
 import "package:photos/gateways/users/models/srp.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/services/account/user_service.dart";
-import "package:photos/theme/colors.dart";
-import "package:photos/theme/ente_theme.dart";
-import "package:photos/theme/text_style.dart";
 import "package:photos/ui/components/buttons/button_widget.dart"
     show ButtonAction;
-import "package:photos/ui/components/buttons/button_widget_v2.dart";
-import "package:photos/ui/components/text_input_widget_v2.dart";
 import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/email_util.dart";
 
-// LoginPasswordVerificationPage is a page that allows the user to enter their password to verify their identity.
-// If the password is correct, then the user is either directed to
-// PasswordReentryPage (if the user has not yet set up 2FA) or TwoFactorAuthenticationPage (if the user has set up 2FA).
-// In the PasswordReentryPage, the password is auto-filled based on the
-// volatile password.
 class LoginPasswordVerificationPage extends StatefulWidget {
   final SrpAttributes srpAttributes;
 
@@ -57,50 +48,51 @@ class _LoginPasswordVerificationPageState
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
-    final textTheme = getEnteTextTheme(context);
+    final colors = context.componentColors;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: colorScheme.backgroundColour,
+      backgroundColor: colors.backgroundBase,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: colorScheme.backgroundColour,
+        backgroundColor: colors.backgroundBase,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          color: colorScheme.content,
+          color: colors.iconColor,
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
         title: Text(
-          AppLocalizations.of(context).logInLabel,
-          style: textTheme.largeBold,
+          context.strings.logInLabel,
+          style: TextStyles.large.copyWith(color: colors.textBase),
         ),
         centerTitle: true,
       ),
-      body: _getBody(colorScheme, textTheme),
+      body: _getBody(),
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: ButtonWidgetV2(
+        child: ButtonComponent(
           key: const ValueKey("verifyPasswordButton"),
-          buttonType: ButtonTypeV2.primary,
-          labelText: AppLocalizations.of(context).logInLabel,
+          label: context.strings.logInLabel,
           isDisabled: !_hasPassword,
-          onTap: _hasPassword
-              ? () async {
-                  FocusScope.of(context).unfocus();
-                  await verifyPassword(context, _passwordController.text);
-                }
-              : null,
+          onTap: _verifyEnteredPassword,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  Widget _getBody(EnteColorScheme colorScheme, EnteTextTheme textTheme) {
+  Future<void> _verifyEnteredPassword() async {
+    if (!_hasPassword) {
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    await verifyPassword(context, _passwordController.text);
+  }
+
+  Widget _getBody() {
     return AutofillGroup(
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -116,16 +108,18 @@ class _LoginPasswordVerificationPageState
               textInputAction: TextInputAction.next,
             ),
           ),
-          TextInputWidgetV2(
+          TextInputComponent(
             key: const ValueKey("passwordInputField"),
-            label: AppLocalizations.of(context).password,
-            hintText: AppLocalizations.of(context).enterYourPassword,
-            textEditingController: _passwordController,
+            label: context.strings.password,
+            hintText: context.strings.enterYourPassword,
+            controller: _passwordController,
             isPasswordInput: true,
             isRequired: true,
-            autoCorrect: false,
-            autoFocus: true,
-            onChange: (value) {
+            autocorrect: false,
+            autofocus: true,
+            shouldUnfocusOnClearOrSubmit: true,
+            onSubmit: (_) => _verifyEnteredPassword(),
+            onChanged: (value) {
               final hasPassword = value.isNotEmpty;
               if (_hasPassword != hasPassword) {
                 setState(() {
@@ -137,10 +131,10 @@ class _LoginPasswordVerificationPageState
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,
-            child: ButtonWidgetV2(
-              buttonType: ButtonTypeV2.link,
-              labelText: AppLocalizations.of(context).forgotPassword,
-              buttonSize: ButtonSizeV2.small,
+            child: ButtonComponent(
+              variant: ButtonComponentVariant.link,
+              label: context.strings.forgotPassword,
+              size: ButtonComponentSize.small,
               onTap: () async {
                 await UserService.instance.sendOtt(
                   context,
@@ -158,11 +152,15 @@ class _LoginPasswordVerificationPageState
   Future<void> verifyPassword(BuildContext context, String password) async {
     final dialog = createProgressDialog(
       context,
-      AppLocalizations.of(context).pleaseWait,
+      context.strings.pleaseWait,
       isDismissible: true,
     );
     await dialog.show();
     try {
+      if (!context.mounted) {
+        await dialog.hide();
+        return;
+      }
       await UserService.instance.verifyEmailViaPassword(
         context,
         widget.srpAttributes,
@@ -173,27 +171,29 @@ class _LoginPasswordVerificationPageState
       await dialog.hide();
       if (e.response != null && e.response!.statusCode == 401) {
         _logger.severe('server reject, failed verify SRP login', e, s);
+        if (!context.mounted) return;
         await _showContactSupportDialog(
           context,
-          AppLocalizations.of(context).incorrectPasswordTitle,
-          AppLocalizations.of(context).pleaseTryAgain,
+          context.strings.incorrectPasswordTitle,
+          context.strings.pleaseTryAgain,
         );
       } else {
         _logger.severe('API failure during SRP login ${e.type}', e, s);
         if (e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout ||
             e.type == DioExceptionType.sendTimeout) {
+          if (!context.mounted) return;
           await _showContactSupportDialog(
             context,
-            AppLocalizations.of(context).noInternetConnection,
-            AppLocalizations.of(context)
-                .pleaseCheckYourInternetConnectionAndTryAgain,
+            context.strings.noInternetConnection,
+            context.strings.pleaseCheckYourInternetConnectionAndTryAgain,
           );
         } else {
+          if (!context.mounted) return;
           await _showContactSupportDialog(
             context,
-            AppLocalizations.of(context).somethingWentWrong,
-            AppLocalizations.of(context).verificationFailedPleaseTryAgain,
+            context.strings.somethingWentWrong,
+            context.strings.verificationFailedPleaseTryAgain,
           );
         }
       }
@@ -202,7 +202,7 @@ class _LoginPasswordVerificationPageState
       await dialog.hide();
       if (e is LoginKeyDerivationError) {
         _logger.severe('loginKey derivation error', e, s);
-        // LoginKey err, perform regular login via ott verification
+        if (!context.mounted) return;
         await UserService.instance.sendOtt(
           context,
           email!,
@@ -210,14 +210,15 @@ class _LoginPasswordVerificationPageState
         );
         return;
       } else if (e is KeyDerivationError) {
-        // device is not powerful enough to perform derive key
+        // This device is not powerful enough to derive the key.
+        if (!context.mounted) return;
         final dialogChoice = await showChoiceDialog(
           context,
-          title: AppLocalizations.of(context).recreatePasswordTitle,
-          body: AppLocalizations.of(context).recreatePasswordBody,
-          firstButtonLabel: AppLocalizations.of(context).useRecoveryKey,
+          title: context.strings.recreatePasswordTitle,
+          body: context.strings.recreatePasswordBody,
+          firstButtonLabel: context.strings.useRecoveryKey,
         );
-        if (dialogChoice!.action == ButtonAction.first) {
+        if (dialogChoice?.action == ButtonAction.first && context.mounted) {
           await UserService.instance.sendOtt(
             context,
             email!,
@@ -227,10 +228,11 @@ class _LoginPasswordVerificationPageState
         return;
       } else {
         _logger.severe('unexpected error while verifying password', e, s);
+        if (!context.mounted) return;
         await _showContactSupportDialog(
           context,
-          AppLocalizations.of(context).oops,
-          AppLocalizations.of(context).verificationFailedPleaseTryAgain,
+          context.strings.oops,
+          context.strings.verificationFailedPleaseTryAgain,
         );
       }
     }
@@ -245,13 +247,13 @@ class _LoginPasswordVerificationPageState
       context,
       title: title,
       body: message,
-      firstButtonLabel: AppLocalizations.of(context).contactSupport,
-      secondButtonLabel: AppLocalizations.of(context).ok,
+      firstButtonLabel: context.strings.contactSupport,
+      secondButtonLabel: context.strings.ok,
     );
-    if (dialogChoice!.action == ButtonAction.first) {
+    if (dialogChoice?.action == ButtonAction.first && context.mounted) {
       await sendLogs(
         context,
-        AppLocalizations.of(context).contactSupport,
+        context.strings.contactSupport,
         "support@ente.com",
         postShare: () {},
       );

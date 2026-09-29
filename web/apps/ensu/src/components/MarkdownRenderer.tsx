@@ -1,7 +1,12 @@
+import {
+    handleExternalLinkClick,
+    safeExternalUrl,
+} from "@/services/external-links";
 import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Box, IconButton } from "@mui/material";
-import React, { useCallback } from "react";
+import { useBaseContext } from "ente-base/context";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -33,44 +38,33 @@ const extractCodeText = (node: React.ReactNode): string => {
 
 const CodeBlock = ({ children, node: _node, ...rest }: PreProps) => {
     const codeText = extractCodeText(children).replace(/\n$/, "");
-
-    const handleCopy = useCallback(() => {
-        if (
-            typeof navigator === "undefined" ||
-            typeof document === "undefined"
-        ) {
-            return;
-        }
-
-        const clipboard = navigator.clipboard;
-        if (clipboard && typeof clipboard.writeText === "function") {
-            void clipboard.writeText(codeText);
-            return;
-        }
-
-        const textarea = document.createElement("textarea");
-        textarea.value = codeText;
-        textarea.setAttribute("readonly", "true");
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        textarea.style.pointerEvents = "none";
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand("copy");
-        } catch (_error) {
-            // Ignore copy errors for unsupported environments.
-        } finally {
-            document.body.removeChild(textarea);
-        }
-    }, [codeText]);
+    const [copyResult, setCopyResult] = useState<{
+        text: string;
+        message: string;
+    }>();
+    const copyStatus = copyResult?.text === codeText ? copyResult.message : "";
+    const handleCopy = () => {
+        void navigator.clipboard.writeText(codeText).then(
+            () => setCopyResult({ text: codeText, message: "Copied" }),
+            () => setCopyResult({ text: codeText, message: "Could not copy" }),
+        );
+    };
 
     return (
-        <Box className="markdown-code-block" sx={{ position: "relative" }}>
-            <Box component="pre" {...rest}>
-                {children}
-            </Box>
-            <Box sx={{ position: "absolute", right: 8, bottom: 8 }}>
+        <Box className="markdown-code-block">
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    gap: 1,
+                    px: "8px",
+                    py: "4px",
+                }}
+            >
+                <Box component="span" role="status" sx={{ fontSize: "12px" }}>
+                    {copyStatus}
+                </Box>
                 <IconButton
                     aria-label="Copy code"
                     onClick={handleCopy}
@@ -91,34 +85,11 @@ const CodeBlock = ({ children, node: _node, ...rest }: PreProps) => {
                     />
                 </IconButton>
             </Box>
+            <Box component="pre" {...rest}>
+                {children}
+            </Box>
         </Box>
     );
-};
-
-const openExternalUrl = async (url: string) => {
-    const hasTauriBridge =
-        typeof window !== "undefined" &&
-        ("__TAURI__" in window ||
-            "__TAURI_IPC__" in window ||
-            "__TAURI_INTERNALS__" in window ||
-            "__TAURI_METADATA__" in window);
-
-    if (hasTauriBridge) {
-        try {
-            const { open } = await import("@tauri-apps/api/shell");
-            await open(url);
-            return;
-        } catch {
-            // Fall back to the browser open path below.
-        }
-    }
-
-    if (typeof window !== "undefined") {
-        const popup = window.open(url, "_blank", "noopener,noreferrer");
-        if (!popup) {
-            window.location.href = url;
-        }
-    }
 };
 
 type AnchorProps = React.ComponentPropsWithoutRef<"a"> & { node?: unknown };
@@ -128,17 +99,35 @@ const ExternalLink = ({
     href,
     children,
     ...rest
-}: AnchorProps) => (
-    <a
-        {...rest}
-        href={href}
-        onClick={(e) => {
-            e.preventDefault();
-            if (href) void openExternalUrl(href);
-        }}
+}: AnchorProps) => {
+    const { showMiniDialog } = useBaseContext();
+    const safeHref = safeExternalUrl(href);
+    if (!safeHref) return <>{children}</>;
+
+    return (
+        <a
+            {...rest}
+            href={safeHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => handleExternalLinkClick(event, showMiniDialog)}
+        >
+            {children}
+        </a>
+    );
+};
+
+type TableProps = React.ComponentPropsWithoutRef<"table"> & { node?: unknown };
+
+const MarkdownTable = ({ node: _node, ...props }: TableProps) => (
+    <div
+        className="markdown-table"
+        tabIndex={0}
+        role="region"
+        aria-label="Table"
     >
-        {children}
-    </a>
+        <table {...props} />
+    </div>
 );
 
 export const MarkdownRenderer = ({
@@ -146,18 +135,20 @@ export const MarkdownRenderer = ({
     className,
 }: MarkdownRendererProps) => {
     return (
-        <ReactMarkdown
-            className={className}
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[
-                [
-                    rehypeKatex,
-                    { strict: false, throwOnError: false, trust: true },
-                ],
-            ]}
-            components={{ pre: CodeBlock, a: ExternalLink }}
-        >
-            {content}
-        </ReactMarkdown>
+        <div className={className}>
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[
+                    [rehypeKatex, { strict: false, throwOnError: false }],
+                ]}
+                components={{
+                    pre: CodeBlock,
+                    a: ExternalLink,
+                    table: MarkdownTable,
+                }}
+            >
+                {content}
+            </ReactMarkdown>
+        </div>
     );
 };

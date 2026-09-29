@@ -1,13 +1,11 @@
-name: "Deploy (docs)"
+name: "Deploy (Docs)"
 
 on:
-    # Run on every push to main that changes docs/
     push:
         branches: [main]
         paths:
-            - "docs/**"
             - ".github/workflows/docs-deploy.yml"
-    # Also allow manually running the workflow
+            - "docs/**"
     workflow_dispatch:
 
 permissions:
@@ -16,41 +14,36 @@ permissions:
 jobs:
     deploy:
         runs-on: ubuntu-latest
+        environment: production
 
         defaults:
             run:
                 working-directory: docs
 
         steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-            - name: Setup node and enable yarn caching
-              uses: actions/setup-node@v6
+            - name: Setup node and enable npm caching
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
-                  node-version: 22
-                  cache: "yarn"
-                  cache-dependency-path: "docs/yarn.lock"
+                  node-version: 24
+                  cache: "npm"
+                  cache-dependency-path: "docs/package-lock.json"
 
-            - name: Activate Yarn 1.22.22
-              run: |
-                  corepack enable
-                  corepack prepare yarn@1.22.22 --activate
+            - run: npm ci
 
-            - name: Install dependencies
-              run: yarn install --frozen-lockfile
+            - run: npm audit --audit-level=critical
 
-            - name: Build production site
-              # Will create docs/.vitepress/dist
-              run: yarn build
+            - run: npm run build
 
-            - name: Prepare deployment with help subdirectory
+            - name: Prepare deployment
               run: |
                   mkdir -p deploy
                   mv docs/.vitepress/dist deploy/help
 
             - name: Publish
-              uses: cloudflare/wrangler-action@v3
+              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
               with:
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

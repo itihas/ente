@@ -19,8 +19,6 @@ class IsolatedFfmpegService {
     return await Isolate.run<Map>(() => _ffmpegRun(command, rootIsolateToken));
   }
 
-  /// Run FFmpeg with session ID callback for cancellation support.
-  /// Uses a completion port registered on the root isolate.
   Future<Map> runFfmpegCancellable(
     String command,
     void Function(int sessionId) onSessionStarted,
@@ -36,10 +34,7 @@ class IsolatedFfmpegService {
 
     port.listen((msg) {
       if (msg is int) {
-        FFmpegKit.registerSessionCompletionPort(
-          msg,
-          completionPort.sendPort,
-        );
+        FFmpegKit.registerSessionCompletionPort(msg, completionPort.sendPort);
         onSessionStarted(msg);
       }
     });
@@ -56,10 +51,11 @@ class IsolatedFfmpegService {
       port.close();
     });
 
-    await Isolate.spawn(
-      _ffmpegRunCancellable,
-      (command, port.sendPort, rootIsolateToken),
-    );
+    await Isolate.spawn(_ffmpegRunCancellable, (
+      command,
+      port.sendPort,
+      rootIsolateToken,
+    ));
 
     return completer.future;
   }
@@ -93,6 +89,9 @@ Future<Map> _getVideoProps(
   RootIsolateToken rootIsolateToken,
 ) async {
   BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+  // This path may run before or without the app-level initializer, so disable
+  // live log forwarding before probing to keep FFprobe output off the UI thread.
+  await FFmpegKitConfig.disableLogs();
   final session = await FFprobeKit.getMediaInformation(filePath);
   final mediaInfo = session.getMediaInformation();
 
@@ -111,10 +110,7 @@ Future<Map> _ffmpegRun(String value, RootIsolateToken rootIsolateToken) async {
   final returnCode = await session.getReturnCode();
   final output = await session.getOutput();
 
-  return {
-    "returnCode": returnCode?.getValue(),
-    "output": output,
-  };
+  return {"returnCode": returnCode?.getValue(), "output": output};
 }
 
 @pragma('vm:entry-point')

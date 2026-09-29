@@ -7,31 +7,34 @@ import type { SxProps, Theme } from "@mui/material";
 import {
     Alert,
     Box,
-    Button,
     CircularProgress,
+    Snackbar,
     Stack,
     TextField,
     Typography,
 } from "@mui/material";
-import { isWeakPassword } from "ente-accounts-rs/utils/password";
+import { isWeakPassword } from "ente-accounts/utils/password";
+import { clientPackageName, desktopAppVersion, isDesktop } from "ente-base/app";
 import { EnteLogo } from "ente-base/components/EnteLogo";
 import { LoadingButton } from "ente-base/components/mui/LoadingButton";
 import { ShowHidePasswordInputAdornment } from "ente-base/components/mui/PasswordInputAdornment";
+import { isDevBuild } from "ente-base/env";
+import { isNamedError } from "ente-base/error";
 import log from "ente-base/log";
-import type { LegacyKitRecoveryHandle } from "ente-wasm";
+import { apiOrigin } from "ente-base/origins";
+import {
+    loadLegacyKitParser,
+    openKitRecovery,
+    type LegacyKitParser,
+    type LegacyKitRecoveryHandle,
+    type LegacyKitRecoverySession,
+    type LegacyKitShare,
+} from "ente-legacy-wasm";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    changeLegacyKitPassword,
-    openLegacyKitRecovery,
-    refreshLegacyKitRecoverySession,
-    type LegacyKitRecoverySession,
-} from "../features/legacy-kit/recovery";
-import { readLegacyKitCodeFromFile } from "../features/legacy-kit/scan";
-import {
-    parseLegacyKitShare,
-    validateLegacyKitSharePair,
-    type LegacyKitShare,
-} from "../features/legacy-kit/share";
+    LegacyKitQRDecodeError,
+    readLegacyKitCodeFromFile,
+} from "../features/legacy-kit/scan";
 
 type SlotID = "first" | "second";
 
@@ -59,13 +62,19 @@ const getErrorMessage = (error: unknown) =>
           ? String(error.message)
           : "Something went wrong.";
 
-const parseSlotCode = (rawCode: string): Pick<SheetSlot, "error" | "share"> => {
+const isInactiveLegacyKitError = (error: unknown) =>
+    isNamedError(error, "legacy_kit_inactive");
+
+const parseSlotCode = (
+    rawCode: string,
+    parser: LegacyKitParser,
+): Pick<SheetSlot, "error" | "share"> => {
     if (!rawCode.trim()) {
         return {};
     }
 
     try {
-        return { share: parseLegacyKitShare(rawCode) };
+        return { share: parser.parseLegacyKitShare(rawCode) };
     } catch {
         return { error: "Invalid sheet." };
     }
@@ -114,7 +123,7 @@ const textFieldSx: SxProps<Theme> = {
         px: 2,
         py: "15px",
     },
-    "& .MuiInputBase-inputMultiline": { py: 0 },
+    "& .MuiInputBase-multiline > .MuiInputBase-input": { py: 0 },
     "& .MuiFormHelperText-root": { mx: 0, mt: 0.75 },
 };
 
@@ -127,7 +136,44 @@ const buttonSx = {
 };
 
 const Page: React.FC = () => {
-    const [hasStarted, setHasStarted] = useState(false);
+    const [parser, setParser] = useState<LegacyKitParser>();
+    const [isStarting, setIsStarting] = useState(false);
+    const [startError, setStartError] = useState<string>();
+
+    const start = async () => {
+        if (startError) {
+            window.location.reload();
+            return;
+        }
+        setIsStarting(true);
+        try {
+            setParser(await loadLegacyKitParser());
+        } catch (error) {
+            log.error("Could not load Legacy Kit recovery", error);
+            setStartError(
+                "Could not load recovery. Please reload the page to try again.",
+            );
+        } finally {
+            setIsStarting(false);
+        }
+    };
+
+    return (
+        <LegacyShell>
+            {parser ? (
+                <RecoveryFlow parser={parser} />
+            ) : (
+                <LandingStep
+                    onStart={() => void start()}
+                    isStarting={isStarting}
+                    error={startError}
+                />
+            )}
+        </LegacyShell>
+    );
+};
+
+const RecoveryFlow: React.FC<{ parser: LegacyKitParser }> = ({ parser }) => {
     const [slots, setSlots] = useState<Record<SlotID, SheetSlot>>({
         first: emptySlot(),
         second: emptySlot(),
@@ -136,7 +182,9 @@ const Page: React.FC = () => {
     const [session, setSession] = useState<LegacyKitRecoverySession>();
     const [isOpening, setIsOpening] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isKitInactive, setIsKitInactive] = useState(false);
     const [openError, setOpenError] = useState<string>();
+    const [showQRDecodeWarning, setShowQRDecodeWarning] = useState(false);
 
     const shares = useMemo<[LegacyKitShare, LegacyKitShare] | undefined>(() => {
         const firstShare = slots.first.share;
@@ -151,12 +199,18 @@ const Page: React.FC = () => {
             return undefined;
         }
         try {
-            validateLegacyKitSharePair(shares[0], shares[1]);
+            parser.validateLegacyKitSharePair(shares[0], shares[1]);
             return undefined;
         } catch (error) {
+            if (isNamedError(error, "different_legacy_kits")) {
+                return "These sheets are from different Legacy Kits.";
+            }
+            if (isNamedError(error, "duplicate_legacy_kit_share")) {
+                return "Use two different sheets from the same Legacy Kit.";
+            }
             return getErrorMessage(error);
         }
-    }, [shares]);
+    }, [parser, shares]);
 
     const canOpen = !!shares && !pairError && !isOpening;
 
@@ -172,7 +226,7 @@ const Page: React.FC = () => {
 
     const handleCodeChange = useCallback(
         (slotID: SlotID, rawCode: string) => {
-            const parsed = parseSlotCode(rawCode);
+            const parsed = parseSlotCode(rawCode, parser);
             setOpenError(undefined);
             updateSlot(slotID, {
                 error: parsed.error,
@@ -181,7 +235,7 @@ const Page: React.FC = () => {
                 share: parsed.share,
             });
         },
-        [updateSlot],
+        [parser, updateSlot],
     );
 
     const handleFile = useCallback(
@@ -201,7 +255,7 @@ const Page: React.FC = () => {
 
             void readLegacyKitCodeFromFile(file)
                 .then((rawCode) => {
-                    const parsed = parseSlotCode(rawCode);
+                    const parsed = parseSlotCode(rawCode, parser);
                     updateSlot(slotID, {
                         error: parsed.error,
                         fileName: file.name,
@@ -212,6 +266,9 @@ const Page: React.FC = () => {
                 })
                 .catch((error: unknown) => {
                     log.error("Could not read legacy kit sheet", error);
+                    if (isDevBuild && error instanceof LegacyKitQRDecodeError) {
+                        setShowQRDecodeWarning(true);
+                    }
                     updateSlot(slotID, {
                         error: getErrorMessage(error),
                         isReading: false,
@@ -220,7 +277,7 @@ const Page: React.FC = () => {
                     });
                 });
         },
-        [updateSlot],
+        [parser, updateSlot],
     );
 
     const openRecovery = useCallback(async () => {
@@ -232,11 +289,20 @@ const Page: React.FC = () => {
         setOpenError(undefined);
 
         try {
-            const opened = await openLegacyKitRecovery(shares);
-            setHandle(opened.handle);
-            setSession(opened.session);
+            const opened = await openKitRecovery({
+                baseUrl: await apiOrigin(),
+                shares,
+                clientPackage: clientPackageName,
+                clientVersion: isDesktop ? desktopAppVersion : undefined,
+            });
+            setSession(opened.session());
+            setHandle(opened);
         } catch (error) {
             log.error("Legacy kit recovery open failed", error);
+            if (isInactiveLegacyKitError(error)) {
+                setIsKitInactive(true);
+                return;
+            }
             setOpenError(getErrorMessage(error));
         } finally {
             setIsOpening(false);
@@ -250,9 +316,13 @@ const Page: React.FC = () => {
         setIsRefreshing(true);
         setOpenError(undefined);
         try {
-            setSession(await refreshLegacyKitRecoverySession(handle));
+            setSession(await handle.refreshSession());
         } catch (error) {
             log.error("Legacy kit recovery refresh failed", error);
+            if (isInactiveLegacyKitError(error)) {
+                setIsKitInactive(true);
+                return;
+            }
             setOpenError(getErrorMessage(error));
         } finally {
             setIsRefreshing(false);
@@ -277,12 +347,16 @@ const Page: React.FC = () => {
                 return;
             }
             try {
-                await changeLegacyKitPassword(handle, password);
+                await handle.changePassword(password);
                 setSession((current) =>
                     current ? { ...current, status: "RECOVERED" } : current,
                 );
             } catch (error) {
                 log.error("Legacy kit password change failed", error);
+                if (isInactiveLegacyKitError(error)) {
+                    setIsKitInactive(true);
+                    return;
+                }
                 setPasswordsFieldError(getErrorMessage(error));
             }
         },
@@ -290,9 +364,9 @@ const Page: React.FC = () => {
     );
 
     return (
-        <LegacyShell>
-            {!hasStarted ? (
-                <LandingStep onStart={() => setHasStarted(true)} />
+        <>
+            {isKitInactive ? (
+                <InactiveLegacyKitStep />
             ) : !session ? (
                 <UploadStep
                     slots={slots}
@@ -315,7 +389,15 @@ const Page: React.FC = () => {
             ) : (
                 <TerminalStatusStep session={session} />
             )}
-        </LegacyShell>
+            {isDevBuild && (
+                <Snackbar
+                    autoHideDuration={6000}
+                    message="QR code parsing failed."
+                    open={showQRDecodeWarning}
+                    onClose={() => setShowQRDecodeWarning(false)}
+                />
+            )}
+        </>
     );
 };
 
@@ -361,7 +443,7 @@ const LegacyShell: React.FC<LegacyShellProps> = ({ children }) => (
                 minHeight: 0,
                 overflow: "hidden auto",
                 px: { xs: 2.5, md: 5 },
-                py: { xs: 3, md: 5 },
+                py: { xs: 3, md: "1px" },
             }}
         >
             {children}
@@ -371,16 +453,22 @@ const LegacyShell: React.FC<LegacyShellProps> = ({ children }) => (
 
 interface LandingStepProps {
     onStart: () => void;
+    isStarting: boolean;
+    error: string | undefined;
 }
 
-const LandingStep: React.FC<LandingStepProps> = ({ onStart }) => (
+const LandingStep: React.FC<LandingStepProps> = ({
+    onStart,
+    isStarting,
+    error,
+}) => (
     <Stack
         direction={{ xs: "column", lg: "row" }}
         sx={{
             alignItems: "center",
             gap: { xs: 2, md: "46px" },
             justifyContent: "center",
-            maxWidth: 900,
+            maxWidth: { xs: 343, md: 933 },
             width: "100%",
         }}
     >
@@ -389,9 +477,9 @@ const LandingStep: React.FC<LandingStepProps> = ({ onStart }) => (
             alt=""
             src="/images/legacy-kit/recovery-landing.svg"
             sx={{
-                height: "auto",
+                height: { xs: "auto", md: 293.566 },
                 mt: { xs: 4, md: 0 },
-                width: { xs: 200, md: 304 },
+                width: { xs: 200, md: 304.458 },
             }}
         />
 
@@ -399,7 +487,7 @@ const LandingStep: React.FC<LandingStepProps> = ({ onStart }) => (
             sx={{
                 alignItems: "center",
                 gap: { xs: 2, md: "42px" },
-                maxWidth: { xs: 343, md: 540 },
+                maxWidth: { xs: 343, md: 582 },
                 textAlign: "center",
                 width: "100%",
             }}
@@ -422,7 +510,7 @@ const LandingStep: React.FC<LandingStepProps> = ({ onStart }) => (
                         fontWeight: 500,
                         lineHeight: "24px",
                         mx: "auto",
-                        maxWidth: { xs: 311, md: 500 },
+                        maxWidth: { xs: 311, md: 582 },
                     }}
                 >
                     Use your legacy kit recovery sheets to regain access to an
@@ -465,7 +553,7 @@ const LandingStep: React.FC<LandingStepProps> = ({ onStart }) => (
                             sx={{
                                 fontSize: { xs: 16, md: 20 },
                                 fontWeight: 500,
-                                lineHeight: { xs: "20px", md: "28px" },
+                                lineHeight: { xs: "20px", md: "20px" },
                             }}
                         >
                             {feature}
@@ -474,9 +562,11 @@ const LandingStep: React.FC<LandingStepProps> = ({ onStart }) => (
                 ))}
             </Stack>
 
-            <Button
+            {error && <Alert severity="error">{error}</Alert>}
+            <LoadingButton
                 color="accent"
                 onClick={onStart}
+                loading={isStarting}
                 sx={{
                     ...buttonSx,
                     borderRadius: { xs: "20px", md: "25px" },
@@ -486,8 +576,8 @@ const LandingStep: React.FC<LandingStepProps> = ({ onStart }) => (
                     width: "100%",
                 }}
             >
-                Start recovery
-            </Button>
+                {error ? "Reload page" : "Start recovery"}
+            </LoadingButton>
         </Stack>
     </Stack>
 );
@@ -704,10 +794,10 @@ const UploadArea: React.FC<UploadAreaProps> = ({ onFile, slot }) => (
                 color: "text.muted",
                 cursor: slot.isReading ? "default" : "pointer",
                 display: "flex",
-                flexDirection: { xs: "row", md: "column" },
+                flexDirection: "row",
                 fontSize: { xs: 14, md: 16 },
                 fontWeight: 500,
-                gap: { xs: 1, md: 0 },
+                gap: 1,
                 height: { xs: 52, md: 160 },
                 justifyContent: "center",
                 lineHeight: "20px",
@@ -814,6 +904,51 @@ const ScannedSheetCard: React.FC = () => (
     </Box>
 );
 
+const inactiveLegacyKitDescription =
+    "This legacy kit has been deleted by the account owner. These recovery sheets can no longer be used. Contact the account owner for help.";
+
+const InactiveLegacyKitStep: React.FC = () => (
+    <Stack
+        sx={{
+            alignItems: "center",
+            gap: { xs: 2.5, md: 3.5 },
+            maxWidth: { xs: 311, md: 560 },
+            p: { xs: 0, md: 6 },
+            textAlign: "center",
+            width: "100%",
+        }}
+    >
+        <Box
+            component="img"
+            alt=""
+            src="/images/legacy-kit/kit-no-longer-active.svg"
+            sx={{ height: "97.261px", width: "103.266px" }}
+        />
+        <Stack sx={{ alignItems: "center", gap: { xs: 1.5, md: 2 } }}>
+            <Typography
+                component="h1"
+                sx={{
+                    fontSize: { xs: 24, md: 32 },
+                    fontWeight: 800,
+                    lineHeight: { xs: "28px", md: "36px" },
+                }}
+            >
+                Kit no longer active
+            </Typography>
+            <Typography
+                sx={{
+                    color: "text.muted",
+                    fontSize: { xs: 12, md: 16 },
+                    fontWeight: 500,
+                    lineHeight: { xs: "16px", md: "20px" },
+                }}
+            >
+                {inactiveLegacyKitDescription}
+            </Typography>
+        </Stack>
+    </Stack>
+);
+
 interface WaitingStepProps {
     isRefreshing: boolean;
     openError?: string;
@@ -904,7 +1039,7 @@ const LegacyPasswordForm: React.FC<LegacyPasswordFormProps> = ({
         !isWeakPassword(password) &&
         !isSubmitting;
 
-    const submit = async (event: React.FormEvent) => {
+    const submit = async (event: React.SubmitEvent) => {
         event.preventDefault();
         setFieldError("");
 

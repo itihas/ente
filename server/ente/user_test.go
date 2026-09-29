@@ -1,50 +1,61 @@
 package ente
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 const (
 	validArgonMemLimit = 128 * 1024 * 1024
 	validArgonOpsLimit = 32
 )
 
-func TestSetUserAttributesRequestValidate_RejectsUnexpectedKDFStrength(t *testing.T) {
-	req := SetUserAttributesRequest{
-		KeyAttributes: KeyAttributes{
-			MemLimit: validArgonMemLimit,
-			OpsLimit: validArgonOpsLimit - 1,
-		},
+func TestKeyRequestValidation(t *testing.T) {
+	validators := []struct {
+		name     string
+		validate func(memLimit, opsLimit int64) error
+	}{
+		{name: "set attributes", validate: func(memLimit, opsLimit int64) error {
+			return (&SetUserAttributesRequest{KeyAttributes: KeyAttributes{
+				MemLimit: memLimit,
+				OpsLimit: opsLimit,
+			}}).Validate()
+		}},
+		{name: "update keys", validate: func(memLimit, opsLimit int64) error {
+			return (&UpdateKeysRequest{MemLimit: memLimit, OpsLimit: opsLimit}).Validate()
+		}},
 	}
 
-	assertBadRequestMessage(t, req.Validate(), "Unexpected KDF strength")
-}
-
-func TestSetUserAttributesRequestValidate_RejectsLowMemoryLimit(t *testing.T) {
-	req := SetUserAttributesRequest{
-		KeyAttributes: KeyAttributes{
-			MemLimit: 64 * 1024 * 1024,
-			OpsLimit: 64,
-		},
+	for _, validator := range validators {
+		t.Run(validator.name, func(t *testing.T) {
+			assertBadRequestMessage(
+				t,
+				validator.validate(validArgonMemLimit, validArgonOpsLimit-1),
+				"Unexpected KDF strength",
+			)
+			require.NoError(t, validator.validate(validArgonMemLimit, validArgonOpsLimit))
+			assertBadRequestMessage(
+				t,
+				validator.validate(64*1024*1024, 64),
+				"memory limit must be at least 128MB",
+			)
+		})
 	}
-
-	assertBadRequestMessage(t, req.Validate(), "memory limit must be at least 128MB")
 }
 
-func TestUpdateKeysRequestValidate_RejectsUnexpectedKDFStrength(t *testing.T) {
-	req := UpdateKeysRequest{
+func TestUpdateSRPAndKeysRequestValidation(t *testing.T) {
+	request := UpdateSRPAndKeysRequest{}
+	assertBadRequestMessage(t, request.Validate(), "updatedKeyAttr is required")
+
+	request.UpdateAttributes = &UpdateKeysRequest{
 		MemLimit: validArgonMemLimit,
 		OpsLimit: validArgonOpsLimit - 1,
 	}
+	assertBadRequestMessage(t, request.Validate(), "Unexpected KDF strength")
 
-	assertBadRequestMessage(t, req.Validate(), "Unexpected KDF strength")
-}
-
-func TestUpdateKeysRequestValidate_RejectsLowMemoryLimit(t *testing.T) {
-	req := UpdateKeysRequest{
-		MemLimit: 64 * 1024 * 1024,
-		OpsLimit: 64,
-	}
-
-	assertBadRequestMessage(t, req.Validate(), "memory limit must be at least 128MB")
+	request.UpdateAttributes.OpsLimit = validArgonOpsLimit
+	require.NoError(t, request.Validate())
 }
 
 func assertBadRequestMessage(t *testing.T, err error, wantMessage string) {

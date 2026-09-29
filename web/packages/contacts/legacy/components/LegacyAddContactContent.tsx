@@ -1,3 +1,4 @@
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SearchIcon from "@mui/icons-material/Search";
 import {
     Box,
@@ -6,41 +7,41 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
-import { ensureLocalUser } from "ente-accounts-rs/services/user";
+import { ensureLocalUser } from "ente-accounts/services/user";
 import { useBaseContext } from "ente-base/context";
-import React, { useMemo, useState } from "react";
-import {
-    legacyAddContact,
-    legacyPublicKey,
-    legacyVerificationID,
-    type LegacySuggestedUser,
-} from "..";
+import { isNamedError } from "ente-base/error";
+import { useMemo, useState } from "react";
 import { contactsDisplaySnapshot } from "../..";
 import { resolveContactDisplayFromSnapshot } from "../../resolver";
+import type { LegacyModule, LegacySuggestedUser } from "../types";
 import { ActionButton } from "./ActionButton";
 import { LegacyIdentityRow } from "./LegacyIdentityRow";
 import { LegacyRecoveryDayPicker } from "./LegacyRecoveryDayPicker";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-interface LegacyAddContactContentProps {
+interface LegacyAddContactContentProps<Session> {
+    getSession: () => Promise<Session>;
+    legacy: LegacyModule<Session>;
     existingEmails: string[];
     onAdded: () => Promise<void>;
     suggestedUsers: LegacySuggestedUser[];
     variant?: "page" | "sheet";
 }
 
-const getErrorMessage = (error: unknown) =>
-    error instanceof Error ? error.message : "Something went wrong";
-
 const nonEnteDialogAttributes = (email: string) => ({
     title: "Cannot add trusted contact",
     message: `${email} is not linked to an Ente account yet, so it cannot be used as a trusted contact.`,
 });
 
-export const LegacyAddContactContent: React.FC<
-    LegacyAddContactContentProps
-> = ({ existingEmails, onAdded, suggestedUsers, variant = "page" }) => {
+export const LegacyAddContactContent = <Session,>({
+    getSession,
+    legacy,
+    existingEmails,
+    onAdded,
+    suggestedUsers,
+    variant = "page",
+}: LegacyAddContactContentProps<Session>) => {
     const { showMiniDialog, onGenericError } = useBaseContext();
     const currentUser = ensureLocalUser();
     const [email, setEmail] = useState("");
@@ -103,7 +104,13 @@ export const LegacyAddContactContent: React.FC<
             return;
         }
         try {
-            const verificationID = await legacyVerificationID(normalizedEmail);
+            const key = await legacy.publicKey(
+                await getSession(),
+                normalizedEmail,
+            );
+            const verificationID = key
+                ? await legacy.verificationID(key)
+                : undefined;
             if (!verificationID) {
                 showMiniDialog({
                     title: "Verification ID unavailable",
@@ -157,27 +164,49 @@ export const LegacyAddContactContent: React.FC<
 
         void (async () => {
             try {
-                const publicKey = await legacyPublicKey(normalizedEmail);
-                if (!publicKey) {
+                const key = await legacy.publicKey(
+                    await getSession(),
+                    normalizedEmail,
+                );
+                if (!key) {
                     showMiniDialog(nonEnteDialogAttributes(normalizedEmail));
                     return;
                 }
 
                 showMiniDialog({
                     title: "Add trusted contact?",
-                    message: `Ente will wait ${selectedRecoveryDays} days before ${normalizedEmail} can recover your account.`,
+                    message: (
+                        <Stack sx={{ gap: 2 }}>
+                            <LegacyIdentityRow email={normalizedEmail} />
+                            <Typography
+                                variant="small"
+                                sx={{ color: "text.muted", lineHeight: "20px" }}
+                            >
+                                Ente will wait{" "}
+                                <Box
+                                    component="span"
+                                    sx={{ color: "text.base", fontWeight: 600 }}
+                                >
+                                    {selectedRecoveryDays} days
+                                </Box>{" "}
+                                before {normalizedEmail} can recover your
+                                account.
+                            </Typography>
+                        </Stack>
+                    ),
                     continue: {
                         text: "Add trusted contact",
-                        color: "primary",
                         action: async () => {
                             try {
-                                await legacyAddContact(
+                                await legacy.addContact(
+                                    await getSession(),
                                     normalizedEmail,
                                     selectedRecoveryDays,
                                 );
                             } catch (error) {
-                                const message = getErrorMessage(error);
-                                if (message.includes("not on Ente")) {
+                                if (
+                                    isNamedError(error, "contact_not_on_ente")
+                                ) {
                                     setTimeout(() => {
                                         showMiniDialog(
                                             nonEnteDialogAttributes(
@@ -187,9 +216,7 @@ export const LegacyAddContactContent: React.FC<
                                     }, 0);
                                     return;
                                 }
-                                throw error instanceof Error
-                                    ? error
-                                    : new Error(message);
+                                throw error;
                             }
                             await onAdded();
                         },
@@ -204,11 +231,14 @@ export const LegacyAddContactContent: React.FC<
     const isSheet = variant === "sheet";
 
     return (
-        <Stack sx={{ gap: 2, ...(isSheet ? {} : { px: 2, pb: 2 }) }}>
+        <Stack sx={{ gap: 3, ...(isSheet ? {} : { px: 2, pb: 2 }) }}>
             {!isSheet && (
                 <Stack sx={{ gap: 1 }}>
                     <Typography variant="h4">Add trusted contact</Typography>
-                    <Typography variant="small" sx={{ color: "text.muted" }}>
+                    <Typography
+                        variant="small"
+                        sx={{ color: "text.muted", lineHeight: "20px" }}
+                    >
                         Search an email, verify the identity if needed, and
                         choose how long recovery should wait.
                     </Typography>
@@ -217,7 +247,7 @@ export const LegacyAddContactContent: React.FC<
 
             <Stack
                 sx={{
-                    gap: 2,
+                    gap: 3,
                     ...(isSheet
                         ? {}
                         : {
@@ -227,40 +257,83 @@ export const LegacyAddContactContent: React.FC<
                           }),
                 }}
             >
-                <TextField
-                    autoFocus
-                    size="small"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="Enter email"
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon fontSize="small" />
-                                </InputAdornment>
-                            ),
-                        },
-                    }}
-                />
+                <Stack sx={{ gap: 1 }}>
+                    <Typography
+                        component="label"
+                        htmlFor="legacy-add-contact-email"
+                        variant="small"
+                        sx={{ lineHeight: "20px", width: "fit-content" }}
+                    >
+                        Email
+                    </Typography>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        variant="outlined"
+                        margin="none"
+                        size="small"
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder="Enter email"
+                        sx={{
+                            "& .MuiOutlinedInput-root": {
+                                height: 52,
+                                px: 2,
+                                borderRadius: "16px",
+                                backgroundColor: "background.paper",
+                                fontSize: 14,
+                                lineHeight: "20px",
+                                fontWeight: 500,
+                            },
+                            "& .MuiOutlinedInput-input": {
+                                p: 0,
+                                height: "100%",
+                            },
+                            "& .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "stroke.fainter",
+                            },
+                            "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
+                                { borderColor: "stroke.fainter" },
+                            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                { borderWidth: 1, borderColor: "stroke.muted" },
+                            "& .MuiInputBase-input::placeholder": {
+                                color: "text.faint",
+                                opacity: 1,
+                            },
+                        }}
+                        slotProps={{
+                            htmlInput: { id: "legacy-add-contact-email" },
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon
+                                            sx={{
+                                                color: "accent.main",
+                                                fontSize: 20,
+                                            }}
+                                        />
+                                    </InputAdornment>
+                                ),
+                            },
+                        }}
+                    />
+                </Stack>
 
                 {!!filteredSuggestions.length && (
                     <Stack sx={{ gap: 1 }}>
                         <Typography
-                            variant="small"
-                            sx={{ color: "text.muted" }}
+                            variant="body"
+                            sx={{ fontWeight: 600, px: 1, py: 0.75 }}
                         >
                             Choose from an existing contact
                         </Typography>
                         <Stack
                             sx={{
-                                gap: 0.5,
-                                p: 0.75,
-                                borderRadius: "18px",
-                                backgroundColor: "fill.faint",
+                                gap: 1,
                                 maxHeight: 260,
                                 overflowY: "auto",
+                                scrollbarWidth: "thin",
                             }}
                         >
                             {filteredSuggestions.map((user) => (
@@ -273,6 +346,7 @@ export const LegacyAddContactContent: React.FC<
                                         user.email.trim().toLowerCase()
                                     }
                                     onClick={() => setEmail(user.email)}
+                                    sx={{ bgcolor: "background.paper" }}
                                 />
                             ))}
                         </Stack>
@@ -283,8 +357,12 @@ export const LegacyAddContactContent: React.FC<
                     !filteredSuggestions.length &&
                     EMAIL_PATTERN.test(normalizedEmail) && (
                         <Typography
-                            variant="small"
-                            sx={{ color: "text.muted" }}
+                            variant="mini"
+                            sx={{
+                                color: "text.muted",
+                                lineHeight: "16px",
+                                px: 1,
+                            }}
                         >
                             No existing contact matched. You can still add this
                             email directly.
@@ -292,32 +370,43 @@ export const LegacyAddContactContent: React.FC<
                     )}
 
                 <Stack sx={{ gap: 1 }}>
-                    <Typography variant="small" sx={{ color: "text.muted" }}>
+                    <Typography
+                        variant="body"
+                        sx={{ fontWeight: 600, px: 1, py: 0.75 }}
+                    >
                         Choose a recovery time
                     </Typography>
                     <LegacyRecoveryDayPicker
                         selectedDays={selectedRecoveryDays}
                         onChange={setSelectedRecoveryDays}
+                        sx={{
+                            "& .MuiToggleButton-root": {
+                                backgroundColor: "background.paper",
+                            },
+                        }}
                     />
                 </Stack>
 
-                <ActionButton
-                    fullWidth
-                    buttonType="primary"
-                    onClick={handleAdd}
-                    disabled={!email.trim()}
-                >
-                    Add trusted contact
-                </ActionButton>
+                <Stack>
+                    <ActionButton
+                        fullWidth
+                        buttonType="primary"
+                        onClick={handleAdd}
+                        disabled={!email.trim()}
+                    >
+                        Add trusted contact
+                    </ActionButton>
 
-                <ActionButton
-                    buttonType="link"
-                    onClick={() => void handleVerify()}
-                    disabled={!email.trim()}
-                    sx={{ alignSelf: "center" }}
-                >
-                    Verify
-                </ActionButton>
+                    <ActionButton
+                        buttonType="link"
+                        onClick={() => void handleVerify()}
+                        disabled={!email.trim()}
+                        sx={{ alignSelf: "center", p: "12px 8px" }}
+                        endIcon={<ChevronRightIcon sx={{ fontSize: 16 }} />}
+                    >
+                        Verify
+                    </ActionButton>
+                </Stack>
             </Stack>
         </Stack>
     );

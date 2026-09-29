@@ -5,14 +5,11 @@ description: Organize your documents and information into collections for easy a
 
 # Collections
 
-Collections help you organize your items into groups. Create collections for
-different areas of your life to keep your information structured and easy to
-find.
+Collections help you organize your items into groups. Create collections for different areas of your life to keep your information structured and easy to find.
 
 ## Items can belong to multiple collections
 
-Unlike folders, items in Locker can belong to multiple collections at once. This
-lets you organize the same item in different ways:
+Unlike folders, items in Locker can belong to multiple collections at once. This lets you organize the same item in different ways:
 
 - A passport scan could be in both "Travel Documents" and "Family Documents"
 - Insurance information could be in "Financial" and "Medical"
@@ -39,7 +36,7 @@ lets you organize the same item in different ways:
 ### When creating an item
 
 1. While creating the item, tap the collection field
-2. Select one or more collections
+2. Leave all collections unselected to use **Uncategorized**. Or select one or more of your collections
 3. Complete creating the item
 
 ### Adding existing items to a collection
@@ -49,6 +46,19 @@ lets you organize the same item in different ways:
 3. Tap the collection field
 4. Select additional collections
 5. Tap **Save**
+
+## Uncategorized collection
+
+**Uncategorized** is where Locker keeps items that are not in one of your collections. Locker creates it for you.
+
+Items are added to Uncategorized when:
+
+- You create or upload an item without selecting a collection
+- You remove an item from its last collection but keep the item
+
+When you edit an item, Uncategorized appears with your other collections. Select it to keep the item there. Deselect it to remove the item.
+
+An item can be in Uncategorized and another collection at the same time. Adding it to another collection does not remove it from Uncategorized.
 
 ## Managing collections
 
@@ -66,8 +76,8 @@ lets you organize the same item in different ways:
 2. Tap the menu icon
 3. Select **Delete collection**
 4. Choose whether to:
-   - **Keep items**: Items are removed from the collection but not deleted
-   - **Delete items**: Items are moved to Trash
+    - **Keep items**: Items are removed from the collection but not deleted
+    - **Delete items**: Items are moved to Trash
 
 ## Removing items from a collection
 
@@ -81,9 +91,7 @@ The item remains in any other collections it belongs to.
 
 ## Important collection
 
-Locker includes a special **Important** collection for marking your most
-critical items. Add items here for quick access to your most frequently needed
-information.
+Locker includes a special **Important** collection for marking your most critical items. Add items here for quick access to your most frequently needed information.
 
 To add an item to Important:
 
@@ -91,8 +99,7 @@ To add an item to Important:
 2. Tap the star or favorite icon
 3. The item is added to the Important collection
 
-The Important collection is automatically created when you first mark an item as
-important.
+The Important collection is automatically created when you first mark an item as important.
 
 ## Collection organization tips
 
@@ -107,11 +114,9 @@ Consider creating collections like:
 
 ## Sharing collections
 
-Share entire collections with other Ente users. This is useful for family
-members who need access to the same information.
+Share entire collections with other Ente users. This is useful for family members who need access to the same information.
 
-Learn more about
-[Sharing collections with users](/locker/features/sharing/share-with-users).
+Learn more about [Sharing collections with users](/locker/features/sharing/share-with-users).
 
 ## Related FAQs
 

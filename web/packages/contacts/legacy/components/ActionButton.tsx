@@ -1,9 +1,9 @@
-import { type ButtonProps } from "@mui/material";
+import type { ButtonProps } from "@mui/material";
 import { LoadingButton } from "ente-base/components/mui/LoadingButton";
 import { isSxArray } from "ente-base/components/utils/sx";
 import React from "react";
 
-export type ActionButtonType =
+type ActionButtonType =
     | "primary"
     | "secondary"
     | "critical"
@@ -17,7 +17,7 @@ interface ActionButtonProps extends Omit<ButtonProps, "color" | "variant"> {
 
 const pillSx = {
     minHeight: 52,
-    borderRadius: "999px",
+    borderRadius: "20px",
     px: 3,
     py: 1.5,
     fontWeight: 600,
@@ -83,17 +83,8 @@ const typeSx = {
         fontWeight: 600,
         textTransform: "none",
         color: "accent.main",
-        textDecoration: "underline",
-        textDecorationColor: "accent.main",
-        "&:hover": {
-            backgroundColor: "transparent",
-            color: "accent.main",
-            textDecorationColor: "accent.main",
-        },
-        "&.Mui-disabled": {
-            color: "text.muted",
-            textDecorationColor: "text.muted",
-        },
+        "&:hover": { backgroundColor: "transparent", color: "accent.main" },
+        "&.Mui-disabled": { color: "text.muted" },
     },
 } satisfies Record<ActionButtonType, ButtonProps["sx"]>;
 

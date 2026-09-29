@@ -3,7 +3,7 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 
 import { MapEvents } from "./MapEvents";
-import { createIcon, getMapCenter } from "./mapHelpers";
+import { createIcon, getMapCenter } from "./map-helpers";
 import type { JourneyPoint } from "./types";
 
 interface MapComponentsType {
@@ -40,9 +40,9 @@ export const TripMap: React.FC<TripMapProps> = ({
     onMarkerClick,
 }) => {
     const theme = useTheme();
-    const isMobileOrTablet = useMediaQuery(theme.breakpoints.down("md")); // 960px breakpoint for mobile and tablet
+    const isMobileOrTablet = useMediaQuery(theme.breakpoints.down("md"));
 
-    // Load react-leaflet components client-side only to prevent SSR issues
+    // Leaflet must be loaded client-side.
     const [mapComponents, setMapComponents] =
         useState<MapComponentsType | null>(null);
 
@@ -60,28 +60,24 @@ export const TripMap: React.FC<TripMapProps> = ({
             });
     }, []);
 
-    // Calculate current active location index based on scroll progress (same logic as in scrollUtils)
     let currentActiveLocationIndex = -1;
     if (photoClusters.length > 0) {
         if (isMobileOrTablet) {
-            // Mobile: Slower progression - stay on each location longer
+            // Mobile keeps each location active longer.
             currentActiveLocationIndex = Math.floor(
                 scrollProgress * (photoClusters.length - 0.5),
             );
         } else {
-            // Desktop: Use original logic
             currentActiveLocationIndex = Math.round(
                 scrollProgress * Math.max(0, photoClusters.length - 1),
             );
         }
     }
 
-    // Super clusters disabled - show all clusters individually
     const visibleClustersWithIndices = photoClusters.map(
         (cluster, originalIndex) => ({ cluster, originalIndex }),
     );
 
-    // Return loading state if map components haven't loaded yet
     if (!mapComponents) {
         return <MapContainerWrapper hasPhotoData={false} />;
     }
@@ -108,7 +104,6 @@ export const TripMap: React.FC<TripMapProps> = ({
                         setCurrentZoom={setCurrentZoom}
                         setTargetZoom={setTargetZoom}
                     />
-                    {/* Stadia Alidade Satellite - includes both imagery and labels */}
                     <TileLayer
                         attribution={
                             isMobileOrTablet
@@ -121,7 +116,6 @@ export const TripMap: React.FC<TripMapProps> = ({
                         keepBuffer={isMobileOrTablet ? 3 : 1}
                     />
 
-                    {/* Draw visible clusters */}
                     {visibleClustersWithIndices.map((item, index) => {
                         const { cluster, originalIndex } = item;
                         const firstPhoto = cluster[0];
@@ -133,9 +127,7 @@ export const TripMap: React.FC<TripMapProps> = ({
                             cluster.reduce((sum, p) => sum + p.lng, 0) /
                             cluster.length;
 
-                        // Use the preserved original index
                         const originalClusterIndex = originalIndex;
-                        // Show green only for active locations
                         const isActive =
                             originalClusterIndex === currentActiveLocationIndex;
 
@@ -155,7 +147,6 @@ export const TripMap: React.FC<TripMapProps> = ({
                                 zIndexOffset={isActive ? 1000 : 0}
                                 eventHandlers={{
                                     click: () => {
-                                        // Calculate cluster center
                                         const avgLat =
                                             cluster.reduce(
                                                 (sum, p) => sum + p.lat,
@@ -182,7 +173,6 @@ export const TripMap: React.FC<TripMapProps> = ({
     );
 };
 
-// Styled components
 const MapContainerWrapper = styled(Box, {
     shouldForwardProp: (prop) => prop !== "hasPhotoData",
 })<{ hasPhotoData: boolean }>(({ hasPhotoData }) => ({

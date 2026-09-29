@@ -1,11 +1,10 @@
 import { LazyNotification } from "@/app/lazy/global-ui";
 import { getEnteURL } from "@/public-album/access/utils/external-links";
 import { downloadManager } from "@/public-album/download/services/download-manager";
-import type { AddSaveGroup } from "@/shared/state/save-groups";
 import CheckIcon from "@mui/icons-material/Check";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ErrorOutlinedIcon from "@mui/icons-material/ErrorOutlined";
 import FullscreenOutlinedIcon from "@mui/icons-material/FullscreenOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -25,14 +24,16 @@ import {
 import { EnteLogo } from "ente-base/components/EnteLogo";
 import { ActivityIndicator } from "ente-base/components/mui/ActivityIndicator";
 import { useBaseContext } from "ente-base/context";
+import { isNamedError } from "ente-base/error";
 import type { PublicAlbumsCredentials } from "ente-base/http";
 import log from "ente-base/log";
+import type { AddSaveGroup } from "ente-gallery/components/utils/save-groups";
+import { createPSRegisterElementIconHTML } from "ente-gallery/components/viewer/icons";
 import type { EnteFile } from "ente-media/file";
 import { fileFileName } from "ente-media/file-metadata";
 import { FileType } from "ente-media/file-type";
 import { t } from "i18next";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { createPSRegisterElementIconHTML } from "../lib/icons";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileViewer } from "./FileViewer";
 
 export interface PublicAlbumSingleFileViewerProps {
@@ -64,11 +65,6 @@ const inlineFileViewerIconPath = (name: "live" | "vol") =>
 const liveIconPath = inlineFileViewerIconPath("live");
 const volumeIconPath = inlineFileViewerIconPath("vol");
 
-/**
- * A dedicated public-album single-file viewer mode with a bespoke header/menu.
- *
- * This wraps the regular FileViewer but overlays its own controls.
- */
 export const PublicAlbumSingleFileViewer: React.FC<
     PublicAlbumSingleFileViewerProps
 > = ({
@@ -109,6 +105,7 @@ export const PublicAlbumSingleFileViewer: React.FC<
     const isViewerPrimed = !needsThumbnailPrime || primedFileID === file.id;
     const viewerFiles = useMemo(() => [viewerFile], [viewerFile]);
     const shouldShowWarningIcon = isPhotoSwipeContentError;
+    const progressHostRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         document.body.classList.add(bodyClassName);
@@ -140,6 +137,8 @@ export const PublicAlbumSingleFileViewer: React.FC<
         let pswpElement: HTMLElement | null = null;
         let preloaderElement: HTMLElement | null = null;
         let errorElement: HTMLElement | null = null;
+        let progressElement: HTMLElement | null = null;
+        let progressParent: HTMLElement | null = null;
 
         const updateVisibility = () => {
             setIsPhotoSwipeUIVisible(
@@ -209,6 +208,9 @@ export const PublicAlbumSingleFileViewer: React.FC<
         const bindToPhotoSwipeElement = () => {
             const next = document.querySelector<HTMLElement>(".pswp");
             if (next !== pswpElement) {
+                progressElement?.remove();
+                progressElement = null;
+                progressParent = null;
                 classObserver?.disconnect();
                 classObserver = undefined;
                 pswpElement = next;
@@ -236,6 +238,15 @@ export const PublicAlbumSingleFileViewer: React.FC<
 
             bindToPreloaderElement();
             bindToErrorElement();
+
+            const progress = pswpElement?.querySelector<HTMLElement>(
+                ".pswp__ente-progress-text",
+            );
+            if (progress && progressHostRef.current) {
+                progressElement = progress;
+                progressParent = progress.parentElement;
+                progressHostRef.current.replaceChildren(progress);
+            }
         };
 
         const treeObserver = new MutationObserver(bindToPhotoSwipeElement);
@@ -247,6 +258,11 @@ export const PublicAlbumSingleFileViewer: React.FC<
             classObserver?.disconnect();
             preloaderObserver?.disconnect();
             errorObserver?.disconnect();
+            if (progressElement) {
+                if (progressParent?.isConnected)
+                    progressParent.append(progressElement);
+                else progressElement.remove();
+            }
         };
     }, []);
 
@@ -371,7 +387,7 @@ export const PublicAlbumSingleFileViewer: React.FC<
     useEffect(() => {
         if (!needsOriginalPrime) return;
 
-        // Give thumbnail fetch a brief head-start, then warm the original.
+        // Let the thumbnail start before warming the original.
         const prefetchTimer = window.setTimeout(() => {
             void downloadManager
                 .renderableSourceURLs(file)
@@ -394,9 +410,8 @@ export const PublicAlbumSingleFileViewer: React.FC<
 
     const handleDownload = useCallback(
         async (targetFile: EnteFile) => {
-            const { downloadAndSaveFiles } = await import(
-                "@/public-album/download/services/save"
-            );
+            const { downloadAndSaveFiles } =
+                await import("@/public-album/download/services/save");
             return downloadAndSaveFiles(
                 [targetFile],
                 fileFileName(targetFile),
@@ -416,7 +431,7 @@ export const PublicAlbumSingleFileViewer: React.FC<
                 await navigator.share({ text: shareUrl });
                 return;
             } catch (error) {
-                if (error instanceof Error && error.name === "AbortError") {
+                if (isNamedError(error, "AbortError")) {
                     return;
                 }
             }
@@ -534,6 +549,8 @@ export const PublicAlbumSingleFileViewer: React.FC<
                         { display: "none !important" },
                     [`body.${bodyClassName} .pswp-ente-public-album .pswp__error`]:
                         { display: "none !important" },
+                    [`body.${bodyClassName} .pswp-ente-public-album .pswp__ente-progress-text`]:
+                        { margin: 0, "&::before": { content: "none" } },
                 }}
             />
             <FileViewer
@@ -577,9 +594,10 @@ export const PublicAlbumSingleFileViewer: React.FC<
                     >
                         <Stack
                             direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
                             sx={{
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 1.5,
                                 pointerEvents: topControlsVisible
                                     ? "auto"
                                     : "none",
@@ -587,8 +605,12 @@ export const PublicAlbumSingleFileViewer: React.FC<
                         >
                             <Stack
                                 direction="row"
-                                alignItems="center"
                                 spacing={1.5}
+                                sx={{
+                                    alignItems: "center",
+                                    minWidth: 0,
+                                    flex: 1,
+                                }}
                             >
                                 <Box
                                     component="a"
@@ -599,6 +621,7 @@ export const PublicAlbumSingleFileViewer: React.FC<
                                         color: "white",
                                         opacity: 0.85,
                                         lineHeight: 0,
+                                        flexShrink: 0,
                                         "& svg": {
                                             width: "auto",
                                             height: { xs: 17, sm: 21 },
@@ -620,7 +643,7 @@ export const PublicAlbumSingleFileViewer: React.FC<
                                             transform: "translateY(1px)",
                                         }}
                                     >
-                                        <ErrorOutlineIcon
+                                        <ErrorOutlinedIcon
                                             aria-hidden="true"
                                             sx={{
                                                 fontSize: 20,
@@ -649,8 +672,8 @@ export const PublicAlbumSingleFileViewer: React.FC<
                                     isLivePhotoFile && (
                                         <Stack
                                             direction="row"
-                                            alignItems="center"
                                             spacing={0.5}
+                                            sx={{ alignItems: "center" }}
                                         >
                                             <FileViewerStyleButton
                                                 onClick={
@@ -705,11 +728,20 @@ export const PublicAlbumSingleFileViewer: React.FC<
                                         </Stack>
                                     )
                                 )}
+                                <Box
+                                    ref={progressHostRef}
+                                    className="pswp-ente pswp-ente-public-album"
+                                    sx={{
+                                        display: { xs: "none", sm: "block" },
+                                        minWidth: 0,
+                                        flex: 1,
+                                    }}
+                                />
                             </Stack>
                             <Stack
                                 direction="row"
-                                alignItems="center"
                                 spacing={1}
+                                sx={{ alignItems: "center", flexShrink: 0 }}
                             >
                                 <Button
                                     variant="contained"
@@ -729,7 +761,7 @@ export const PublicAlbumSingleFileViewer: React.FC<
                                         },
                                     }}
                                 >
-                                    {t("get_ente_photos")}
+                                    {t("join_ente")}
                                 </Button>
                                 <IconButton
                                     onClick={(event) =>
@@ -741,9 +773,15 @@ export const PublicAlbumSingleFileViewer: React.FC<
                                         width: 40,
                                         height: 40,
                                         p: 0.75,
-                                        bgcolor: "rgba(0, 0, 0, 0.4)",
+                                        bgcolor: {
+                                            xs: "transparent",
+                                            sm: "rgba(255, 255, 255, 0.16)",
+                                        },
                                         "&:hover": {
-                                            bgcolor: "rgba(0, 0, 0, 0.55)",
+                                            bgcolor: {
+                                                xs: "transparent",
+                                                sm: "rgba(255, 255, 255, 0.24)",
+                                            },
                                         },
                                     }}
                                 >
@@ -907,9 +945,6 @@ const FileViewerStyleButton = styled("button")`
     }
 `;
 
-/**
- * Return an "image/png" blob derived from the given source URL.
- */
 const createImagePNGBlob = async (imageURL: string): Promise<Blob> =>
     new Promise((resolve, reject) => {
         const image = new Image();

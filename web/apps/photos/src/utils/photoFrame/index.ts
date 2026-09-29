@@ -1,7 +1,7 @@
 // TODO: Audit this file
-import type { SelectionContext } from "ente-new/photos/components/gallery";
-import type { GalleryBarMode } from "ente-new/photos/components/gallery/reducer";
-import type { SelectedState, SetSelectedState } from "utils/file";
+import type { SelectionContext } from "@/components/gallery";
+import type { GalleryBarMode } from "@/components/gallery/reducer";
+import type { SelectedState, SetSelectedState } from "@/utils/file";
 
 // TODO: All this is unnecessarily complex, and needs reworking.
 export const handleSelectCreator =
@@ -129,8 +129,6 @@ const createSelectedAndContext = (
             };
         }
     } else if (!selected.context) {
-        // Gallery will specify a mode, but a fresh selection starts off
-        // without a context, so fill it in with the current context.
         selected = {
             ...selected,
             context:
@@ -139,9 +137,7 @@ const createSelectedAndContext = (
                     : { mode, collectionID: activeCollectionID },
         };
     } else {
-        // Both mode and context are defined.
         if (selected.context.mode != mode) {
-            // Clear selection if mode has changed.
             selected = {
                 ownCount: 0,
                 count: 0,
@@ -154,7 +150,6 @@ const createSelectedAndContext = (
         } else {
             if (selected.context.mode == "people") {
                 if (selected.context.personID != activePersonID) {
-                    // Clear selection if person has changed.
                     selected = {
                         ownCount: 0,
                         count: 0,
@@ -167,7 +162,6 @@ const createSelectedAndContext = (
                 }
             } else {
                 if (selected.context.collectionID != activeCollectionID) {
-                    // Clear selection if collection has changed.
                     selected = {
                         ownCount: 0,
                         count: 0,

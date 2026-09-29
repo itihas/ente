@@ -17,19 +17,9 @@ const detectShareView = (pathname: string): "file" | "collection" | null => {
     return "file";
 };
 
-/**
- * Index page that handles root redirect, single-file share links, and
- * locker collection share links.
- *
- * - Root domain (/) redirects to ente.com/locker
- * - Single-file share links (/{token}#{key}) render FileShareView
- * - Collection share links (/c/{token}#{collectionKey}) render CollectionShareView
- *
- * This page is served for all routes via:
- * - _redirects file for Cloudflare Pages
- * - Next.js rewrites for local development
- * - nginx try_files for Docker deployment
- */
+// Every route is served by this page: the _redirects file (Cloudflare Pages),
+// Next.js rewrites (dev), and nginx try_files (Docker) all rewrite to it, and
+// it reads the share token from window.location instead of router params.
 const Page: React.FC = () => {
     const [hideContent, setHideContent] = useState(false);
     const [shareView, setShareView] = useState<"file" | "collection" | null>(

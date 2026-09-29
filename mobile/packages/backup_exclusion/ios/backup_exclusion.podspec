@@ -6,11 +6,11 @@ Pod::Spec.new do |s|
 Marks app-managed files and directories as excluded from iCloud and local
 device backups.
                        DESC
-  s.homepage         = 'https://github.com/ente-io/ente'
+  s.homepage         = 'https://github.com/ente/ente'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Ente' => 'support@ente.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'backup_exclusion/Sources/backup_exclusion/**/*.swift'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
   s.swift_version = '5.0'

@@ -7,12 +7,7 @@ description: Earn free storage by referring Ente Photos to your friends
 
 You can refer your friends to earn free storage on Ente.
 
-For each friend you refer, who upgrades to a paid plan, we will credit **10 GB**
-of free storage. The referred customer will also receive an additional **10 GB**
-with their paid subscription.
-
-That is, if you refer a friend, once your friend upgrades to a paid plan, both
-you and your friend receive an additional 10 GB of storage.
+Your friend gets an extra 10 GB immediately after applying your referral code. You get an extra 10 GB when your friend upgrades to a paid plan.
 
 ## Find your referral code
 
@@ -28,6 +23,8 @@ You can find your referral code under `Settings > Referrals`.
 
 Referral codes can be applied within `Settings > Referrals > Apply Code`.
 
+As a new user, you get an extra 10 GB as soon as you apply a referral code. No paid subscription is required.
+
 <div align="center">
 
 ![Apply referral code screen](referral-code-application.png){width=400px}
@@ -36,8 +33,7 @@ Referral codes can be applied within `Settings > Referrals > Apply Code`.
 
 ## Customize your referral code
 
-You can personalize your referral code to make it easier to share. To change your
-code, go to `Settings > Referrals` and tap on your current code.
+You can personalize your referral code to make it easier to share. To change your code, go to `Settings > Referrals` and tap on your current code.
 
 Requirements for custom referral codes:
 

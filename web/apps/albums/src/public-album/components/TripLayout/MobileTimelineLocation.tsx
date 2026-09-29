@@ -43,7 +43,6 @@ export const MobileTimelineLocation = memo<MobileTimelineLocationProps>(
                 id={`location-${index}`}
                 className="timeline-location"
             >
-                {/* Centered Photo Fan Container */}
                 <CenteredPhotoContainer>
                     <PhotoFanWrapper>
                         <PhotoFan
@@ -51,7 +50,6 @@ export const MobileTimelineLocation = memo<MobileTimelineLocationProps>(
                             onPhotoClick={onPhotoClick}
                         />
 
-                        {/* Overlay text on top of main photo */}
                         <PhotoOverlay>
                             <DayBadge>
                                 DAY {dayNumber} •{" "}
@@ -78,7 +76,6 @@ export const MobileTimelineLocation = memo<MobileTimelineLocationProps>(
     },
 );
 
-// Styled components
 const MobileLocationContainer = styled(Box)({
     position: "relative",
     display: "flex",

@@ -19,10 +19,6 @@ import { useCallback, useState } from "react";
 import { Trans } from "react-i18next";
 import { z } from "zod";
 
-/**
- * A page that allows a user to change the email address associated with their
- * Ente account.
- */
 const Page: React.FC = () => {
     useRedirectIfNeedsCredentials("/change-email");
 
@@ -131,11 +127,6 @@ const ChangeEmailForm: React.FC = () => {
                     value={formik.values.email}
                     onChange={formik.handleChange}
                     error={!!formik.errors.email}
-                    // See: [Note: Use space as default TextField helperText]
-                    //
-                    // Also, we only need keep the extra space until the email
-                    // has been entered (since the email field is read only
-                    // after that).
                     helperText={
                         formik.errors.email ?? (requestedEmail ? "" : " ")
                     }

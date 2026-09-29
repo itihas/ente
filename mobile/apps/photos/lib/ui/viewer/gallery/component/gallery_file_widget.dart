@@ -3,6 +3,7 @@ import "dart:async";
 import "package:ente_pure_utils/ente_pure_utils.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
+import "package:logging/logging.dart";
 import "package:media_extension/media_extension.dart";
 import "package:media_extension/media_extension_action_types.dart";
 import "package:photos/core/constants.dart";
@@ -11,16 +12,18 @@ import "package:photos/events/file_uploaded_event.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/gallery_type.dart";
 import "package:photos/models/selected_files.dart";
+import "package:photos/module/share/picker_result_uri.dart";
 import "package:photos/services/app_lifecycle_service.dart";
-import "package:photos/theme/ente_theme.dart";
+import "package:photos/services/collections_service.dart";
 import "package:photos/ui/common/touch_cross_detector.dart";
+import "package:photos/ui/sharing/user_avator_widget.dart";
+import "package:photos/ui/viewer/actions/select_all_status_icon.dart";
 import "package:photos/ui/viewer/file/detail_page.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/gallery/component/swipe_selectable_file_widget.dart";
 import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 import "package:photos/ui/viewer/gallery/state/gallery_files_inherited_widget.dart";
 import "package:photos/ui/viewer/gallery/state/gallery_swipe_helper.dart";
-import "package:photos/utils/file_util.dart";
 
 class GalleryFileWidget extends StatefulWidget {
   final EnteFile file;
@@ -28,6 +31,7 @@ class GalleryFileWidget extends StatefulWidget {
   final bool limitSelectionToOne;
   final String tag;
   final int photoGridSize;
+  final int? thumbnailSize;
   final int? currentUserID;
   const GalleryFileWidget({
     required this.file,
@@ -35,6 +39,7 @@ class GalleryFileWidget extends StatefulWidget {
     required this.limitSelectionToOne,
     required this.tag,
     required this.photoGridSize,
+    this.thumbnailSize,
     required this.currentUserID,
     super.key,
   });
@@ -45,6 +50,7 @@ class GalleryFileWidget extends StatefulWidget {
 
 class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   static const borderRadius = BorderRadius.all(Radius.circular(1));
+  static final _logger = Logger("GalleryFileWidget");
   late bool _isFileSelected;
   int? _currentPointerId;
   bool _isPointerInside = false;
@@ -56,8 +62,9 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
     _isFileSelected =
         widget.selectedFiles?.isFileSelected(widget.file) ?? false;
     widget.selectedFiles?.addListener(_selectedFilesListener);
-    _fileUploadedSubscription =
-        Bus.instance.on<FileUploadedEvent>().listen((event) {
+    _fileUploadedSubscription = Bus.instance.on<FileUploadedEvent>().listen((
+      event,
+    ) {
       if (event.file.generatedID != null &&
           event.file.generatedID == widget.file.generatedID &&
           mounted) {
@@ -96,34 +103,49 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   }
 
   Widget _buildFileContent(BuildContext context) {
+    final disableSelection =
+        GalleryContextState.of(context)?.disableSelection ?? false;
     Color selectionColor = Colors.white;
     if (_isFileSelected &&
         widget.file.isUploaded &&
         widget.file.ownerID != null &&
         widget.file.ownerID != widget.currentUserID) {
-      final avatarColors = getEnteColorScheme(context).avatarColors;
-      selectionColor =
-          avatarColors[widget.file.ownerID!.remainder(avatarColors.length)];
+      final owner = CollectionsService.instance.resolveUserIdentity(
+        widget.file.ownerID!,
+        widget.file.collectionID,
+      );
+      selectionColor = getUserAvatarColor(context, owner);
     }
     final String heroTag = widget.tag + widget.file.tag;
+    final effectiveThumbnailSize =
+        widget.thumbnailSize ??
+        (widget.photoGridSize < photoGridSizeDefault
+            ? thumbnailLargeSize
+            : thumbnailSmallSize);
     final Widget thumbnailWidget = ThumbnailWidget(
       widget.file,
       diskLoadDeferDuration: galleryThumbnailDiskLoadDeferDuration,
       serverLoadDeferDuration: galleryThumbnailServerLoadDeferDuration,
       shouldShowLivePhotoOverlay: true,
-      key: Key(heroTag),
-      thumbnailSize: widget.photoGridSize < photoGridSizeDefault
-          ? thumbnailLargeSize
-          : thumbnailSmallSize,
+      // Recreate the loader when the effective tier changes, such as when
+      // switching between Grid and Justified layouts.
+      key: ValueKey((heroTag, effectiveThumbnailSize)),
+      thumbnailSize: effectiveThumbnailSize,
+      useRequestedThumbnailSizeForLocalCache: widget.thumbnailSize != null,
       shouldShowOwnerAvatar: !_isFileSelected,
+      ownerAvatarType: widget.photoGridSize < photoGridSizeMax
+          ? AvatarType.small
+          : AvatarType.xs,
       shouldShowVideoDuration: true,
     );
     return GestureDetector(
-      onTap: () {
-        widget.limitSelectionToOne
-            ? _onTapWithSelectionLimit(widget.file)
-            : _onTapNoSelectionLimit(context, widget.file);
-      },
+      onTap: disableSelection
+          ? null
+          : () {
+              widget.limitSelectionToOne
+                  ? _onTapWithSelectionLimit(widget.file)
+                  : _onTapNoSelectionLimit(context, widget.file);
+            },
       onLongPress: () {
         widget.limitSelectionToOne
             ? _onLongPressWithSelectionLimit(context, widget.file)
@@ -138,16 +160,19 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                   borderRadius: borderRadius,
                   child: Hero(
                     tag: heroTag,
-                    flightShuttleBuilder: (
-                      flightContext,
-                      animation,
-                      flightDirection,
-                      fromHeroContext,
-                      toHeroContext,
-                    ) =>
-                        thumbnailWidget,
+                    flightShuttleBuilder:
+                        (
+                          flightContext,
+                          animation,
+                          flightDirection,
+                          fromHeroContext,
+                          toHeroContext,
+                        ) => (toHeroContext.widget as Hero).child,
                     transitionOnUserGestures: true,
-                    child: thumbnailWidget,
+                    child: ClipRRect(
+                      borderRadius: borderRadius,
+                      child: thumbnailWidget,
+                    ),
                   ),
                 ),
                 Container(
@@ -159,10 +184,11 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                 Positioned(
                   right: 4,
                   top: 4,
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    size: 20,
-                    color: selectionColor, //same for both themes
+                  child: SelectAllStatusIcon(
+                    isSelected: true,
+                    size: 16,
+                    selectedFillColor: selectionColor,
+                    selectedTickCutsOut: true,
                   ),
                 ),
               ],
@@ -172,16 +198,19 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               borderRadius: borderRadius,
               child: Hero(
                 tag: heroTag,
-                flightShuttleBuilder: (
-                  flightContext,
-                  animation,
-                  flightDirection,
-                  fromHeroContext,
-                  toHeroContext,
-                ) =>
-                    thumbnailWidget,
+                flightShuttleBuilder:
+                    (
+                      flightContext,
+                      animation,
+                      flightDirection,
+                      fromHeroContext,
+                      toHeroContext,
+                    ) => (toHeroContext.widget as Hero).child,
                 transitionOnUserGestures: true,
-                child: thumbnailWidget,
+                child: ClipRRect(
+                  borderRadius: borderRadius,
+                  child: thumbnailWidget,
+                ),
               ),
             ),
     );
@@ -217,7 +246,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   void _onTapNoSelectionLimit(BuildContext context, EnteFile file) async {
     final bool shouldToggleSelection =
         (widget.selectedFiles?.files.isNotEmpty ?? false) ||
-            (GalleryContextState.of(context)?.inSelectionMode ?? false);
+        (GalleryContextState.of(context)?.inSelectionMode ?? false);
     if (shouldToggleSelection) {
       if (widget.selectedFiles == null) {
         return;
@@ -226,8 +255,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
     } else {
       if (AppLifecycleService.instance.mediaExtensionAction.action ==
           IntentAction.pick) {
-        final ioFile = await getFile(file);
-        await MediaExtension().setResult("file://${ioFile!.path}");
+        await _returnPickerResult(file);
       } else {
         _routeToDetailPage(file, context);
       }
@@ -240,13 +268,11 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
       _routeToDetailPage(file, context);
     } else {
       _toggleFileSelection(file);
-      // Notify SwipeSelectableFileWidget if it exists
       _handleLongPressForSwipe();
     }
   }
 
   void _handleLongPressForSwipe() {
-    // Use local state to determine if swipe should start
     final swipeHelper = GallerySwipeHelper.of(context);
     if (_currentPointerId != null &&
         _isPointerInside &&
@@ -264,15 +290,27 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   ) async {
     if (AppLifecycleService.instance.mediaExtensionAction.action ==
         IntentAction.pick) {
-      final ioFile = await getFile(file);
-      await MediaExtension().setResult("file://${ioFile!.path}");
+      await _returnPickerResult(file);
     } else {
       _routeToDetailPage(file, context);
     }
   }
 
+  Future<void> _returnPickerResult(EnteFile file) async {
+    final uri = await getPickerResultUri(file);
+    if (uri != null) await MediaExtension().setResult(uri);
+  }
+
   void _routeToDetailPage(EnteFile file, BuildContext context) {
     final galleryFiles = GalleryFilesState.of(context).galleryFiles;
+    final selectedIndex = galleryFiles.indexOf(file);
+    // A refresh can make the tapped tile stale.
+    if (selectedIndex < 0) {
+      _logger.warning(
+        "Not opening viewer; tapped item is no longer in the gallery",
+      );
+      return;
+    }
     // Device folders (local-only contexts) should keep files visible
     // even after deleting from Ente (remote) since they still exist locally
     final galleryType = GalleryContextState.of(context)?.galleryType;
@@ -280,9 +318,10 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
     final page = DetailPage(
       DetailPageConfiguration(
         galleryFiles,
-        galleryFiles.indexOf(file),
+        selectedIndex,
         widget.tag,
         isLocalOnlyContext: isLocalOnlyContext,
+        showGalleryFilmstrip: true,
         galleryType: galleryType,
       ),
     );

@@ -1,24 +1,20 @@
 import 'dart:async';
 import "dart:typed_data";
 
+import "package:ente_components/ente_components.dart";
 import "package:ente_crypto/ente_crypto.dart";
+import "package:ente_strings/ente_strings.dart";
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/errors.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
-import "package:photos/generated/l10n.dart";
 import "package:photos/service_locator.dart";
 import "package:photos/services/account/user_service.dart";
-import "package:photos/theme/colors.dart";
-import "package:photos/theme/ente_theme.dart";
-import "package:photos/theme/text_style.dart";
 import 'package:photos/ui/account/recovery_page.dart';
 import 'package:photos/ui/components/buttons/button_widget.dart'
     show ButtonAction;
-import "package:photos/ui/components/buttons/button_widget_v2.dart";
-import "package:photos/ui/components/text_input_widget_v2.dart";
 import 'package:photos/ui/tabs/home_widget.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/email_util.dart';
@@ -43,10 +39,7 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
     _volatilePassword = Configuration.instance.getVolatilePassword();
     if (_volatilePassword != null) {
       _passwordController.text = _volatilePassword!;
-      Future.delayed(
-        Duration.zero,
-        () => verifyPassword(_volatilePassword!),
-      );
+      Future.delayed(Duration.zero, () => verifyPassword(_volatilePassword!));
     }
   }
 
@@ -58,71 +51,74 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
-    final textTheme = getEnteTextTheme(context);
+    final colors = context.componentColors;
     final isFormValid = _passwordController.text.isNotEmpty;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: colorScheme.backgroundColour,
+      backgroundColor: colors.backgroundBase,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: colorScheme.backgroundColour,
+        backgroundColor: colors.backgroundBase,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          color: colorScheme.content,
+          color: colors.iconColor,
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
         title: Text(
-          AppLocalizations.of(context).enterPassword,
-          style: textTheme.largeBold,
+          context.strings.enterPassword,
+          style: TextStyles.large.copyWith(color: colors.textBase),
         ),
         centerTitle: true,
       ),
-      body: _getBody(colorScheme, textTheme),
+      body: _getBody(),
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: ButtonWidgetV2(
+        child: ButtonComponent(
           key: const ValueKey("verifyPasswordButton"),
-          buttonType: ButtonTypeV2.primary,
-          labelText: AppLocalizations.of(context).logInLabel,
+          label: context.strings.logInLabel,
           isDisabled: !isFormValid,
-          onTap: isFormValid
-              ? () async {
-                  FocusScope.of(context).unfocus();
-                  await verifyPassword(_passwordController.text);
-                }
-              : null,
+          onTap: isFormValid ? _onVerifyPasswordPressed : null,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
+  Future<void> _onVerifyPasswordPressed() async {
+    if (_passwordController.text.isEmpty) {
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    await verifyPassword(_passwordController.text);
+  }
+
   Future<void> verifyPassword(String password) async {
     FocusScope.of(context).unfocus();
-    final dialog =
-        createProgressDialog(context, AppLocalizations.of(context).pleaseWait);
+    final dialog = createProgressDialog(context, context.strings.pleaseWait);
     await dialog.show();
     try {
       final kek = await Configuration.instance.decryptSecretsAndGetKeyEncKey(
         password,
         Configuration.instance.getKeyAttributes()!,
       );
+      unawaited(installSourceService.autoAttributePendingSource());
       _registerSRPForExistingUsers(kek).ignore();
     } on KeyDerivationError catch (e, s) {
       _logger.severe("Password verification failed", e, s);
       await dialog.hide();
+      if (!mounted) return;
       final dialogChoice = await showChoiceDialog(
         context,
-        title: AppLocalizations.of(context).recreatePasswordTitle,
-        body: AppLocalizations.of(context).recreatePasswordBody,
-        firstButtonLabel: AppLocalizations.of(context).useRecoveryKey,
+        title: context.strings.recreatePasswordTitle,
+        body: context.strings.recreatePasswordBody,
+        firstButtonLabel: context.strings.useRecoveryKey,
       );
-      if (dialogChoice!.action == ButtonAction.first) {
+      if (dialogChoice?.action == ButtonAction.first) {
+        if (!mounted) return;
         // ignore: unawaited_futures
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -133,20 +129,22 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
         );
       }
       return;
-    } catch (e, s) {
-      _logger.severe("Password verification failed", e, s);
+    } catch (e) {
+      _logger.warning("Password verification failed: $e");
       await dialog.hide();
+      if (!mounted) return;
       final dialogChoice = await showChoiceDialog(
         context,
-        title: AppLocalizations.of(context).incorrectPasswordTitle,
-        body: AppLocalizations.of(context).pleaseTryAgain,
-        firstButtonLabel: AppLocalizations.of(context).contactSupport,
-        secondButtonLabel: AppLocalizations.of(context).ok,
+        title: context.strings.incorrectPasswordTitle,
+        body: context.strings.pleaseTryAgain,
+        firstButtonLabel: context.strings.contactSupport,
+        secondButtonLabel: context.strings.ok,
       );
-      if (dialogChoice!.action == ButtonAction.first) {
+      if (dialogChoice?.action == ButtonAction.first) {
+        if (!mounted) return;
         await sendLogs(
           context,
-          AppLocalizations.of(context).contactSupport,
+          context.strings.contactSupport,
           "support@ente.com",
           postShare: () {},
         );
@@ -157,6 +155,7 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
     Configuration.instance.resetVolatilePassword();
     await flagService.tryRefreshFlags();
     Bus.instance.fire(SubscriptionPurchasedEvent());
+    if (!mounted) return;
     unawaited(
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
@@ -189,7 +188,7 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
     }
   }
 
-  Widget _getBody(EnteColorScheme colorScheme, EnteTextTheme textTheme) {
+  Widget _getBody() {
     return SafeArea(
       child: AutofillGroup(
         child: Padding(
@@ -199,28 +198,29 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
             children: [
               const SizedBox(height: 12),
               Visibility(
-                // hidden textForm for suggesting auto-fill service for saving
-                // password
+                // Give autofill the account email to pair with the password.
                 visible: false,
                 child: TextFormField(
-                  autofillHints: const [
-                    AutofillHints.email,
-                  ],
+                  autofillHints: const [AutofillHints.email],
                   autocorrect: false,
                   keyboardType: TextInputType.emailAddress,
                   initialValue: email,
                   textInputAction: TextInputAction.next,
                 ),
               ),
-              TextInputWidgetV2(
+              TextInputComponent(
                 key: const ValueKey("passwordInputField"),
-                label: AppLocalizations.of(context).password,
+                label: context.strings.password,
                 isRequired: true,
-                hintText: AppLocalizations.of(context).enterYourPassword,
-                textEditingController: _passwordController,
+                hintText: context.strings.enterYourPassword,
+                controller: _passwordController,
                 isPasswordInput: true,
-                autoCorrect: false,
-                onChange: (value) {
+                autocorrect: false,
+                shouldUnfocusOnClearOrSubmit: true,
+                onSubmit: _passwordController.text.isNotEmpty
+                    ? (_) => _onVerifyPasswordPressed()
+                    : null,
+                onChanged: (value) {
                   setState(() {});
                 },
               ),
@@ -228,25 +228,26 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ButtonWidgetV2(
-                    buttonType: ButtonTypeV2.link,
-                    labelText: AppLocalizations.of(context).changeEmail,
-                    buttonSize: ButtonSizeV2.small,
+                  ButtonComponent(
+                    variant: ButtonComponentVariant.link,
+                    label: context.strings.changeEmail,
+                    size: ButtonComponentSize.small,
                     onTap: () async {
                       final dialog = createProgressDialog(
                         context,
-                        AppLocalizations.of(context).pleaseWait,
+                        context.strings.pleaseWait,
                       );
                       await dialog.show();
                       await Configuration.instance.logout();
                       await dialog.hide();
+                      if (!mounted) return;
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     },
                   ),
-                  ButtonWidgetV2(
-                    buttonType: ButtonTypeV2.link,
-                    labelText: AppLocalizations.of(context).forgotPassword,
-                    buttonSize: ButtonSizeV2.small,
+                  ButtonComponent(
+                    variant: ButtonComponentVariant.link,
+                    label: context.strings.forgotPassword,
+                    size: ButtonComponentSize.small,
                     onTap: () async {
                       // ignore: unawaited_futures
                       Navigator.of(context).push(

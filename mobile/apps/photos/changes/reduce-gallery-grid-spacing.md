@@ -1,0 +1,1 @@
+- Reduced the spacing between photos in the gallery.

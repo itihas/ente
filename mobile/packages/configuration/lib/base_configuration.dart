@@ -1,5 +1,3 @@
-library configuration;
-
 import 'dart:convert';
 import 'dart:io' as io;
 
@@ -8,6 +6,7 @@ import 'package:ente_base/models/database.dart';
 import 'package:ente_base/models/key_attributes.dart';
 import 'package:ente_base/models/key_gen_result.dart';
 import 'package:ente_base/models/private_key_attributes.dart';
+import 'package:ente_configuration/app_identity.dart';
 import 'package:ente_configuration/constants.dart';
 import 'package:ente_crypto_api/ente_crypto_api.dart';
 import 'package:ente_events/event_bus.dart';
@@ -22,7 +21,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuple/tuple.dart';
 
-class BaseConfiguration {
+export 'package:ente_configuration/app_identity.dart';
+
+abstract class BaseConfiguration {
   static const endpoint = String.fromEnvironment(
     "endpoint",
     defaultValue: kDefaultProductionEndpoint,
@@ -36,6 +37,7 @@ class BaseConfiguration {
   static const userIDKey = "user_id";
   static const endPointKey = "endpoint";
   static const lastTempFolderClearTimeKey = "last_temp_folder_clear_time";
+  static const accountSecureStorageKeys = [keyKey, secretKeyKey];
 
   final kTempFolderDeletionTimeBuffer = const Duration(days: 1).inMicroseconds;
 
@@ -52,25 +54,29 @@ class BaseConfiguration {
 
   String? _volatilePassword;
 
-  // Descendants can override to append keys that must be cleared.
-  List<String> get secureStorageKeys => [];
+  EnteAppIdentity get appIdentity;
+
+  List<String> get secureStorageKeys;
 
   Future<void> init(List<EnteBaseDatabase> dbs) async {
     _databases = dbs;
     _tempDocumentsDirPath =
-        "${p.join((await getTemporaryDirectory()).path, "temp")}${p.separator}";
+        "${p.join((await getApplicationCacheDirectory()).path, "temp")}${p.separator}";
     _preferences = await SharedPreferences.getInstance();
     _secureStorage = const FlutterSecureStorage(
       iOptions: IOSOptions(
         accessibility: KeychainAccessibility.first_unlock_this_device,
       ),
     );
-    await _setupKeys();
+    // Set up folders before keys so the cache directory is initialized before
+    // _setupKeys() can trigger an auto-logout whose cleanup needs it.
     await _setupFolders();
+    await _setupKeys();
     _logger.info("User ID: ${getUserID()}");
   }
 
   Future<void> logout({bool autoLogout = false}) async {
+    await _clearTempFolderOnLogout();
     await _preferences.clear();
     await resetSecureStorage();
     for (final db in _databases) {
@@ -80,6 +86,19 @@ class BaseConfiguration {
     _cachedToken = null;
     _secretKey = null;
     Bus.instance.fire(SignedOutEvent());
+  }
+
+  Future<void> _clearTempFolderOnLogout() async {
+    final tempDirectory = io.Directory(_tempDocumentsDirPath);
+    try {
+      if (await tempDirectory.exists()) {
+        await tempDirectory.delete(recursive: true);
+      }
+      await tempDirectory.create(recursive: true);
+      _logger.info("Cleared temp folder on logout");
+    } catch (e, s) {
+      _logger.warning("Failed to clear temp folder on logout", e, s);
+    }
   }
 
   Future<void> resetSecureStorage() async {
@@ -93,18 +112,13 @@ class BaseConfiguration {
   }
 
   Future<KeyGenResult> generateKey(String password) async {
-    // Create a master key
     final masterKey = CryptoUtil.generateKey();
 
-    // Create a recovery key
     final recoveryKey = CryptoUtil.generateKey();
 
-    // Encrypt master key and recovery key with each other
     final encryptedMasterKey = CryptoUtil.encryptSync(masterKey, recoveryKey);
     final encryptedRecoveryKey = CryptoUtil.encryptSync(recoveryKey, masterKey);
 
-    // Derive a key from the password that will be used to encrypt and
-    // decrypt the master key
     final kekSalt = CryptoUtil.getSaltToDeriveKey();
     final derivedKeyResult = await CryptoUtil.deriveSensitiveKey(
       utf8.encode(password),
@@ -112,14 +126,16 @@ class BaseConfiguration {
     );
     final loginKey = await CryptoUtil.deriveLoginKey(derivedKeyResult.key);
 
-    // Encrypt the key with this derived key
-    final encryptedKeyData =
-        CryptoUtil.encryptSync(masterKey, derivedKeyResult.key);
+    final encryptedKeyData = CryptoUtil.encryptSync(
+      masterKey,
+      derivedKeyResult.key,
+    );
 
-    // Generate a public-private keypair and encrypt the latter
     final keyPair = CryptoUtil.generateKeyPair();
-    final encryptedSecretKeyData =
-        CryptoUtil.encryptSync(keyPair.secretKey, masterKey);
+    final encryptedSecretKeyData = CryptoUtil.encryptSync(
+      keyPair.secretKey,
+      masterKey,
+    );
 
     final attributes = KeyAttributes(
       CryptoUtil.bin2base64(kekSalt),
@@ -146,11 +162,8 @@ class BaseConfiguration {
   Future<Tuple2<KeyAttributes, Uint8List>> getAttributesForNewPassword(
     String password,
   ) async {
-    // Get master key
     final masterKey = getKey();
 
-    // Derive a key from the password that will be used to encrypt and
-    // decrypt the master key
     final kekSalt = CryptoUtil.getSaltToDeriveKey();
     final derivedKeyResult = await CryptoUtil.deriveSensitiveKey(
       utf8.encode(password),
@@ -158,9 +171,10 @@ class BaseConfiguration {
     );
     final loginKey = await CryptoUtil.deriveLoginKey(derivedKeyResult.key);
 
-    // Encrypt the key with this derived key
-    final encryptedKeyData =
-        CryptoUtil.encryptSync(masterKey!, derivedKeyResult.key);
+    final encryptedKeyData = CryptoUtil.encryptSync(
+      masterKey!,
+      derivedKeyResult.key,
+    );
 
     final existingAttributes = getKeyAttributes();
 
@@ -174,10 +188,6 @@ class BaseConfiguration {
     return Tuple2(updatedAttributes, loginKey);
   }
 
-  // decryptSecretsAndGetLoginKey decrypts the master key and recovery key
-  // with the given password and save them in local secure storage.
-  // This method also returns the keyEncKey that can be used for performing
-  // SRP setup for existing users.
   Future<Uint8List> decryptSecretsAndGetKeyEncKey(
     String password,
     KeyAttributes attributes, {
@@ -218,14 +228,11 @@ class BaseConfiguration {
       secretKey,
     );
     _logger.info('appToken done');
-    await setToken(
-      CryptoUtil.bin2base64(token, urlSafe: true),
-    );
+    await setToken(CryptoUtil.bin2base64(token, urlSafe: true));
     return keyEncryptionKey;
   }
 
   Future<void> recover(String recoveryKey) async {
-    // check if user has entered mnemonic code
     if (recoveryKey.contains(' ')) {
       final split = recoveryKey.split(' ');
       if (split.length != mnemonicKeyWordCount) {
@@ -269,9 +276,7 @@ class BaseConfiguration {
       CryptoUtil.base642bin(attributes.publicKey),
       secretKey,
     );
-    await setToken(
-      CryptoUtil.bin2base64(token, urlSafe: true),
-    );
+    await setToken(CryptoUtil.bin2base64(token, urlSafe: true));
   }
 
   String getHttpEndpoint() {
@@ -282,9 +287,6 @@ class BaseConfiguration {
     return savedEndpoint;
   }
 
-  // isEnteProduction checks if the current endpoint is the default production
-  // endpoint. This is used to determine if the app is in production mode or
-  // not. The default production endpoint is set in the environment variable
   bool isEnteProduction() {
     return getHttpEndpoint() == kDefaultProductionEndpoint;
   }
@@ -348,18 +350,12 @@ class BaseConfiguration {
 
   Future<void> setKey(String key) async {
     _key = key;
-    await _secureStorage.write(
-      key: keyKey,
-      value: key,
-    );
+    await _secureStorage.write(key: keyKey, value: key);
   }
 
   Future<void> setSecretKey(String? secretKey) async {
     _secretKey = secretKey;
-    await _secureStorage.write(
-      key: secretKeyKey,
-      value: secretKey,
-    );
+    await _secureStorage.write(key: secretKeyKey, value: secretKey);
   }
 
   Uint8List? getKey() {
@@ -368,6 +364,15 @@ class BaseConfiguration {
 
   Uint8List? getSecretKey() {
     return _secretKey == null ? null : CryptoUtil.base642bin(_secretKey!);
+  }
+
+  String decryptDeleteChallenge(String encryptedChallenge) {
+    final challenge = CryptoUtil.openSealSync(
+      CryptoUtil.base642bin(encryptedChallenge),
+      CryptoUtil.base642bin(getKeyAttributes()!.publicKey),
+      getSecretKey()!,
+    );
+    return utf8.decode(challenge);
   }
 
   Uint8List getRecoveryKey() {
@@ -379,7 +384,7 @@ class BaseConfiguration {
     );
   }
 
-  // Caution: This directory is cleared on app start
+  // This directory is cleared on app start.
   String getTempDirectory() {
     return _tempDocumentsDirPath;
   }
@@ -418,15 +423,13 @@ class BaseConfiguration {
       _secretKey = await _secureStorage.read(key: secretKeyKey);
     } catch (e, s) {
       _logger.severe("Configuration init failed", e, s);
-      /*
-      Check if it's a known is related to reading secret from secure storage
-      on android https://github.com/mogol/flutter_secure_storage/issues/541
-       */
+      // BadPaddingException can mean Android secure storage is inaccessible.
+      // https://github.com/mogol/flutter_secure_storage/issues/541
       if (e is PlatformException) {
         final PlatformException error = e;
         final bool isBadPaddingError =
             error.toString().contains('BadPaddingException') ||
-                (error.message ?? '').contains('BadPaddingException');
+            (error.message ?? '').contains('BadPaddingException');
         if (isBadPaddingError) {
           await logout(autoLogout: true);
           return;

@@ -1,45 +1,99 @@
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import GeneratingRiveIndicator from "@/components/chat/GeneratingRiveIndicator";
+import {
+    STREAMING_SELECTION_KEY,
+    type BranchSwitcher,
+} from "@/services/chat/branching";
+import type { ChatAttachment, ChatMessage } from "@/services/chat/store";
+import {
+    handleExternalLinkClick,
+    safeExternalUrl,
+} from "@/services/external-links";
+import { noteSourceErrorMessage, openNoteDocument } from "@/services/notes";
 import {
     ArrowLeft01Icon,
     ArrowRight01Icon,
     Attachment01Icon,
+    Cancel01Icon,
     Copy01Icon,
     Edit01Icon,
     RepeatIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Box, IconButton, Stack, Typography } from "@mui/material";
-import type { SxProps, Theme } from "@mui/material/styles";
-import { MarkdownRenderer } from "components/MarkdownRenderer";
-import GeneratingRiveIndicator from "components/chat/GeneratingRiveIndicator";
-import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
-    STREAMING_SELECTION_KEY,
-    type BranchSwitcher,
-} from "services/chat/branching";
-import type { ChatAttachment, ChatMessage } from "services/chat/store";
+    Box,
+    Chip,
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    IconButton,
+    Link,
+    Stack,
+    Typography,
+} from "@mui/material";
+import type { SxProps, Theme } from "@mui/material/styles";
+import type { SystemStyleObject } from "@mui/system";
+import { useBaseContext } from "ente-base/context";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 
-type DocumentAttachment = {
+interface DocumentAttachment {
     id: string;
     name: string;
     text: string;
     size: number;
-};
+}
 
-type IconProps = { size: number; strokeWidth: number };
+interface IconProps {
+    size: number;
+    strokeWidth: number;
+}
 
-export type ParsedDocuments = { text: string; documents: DocumentAttachment[] };
+const sourceLinkSx = {
+    border: 0,
+    p: 0,
+    bgcolor: "transparent",
+    fontFamily: "inherit",
+    fontSize: "12px",
+    lineHeight: "15px",
+    fontWeight: 500,
+    color: "accent.main",
+    cursor: "pointer",
+} as const;
+
+const sourceChipSx = {
+    height: 25,
+    borderRadius: 1,
+    bgcolor: "fill.faintHover",
+    color: "text.base",
+    fontSize: "12px",
+    lineHeight: "15px",
+    fontWeight: 500,
+    cursor: "pointer",
+    "& .MuiChip-label": { px: 1.25 },
+    "&:hover": { bgcolor: "fill.muted" },
+} as const;
+
+const sourceChipLabel = (label: string, sourceCount: number) =>
+    sourceCount > 1 ? `${label} +${sourceCount - 1}` : label;
+
+interface ParsedDocuments {
+    text: string;
+    documents: DocumentAttachment[];
+}
 
 export interface ChatMessageListProps {
     messages: ChatMessage[];
     attachmentPreviews: Record<string, string>;
     branchSwitchers: Record<string, BranchSwitcher>;
     loadingPhrase: string | null;
+    preparationStatus: string | null;
     loadingDots: number;
     isGenerating: boolean;
     isStreamingOutro: boolean;
     stickToBottom: boolean;
     onStickToBottomChange: (value: boolean) => void;
-    scrollContainerRef: React.MutableRefObject<HTMLDivElement | null>;
+    scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     onScroll: () => void;
     onUserScrollIntent: () => void;
     onOpenAttachment: (
@@ -60,8 +114,11 @@ export interface ChatMessageListProps {
     userMessageTextSx: SxProps<Theme>;
     assistantTextSx: SxProps<Theme>;
     assistantMarkdownSx: SxProps<Theme>;
-    streamingMessageSx: SxProps<Theme>;
+    streamingMessageSx: SystemStyleObject<Theme>;
     actionButtonSx: SxProps<Theme>;
+    dialogTitleSx: SystemStyleObject<Theme>;
+    dialogCloseButtonSx: SystemStyleObject<Theme>;
+    dialogCloseIconProps: IconProps;
     smallIconProps: IconProps;
     actionIconProps: IconProps;
 }
@@ -164,11 +221,193 @@ const AiSafetyFooter = memo(() => {
     );
 });
 
+type MessageSource = NonNullable<ChatMessage["sources"]>[number];
+type PackSource = Extract<MessageSource, { type: "ensuPack" }>;
+type LocalNoteSource = Extract<MessageSource, { type: "localNote" }>;
+
+const PackSourceCard = memo(
+    ({ source, number }: { source: PackSource; number: number }) => {
+        const { showMiniDialog } = useBaseContext();
+        const { citation } = source;
+        return (
+            <Stack
+                sx={{
+                    gap: 1.25,
+                    p: 2,
+                    borderRadius: 1.5,
+                    bgcolor: "fill.faint",
+                }}
+            >
+                <Typography variant="mini" sx={{ color: "text.muted" }}>
+                    SOURCE {number} · ENSU PACK ·{" "}
+                    {citation.datasetLabel.toUpperCase()}
+                </Typography>
+                <Typography variant="h6">{citation.title}</Typography>
+                <Divider sx={{ my: 0.25 }} />
+                <Typography variant="small" sx={{ color: "text.muted" }}>
+                    {citation.credit}
+                </Typography>
+                <Stack direction="row" sx={{ gap: 2, flexWrap: "wrap" }}>
+                    <Link
+                        href={safeExternalUrl(citation.sourceUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        underline="hover"
+                        onClick={(event) =>
+                            handleExternalLinkClick(event, showMiniDialog)
+                        }
+                        sx={sourceLinkSx}
+                    >
+                        Open source ↗
+                    </Link>
+                    <Link
+                        href={safeExternalUrl(citation.licenseUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        underline="hover"
+                        onClick={(event) =>
+                            handleExternalLinkClick(event, showMiniDialog)
+                        }
+                        sx={sourceLinkSx}
+                    >
+                        {citation.licenseLabel} ↗
+                    </Link>
+                </Stack>
+            </Stack>
+        );
+    },
+);
+
+const LocalNoteSourceCard = memo(
+    ({ source, number }: { source: LocalNoteSource; number: number }) => {
+        const [openError, setOpenError] = useState<string | null>(null);
+        const { reference } = source;
+        return (
+            <Stack
+                sx={{
+                    gap: 1.25,
+                    p: 2,
+                    borderRadius: 1.5,
+                    bgcolor: "fill.faint",
+                }}
+            >
+                <Typography variant="mini" sx={{ color: "text.muted" }}>
+                    SOURCE {number} · YOUR NOTES
+                    {reference.collectionLabel && (
+                        <> · {reference.collectionLabel.toUpperCase()}</>
+                    )}
+                </Typography>
+                <Typography variant="h6">{reference.title}</Typography>
+                {reference.section && (
+                    <Typography variant="small" sx={{ color: "text.muted" }}>
+                        {reference.section}
+                    </Typography>
+                )}
+                <Divider sx={{ my: 0.25 }} />
+                <Typography variant="small" sx={{ color: "text.muted" }}>
+                    {reference.documentId}
+                </Typography>
+                <Link
+                    component="button"
+                    type="button"
+                    underline="hover"
+                    onClick={() => {
+                        setOpenError(null);
+                        void openNoteDocument(
+                            reference.collectionId,
+                            reference.documentId,
+                            reference.indexedRevision,
+                        ).catch((error: unknown) =>
+                            setOpenError(noteSourceErrorMessage(error)),
+                        );
+                    }}
+                    sx={{ ...sourceLinkSx, alignSelf: "flex-start" }}
+                >
+                    Open note ↗
+                </Link>
+                {openError && (
+                    <Typography variant="small" sx={{ color: "critical.main" }}>
+                        {openError}
+                    </Typography>
+                )}
+            </Stack>
+        );
+    },
+);
+
+const KnowledgeSourcesDialog = memo(
+    ({
+        sources,
+        onClose,
+        dialogTitleSx,
+        closeButtonSx,
+        closeIconProps,
+    }: {
+        sources: MessageSource[];
+        onClose: () => void;
+        dialogTitleSx: SystemStyleObject<Theme>;
+        closeButtonSx: SystemStyleObject<Theme>;
+        closeIconProps: IconProps;
+    }) => (
+        <Dialog
+            open
+            onClose={onClose}
+            fullWidth
+            maxWidth="sm"
+            slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        >
+            <DialogTitle
+                sx={[
+                    dialogTitleSx,
+                    {
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1,
+                        px: 3,
+                        py: 1.5,
+                        pr: 1.5,
+                    },
+                ]}
+            >
+                <Box component="span">Sources</Box>
+                <IconButton
+                    aria-label="Close sources"
+                    onClick={onClose}
+                    sx={closeButtonSx}
+                >
+                    <HugeiconsIcon icon={Cancel01Icon} {...closeIconProps} />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ px: 3, pt: 1, pb: 3 }}>
+                <Stack sx={{ gap: 1.5 }}>
+                    {sources.map((source, index) =>
+                        source.type === "ensuPack" ? (
+                            <PackSourceCard
+                                key={`${source.type}:${source.citation.datasetId}:${source.citation.sourceUrl}:${index}`}
+                                source={source}
+                                number={index + 1}
+                            />
+                        ) : (
+                            <LocalNoteSourceCard
+                                key={`${source.type}:${source.reference.collectionId}:${source.reference.documentId}:${index}`}
+                                source={source}
+                                number={index + 1}
+                            />
+                        ),
+                    )}
+                </Stack>
+            </DialogContent>
+        </Dialog>
+    ),
+);
+
 interface MessageRowProps {
     message: ChatMessage;
     isLastMessage: boolean;
     branchSwitchers: Record<string, BranchSwitcher>;
     loadingPhrase: string | null;
+    preparationStatus: string | null;
     loadingDots: number;
     isGenerating: boolean;
     isStreamingOutro: boolean;
@@ -189,8 +428,11 @@ interface MessageRowProps {
     userBubbleBackground: string;
     userMessageTextSx: SxProps<Theme>;
     assistantMarkdownSx: SxProps<Theme>;
-    streamingMessageSx: SxProps<Theme>;
+    streamingMessageSx: SystemStyleObject<Theme>;
     actionButtonSx: SxProps<Theme>;
+    dialogTitleSx: SystemStyleObject<Theme>;
+    dialogCloseButtonSx: SystemStyleObject<Theme>;
+    dialogCloseIconProps: IconProps;
     smallIconProps: IconProps;
     actionIconProps: IconProps;
 }
@@ -201,6 +443,7 @@ const MessageRow = memo(
         isLastMessage,
         branchSwitchers,
         loadingPhrase,
+        preparationStatus,
         loadingDots,
         isGenerating,
         isStreamingOutro,
@@ -220,12 +463,39 @@ const MessageRow = memo(
         assistantMarkdownSx,
         streamingMessageSx,
         actionButtonSx,
+        dialogTitleSx,
+        dialogCloseButtonSx,
+        dialogCloseIconProps,
         smallIconProps,
         actionIconProps,
     }: MessageRowProps) => {
         const isSelf = message.sender === "self";
         const isStreaming = message.messageUuid === STREAMING_SELECTION_KEY;
         const isSynthetic = !!message.isSynthetic;
+        const sources = message.sources ?? [];
+        const citations = sources
+            .filter(
+                (source): source is PackSource => source.type === "ensuPack",
+            )
+            .map(({ citation }) => citation);
+        const localNotes = sources.filter(
+            (source): source is LocalNoteSource => source.type === "localNote",
+        );
+        const packCount = new Set(citations.map(({ datasetId }) => datasetId))
+            .size;
+        const noteCount = new Set(
+            localNotes.map(({ reference }) => reference.collectionId),
+        ).size;
+        const packSourceLabel = citations.length
+            ? sourceChipLabel(citations[0]!.datasetLabel, packCount)
+            : undefined;
+        const noteSourceLabel = localNotes.length
+            ? sourceChipLabel(
+                  localNotes[0]!.reference.collectionLabel ?? "Your Notes",
+                  noteCount,
+              )
+            : undefined;
+        const [showSources, setShowSources] = useState(false);
         const switcher = branchSwitchers[message.messageUuid];
         const showSwitcher = !isSynthetic && !!switcher && switcher.total > 1;
         const timestamp = formatTime(message.createdAt);
@@ -378,19 +648,62 @@ const MessageRow = memo(
                                         isGenerating={
                                             isGenerating && isStreaming
                                         }
-                                        isOutroPhase={
-                                            isStreaming && isStreamingOutro
-                                        }
+                                        isOutroPhase={isStreamingOutro}
                                         fallbackText={`${loadingPhrase ?? "Generating your reply"}${dots}`}
+                                        status={preparationStatus}
                                     />
                                 </Stack>
                             ) : (
-                                <Box sx={assistantMarkdownSx}>
-                                    <MarkdownRenderer
-                                        content={displayText}
-                                        className="markdown-content"
-                                    />
-                                </Box>
+                                <Stack
+                                    sx={{ gap: 1, alignItems: "flex-start" }}
+                                >
+                                    <Box sx={assistantMarkdownSx}>
+                                        <MarkdownRenderer
+                                            content={displayText}
+                                            className="markdown-content"
+                                        />
+                                    </Box>
+                                    {(packSourceLabel || noteSourceLabel) && (
+                                        <Stack
+                                            direction="row"
+                                            sx={{ gap: 0.75, flexWrap: "wrap" }}
+                                        >
+                                            {packSourceLabel && (
+                                                <Chip
+                                                    size="small"
+                                                    label={packSourceLabel}
+                                                    onClick={() =>
+                                                        setShowSources(true)
+                                                    }
+                                                    sx={sourceChipSx}
+                                                />
+                                            )}
+                                            {noteSourceLabel && (
+                                                <Chip
+                                                    size="small"
+                                                    label={noteSourceLabel}
+                                                    onClick={() =>
+                                                        setShowSources(true)
+                                                    }
+                                                    sx={sourceChipSx}
+                                                />
+                                            )}
+                                        </Stack>
+                                    )}
+                                    {showSources && (
+                                        <KnowledgeSourcesDialog
+                                            sources={sources}
+                                            onClose={() =>
+                                                setShowSources(false)
+                                            }
+                                            dialogTitleSx={dialogTitleSx}
+                                            closeButtonSx={dialogCloseButtonSx}
+                                            closeIconProps={
+                                                dialogCloseIconProps
+                                            }
+                                        />
+                                    )}
+                                </Stack>
                             )}
                         </Box>
                     )}
@@ -491,7 +804,6 @@ const MessageRow = memo(
                                                 aria-label="Previous branch"
                                                 sx={actionButtonSx}
                                                 onClick={() =>
-                                                    switcher &&
                                                     onPrevBranch(switcher)
                                                 }
                                             >
@@ -510,16 +822,13 @@ const MessageRow = memo(
                                                     textAlign: "center",
                                                 }}
                                             >
-                                                {switcher
-                                                    ? switcher.currentIndex + 1
-                                                    : 1}
-                                                /{switcher ? switcher.total : 1}
+                                                {switcher.currentIndex + 1}/
+                                                {switcher.total}
                                             </Typography>
                                             <IconButton
                                                 aria-label="Next branch"
                                                 sx={actionButtonSx}
                                                 onClick={() =>
-                                                    switcher &&
                                                     onNextBranch(switcher)
                                                 }
                                             >
@@ -564,7 +873,6 @@ const MessageRow = memo(
                                                 aria-label="Previous branch"
                                                 sx={actionButtonSx}
                                                 onClick={() =>
-                                                    switcher &&
                                                     onPrevBranch(switcher)
                                                 }
                                             >
@@ -583,16 +891,13 @@ const MessageRow = memo(
                                                     textAlign: "center",
                                                 }}
                                             >
-                                                {switcher
-                                                    ? switcher.currentIndex + 1
-                                                    : 1}
-                                                /{switcher ? switcher.total : 1}
+                                                {switcher.currentIndex + 1}/
+                                                {switcher.total}
                                             </Typography>
                                             <IconButton
                                                 aria-label="Next branch"
                                                 sx={actionButtonSx}
                                                 onClick={() =>
-                                                    switcher &&
                                                     onNextBranch(switcher)
                                                 }
                                             >
@@ -620,6 +925,7 @@ export const ChatMessageList = memo(
         attachmentPreviews,
         branchSwitchers,
         loadingPhrase,
+        preparationStatus,
         loadingDots,
         isGenerating,
         isStreamingOutro,
@@ -643,6 +949,9 @@ export const ChatMessageList = memo(
         assistantMarkdownSx,
         streamingMessageSx,
         actionButtonSx,
+        dialogTitleSx,
+        dialogCloseButtonSx,
+        dialogCloseIconProps,
         smallIconProps,
         actionIconProps,
     }: ChatMessageListProps) => {
@@ -684,6 +993,9 @@ export const ChatMessageList = memo(
                         isLastMessage={message.messageUuid === lastMessageUuid}
                         branchSwitchers={branchSwitchers}
                         loadingPhrase={isStreaming ? loadingPhrase : null}
+                        preparationStatus={
+                            isStreaming ? preparationStatus : null
+                        }
                         loadingDots={isStreaming ? loadingDots : 0}
                         isGenerating={isGenerating}
                         isStreamingOutro={isStreamingOutro}
@@ -703,6 +1015,9 @@ export const ChatMessageList = memo(
                         assistantMarkdownSx={assistantMarkdownSx}
                         streamingMessageSx={streamingMessageSx}
                         actionButtonSx={actionButtonSx}
+                        dialogTitleSx={dialogTitleSx}
+                        dialogCloseButtonSx={dialogCloseButtonSx}
+                        dialogCloseIconProps={dialogCloseIconProps}
                         smallIconProps={smallIconProps}
                         actionIconProps={actionIconProps}
                     />
@@ -714,11 +1029,15 @@ export const ChatMessageList = memo(
                 assistantMarkdownSx,
                 attachmentPreviews,
                 branchSwitchers,
+                dialogCloseButtonSx,
+                dialogCloseIconProps,
+                dialogTitleSx,
                 formatTime,
                 isGenerating,
                 isStreamingOutro,
                 loadingDots,
                 loadingPhrase,
+                preparationStatus,
                 onCopyMessage,
                 onEditMessage,
                 onNextBranch,

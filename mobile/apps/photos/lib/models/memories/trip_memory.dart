@@ -1,4 +1,4 @@
-import "package:photos/generated/l10n.dart";
+import "package:ente_strings/ente_strings.dart";
 import "package:photos/models/location/location.dart";
 import "package:photos/models/memories/memory.dart";
 import "package:photos/models/memories/smart_memory.dart";
@@ -7,7 +7,6 @@ class TripMemory extends SmartMemory {
   final Location location;
   final String? tripKey;
 
-  // Stuff for the title
   String? locationName;
   int? tripYear;
 
@@ -16,20 +15,13 @@ class TripMemory extends SmartMemory {
     int firstDateToShow,
     int lastDateToShow,
     this.location, {
-    String? id,
+    super.id,
     this.locationName,
     this.tripYear,
     this.tripKey,
     super.firstCreationTime,
     super.lastCreationTime,
-  }) : super(
-          memories,
-          MemoryType.trips,
-          '',
-          firstDateToShow,
-          lastDateToShow,
-          id: id,
-        );
+  }) : super(memories, MemoryType.trips, '', firstDateToShow, lastDateToShow);
 
   TripMemory copyWith({
     List<Memory>? memories,
@@ -54,7 +46,7 @@ class TripMemory extends SmartMemory {
   }
 
   @override
-  String createTitle(AppLocalizations locals, String languageCode) {
+  String createTitle(StringsLocalizations locals, String languageCode) {
     assert(locationName != null || tripYear != null);
     if (locationName != null) {
       if (locationName!.toLowerCase().contains("base")) return locationName!;

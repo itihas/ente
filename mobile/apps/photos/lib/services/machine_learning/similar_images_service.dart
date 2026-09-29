@@ -26,8 +26,6 @@ class SimilarImagesService {
   static final SimilarImagesService instance =
       SimilarImagesService._privateConstructor();
 
-  /// Returns a list of SimilarFiles, where each SimilarFiles object contains
-  /// a list of files that are perceptually similar
   Future<List<SimilarFiles>> getSimilarFiles(
     double distanceThreshold, {
     bool exact = false,
@@ -35,8 +33,11 @@ class SimilarImagesService {
   }) async {
     try {
       final now = DateTime.now();
-      final List<SimilarFiles> result =
-          await _getSimilarFiles(distanceThreshold, exact, forceRefresh);
+      final List<SimilarFiles> result = await _getSimilarFiles(
+        distanceThreshold,
+        exact,
+        forceRefresh,
+      );
       final duration = DateTime.now().difference(now);
       _logger.info(
         "Found ${result.length} similar files in ${duration.inSeconds} seconds for threshold $distanceThreshold and exact $exact",
@@ -59,13 +60,11 @@ class SimilarImagesService {
     await mlDataDB.checkMigrateFillClipVectorDB();
     w?.log("checkMigrateFillClipVectorDB");
 
-    // Get all files with CLIP embeddings first to avoid caching unindexed files
-    final Map<int, int> clipIndexedFiles =
-        await mlDataDB.clipIndexedFileWithVersion();
+    final Map<int, int> clipIndexedFiles = await mlDataDB
+        .clipIndexedFileWithVersion();
     final Set<int> clipIndexedFileIDs = clipIndexedFiles.keys.toSet();
     w?.log("getClipIndexedFiles");
 
-    // Get all files, and all potential embedding IDs, and create a map of fileID to file
     final allFiles = Set<EnteFile>.from(
       await SearchService.instance.getAllFilesForSearch(),
     );
@@ -83,7 +82,6 @@ class SimilarImagesService {
     final Uint64List potentialKeys = Uint64List.fromList(fileIDs);
     w?.log("getAllFilesForSearch");
 
-    // Get mapping of fileIDs to corresponding personIDs
     final fileIDToPersonIDs = <int, Set<String>>{};
     final dbPersonClusterInfo = await mlDataDB.getPersonToClusterIdToFaceIds();
     for (final personID in dbPersonClusterInfo.keys) {
@@ -119,7 +117,6 @@ class SimilarImagesService {
       return result;
     }
 
-    // Load cached data
     final SimilarFilesCache? cachedData = await _readCachedSimilarFiles();
     if (cachedData == null) {
       _logger.warning("No cached similar files found");
@@ -129,7 +126,6 @@ class SimilarImagesService {
       );
     }
 
-    // Determine if we need full refresh
     bool needsFullRefresh = false;
     if (cachedData != null) {
       final Set<int> cachedFileIDs = cachedData.allCheckedFileIDs;
@@ -140,18 +136,16 @@ class SimilarImagesService {
         needsFullRefresh = true;
       }
 
-      // Check condition: less than 1000 files
       if (currentFileIDs.length < 1000) {
         needsFullRefresh = true;
       }
 
-      // Check condition: cache is older than a month
-      if (DateTime.fromMillisecondsSinceEpoch(cachedData.cachedTime)
-          .isBefore(DateTime.now().subtract(const Duration(days: 30)))) {
+      if (DateTime.fromMillisecondsSinceEpoch(
+        cachedData.cachedTime,
+      ).isBefore(DateTime.now().subtract(const Duration(days: 30)))) {
         needsFullRefresh = true;
       }
 
-      // Check condition: new files > 20% of total files
       if (!needsFullRefresh) {
         final newFileIDs = currentFileIDs.difference(cachedFileIDs);
         if (newFileIDs.length > currentFileIDs.length * 0.2) {
@@ -159,12 +153,12 @@ class SimilarImagesService {
         }
       }
 
-      // Check condition: 20+% of grouped files deleted
       if (!needsFullRefresh) {
-        final Set<int> cacheGroupedFileIDs =
-            await cachedData.getGroupedFileIDs();
-        final deletedFromGroups = cacheGroupedFileIDs
-            .intersection(cachedFileIDs.difference(currentFileIDs));
+        final Set<int> cacheGroupedFileIDs = await cachedData
+            .getGroupedFileIDs();
+        final deletedFromGroups = cacheGroupedFileIDs.intersection(
+          cachedFileIDs.difference(currentFileIDs),
+        );
         final totalInGroups = cacheGroupedFileIDs.length;
         if (totalInGroups > 0 &&
             deletedFromGroups.length > totalInGroups * 0.2) {
@@ -172,8 +166,8 @@ class SimilarImagesService {
         }
 
         if (!needsFullRefresh && totalInGroups > 0) {
-          final groupedFilesWithoutClipEmbeddings =
-              cacheGroupedFileIDs.difference(clipIndexedFileIDs);
+          final groupedFilesWithoutClipEmbeddings = cacheGroupedFileIDs
+              .difference(clipIndexedFileIDs);
           if (groupedFilesWithoutClipEmbeddings.length >
               totalInGroups * _groupedClipEmbeddingLossRefreshRatio) {
             _logger.info(
@@ -227,7 +221,6 @@ class SimilarImagesService {
     final currentFileIDsSet = currentFileIDs.map((id) => id.toInt()).toSet();
     final deletedFiles = cachedFileIDs.difference(currentFileIDsSet);
 
-    // Clean up deleted files from existing groups
     if (deletedFiles.isNotEmpty) {
       for (final group in existingGroups) {
         final filesInGroupToDelete = [];
@@ -241,10 +234,8 @@ class SimilarImagesService {
         }
       }
     }
-    // Remove empty groups
     existingGroups.removeWhere((group) => group.length <= 1);
 
-    // Identify new files
     final newFileIDs = currentFileIDsSet.difference(cachedFileIDs);
     if (newFileIDs.isEmpty) {
       if (deletedFiles.isNotEmpty) {
@@ -259,16 +250,11 @@ class SimilarImagesService {
       return existingGroups;
     }
 
-    // Search only new files
     final newFileIDsList = Uint64List.fromList(newFileIDs.toList());
-    final (keys, vectorKeys, distances) =
-        await MLComputer.instance.bulkVectorSearchWithKeys(
-      newFileIDsList,
-      exact,
-    );
+    final (keys, vectorKeys, distances) = await MLComputer.instance
+        .bulkVectorSearchWithKeys(newFileIDsList, exact);
     final keysList = keys.map((key) => key.toInt()).toList();
 
-    // Try to assign new files to existing groups
     final unassignedNewFilesIndices = <int>{};
     final unassignedNewFileIDs = <int>{};
     for (int i = 0; i < keysList.length; i++) {
@@ -296,8 +282,9 @@ class SimilarImagesService {
                 } else if (FavoritesService.instance.isFavoriteCache(b)) {
                   return 1;
                 }
-                final sizeComparison =
-                    (b.fileSize ?? 0).compareTo(a.fileSize ?? 0);
+                final sizeComparison = (b.fileSize ?? 0).compareTo(
+                  a.fileSize ?? 0,
+                );
                 if (sizeComparison != 0) return sizeComparison;
                 return a.displayName.compareTo(b.displayName);
               });
@@ -314,7 +301,6 @@ class SimilarImagesService {
       }
     }
 
-    // Check if unassigned new files form groups among themselves
     if (unassignedNewFilesIndices.isNotEmpty) {
       final alreadyUsedNewFiles = <int>{};
       for (final searchIndex in unassignedNewFilesIndices) {
@@ -379,15 +365,10 @@ class SimilarImagesService {
   ) async {
     _logger.info("Performing full search for similar files");
     final w = (kDebugMode ? EnteWatch('getSimilarFiles') : null)?..start();
-    // Run bulk vector search
-    final (keys, vectorKeys, distances) =
-        await MLComputer.instance.bulkVectorSearchWithKeys(
-      potentialKeys,
-      exact,
-    );
+    final (keys, vectorKeys, distances) = await MLComputer.instance
+        .bulkVectorSearchWithKeys(potentialKeys, exact);
     w?.log("bulkSearchVectors");
 
-    // Run through the vector search results and create SimilarFiles objects
     final alreadyUsedFileIDs = <int>{};
     final allSimilarFiles = <SimilarFiles>[];
     for (int i = 0; i < keys.length; i++) {
@@ -423,7 +404,6 @@ class SimilarImagesService {
         for (final file in similarFilesList) {
           alreadyUsedFileIDs.add(file.uploadedFileID!);
         }
-        // show highest quality files first
         similarFilesList.sort((a, b) {
           if (FavoritesService.instance.isFavoriteCache(a)) {
             return -1;
@@ -434,10 +414,7 @@ class SimilarImagesService {
           if (sizeComparison != 0) return sizeComparison;
           return a.displayName.compareTo(b.displayName);
         });
-        final similarFiles = SimilarFiles(
-          similarFilesList,
-          furthestDistance,
-        );
+        final similarFiles = SimilarFiles(similarFilesList, furthestDistance);
         allSimilarFiles.add(similarFiles);
       }
     }
@@ -459,8 +436,9 @@ class SimilarImagesService {
     int cachedTimeOfOriginalComputation,
   ) async {
     final cachePath = await _getCachePath();
-    final similarGroupsJsonStringList =
-        similarGroups.map((group) => group.toJsonString()).toList();
+    final similarGroupsJsonStringList = similarGroups
+        .map((group) => group.toJsonString())
+        .toList();
     final cacheObject = SimilarFilesCache(
       similarFilesJsonStringList: similarGroupsJsonStringList,
       allCheckedFileIDs: allCheckedFileIDs,

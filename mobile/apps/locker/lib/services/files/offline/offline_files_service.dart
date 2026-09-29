@@ -1,9 +1,9 @@
 import 'package:ente_events/event_bus.dart';
+import 'package:ente_strings/ente_strings.dart';
 import 'package:ente_ui/utils/dialog_util.dart';
 import 'package:ente_ui/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:locker/events/collections_updated_event.dart';
-import 'package:locker/l10n/l10n.dart';
 import 'package:locker/services/configuration.dart';
 import 'package:locker/services/db/locker_db.dart';
 import 'package:locker/services/files/download/file_downloader.dart';
@@ -12,10 +12,6 @@ import 'package:locker/services/files/sync/models/file.dart';
 import 'package:locker/services/info_file_service.dart';
 import 'package:logging/logging.dart';
 
-/// Handles Locker's explicit per-file offline save flow.
-///
-/// A file is marked offline only after the encrypted blob has been saved on
-/// this device.
 class OfflineFilesService {
   OfflineFilesService._privateConstructor();
 
@@ -28,12 +24,10 @@ class OfflineFilesService {
 
   Future<void> init() async {
     _logger.fine('Cleaning up stale offline file copies');
-    await cleanupStaleOfflineFileCopies(
-      olderThan: _cachedFileCleanupAge,
-    );
+    await cleanupStaleOfflineFileCopies(olderThan: _cachedFileCleanupAge);
   }
 
-  /// Shared files and info records are intentionally excluded from offline save.
+  // Shared files and info records are excluded from offline save.
   bool _canMarkOffline(EnteFile file) {
     final currentUserID = Configuration.instance.getUserID();
     return file.uploadedFileID != null &&
@@ -56,7 +50,6 @@ class OfflineFilesService {
     return eligibleFilesById.values.toList();
   }
 
-  /// Downloads the encrypted blob and marks the file offline on success.
   Future<bool> markFilesOffline(
     BuildContext context,
     Iterable<EnteFile> files,
@@ -66,24 +59,27 @@ class OfflineFilesService {
       'Mark offline requested for ${eligibleFiles.length} eligible files',
     );
 
-    if (eligibleFiles.isEmpty || !context.mounted) {
+    if (eligibleFiles.isEmpty) {
       _logger.fine('No eligible files to mark offline');
       return false;
     }
 
     final total = eligibleFiles.length;
-    final dialog = createProgressDialog(
-      context,
-      total == 1
-          ? context.l10n.savingOffline
-          : '${context.l10n.savingOffline} 0/$total',
-      isDismissible: false,
-    );
+    final savingOffline = context.mounted
+        ? context.strings.savingOffline
+        : null;
+    final dialog = savingOffline == null
+        ? null
+        : createProgressDialog(
+            context,
+            total == 1 ? savingOffline : '$savingOffline 0/$total',
+            isDismissible: false,
+          );
 
     var successCount = 0;
     var failureCount = 0;
 
-    await dialog.show();
+    await dialog?.show();
 
     try {
       for (var index = 0; index < eligibleFiles.length; index++) {
@@ -91,15 +87,17 @@ class OfflineFilesService {
         final fileID = file.uploadedFileID!;
         final currentStep = index + 1;
 
-        dialog.update(
-          message: total == 1
-              ? context.l10n.savingOffline
-              : '${context.l10n.savingOffline} $currentStep/$total',
-        );
+        if (context.mounted && dialog != null) {
+          dialog.update(
+            message: total == 1
+                ? savingOffline
+                : '$savingOffline $currentStep/$total',
+          );
+        }
 
         final alreadyHasOfflineCopy =
             LockerDB.instance.isFileMarkedOffline(file) &&
-                await getCurrentOfflineEncryptedCopy(file) != null;
+            await getCurrentOfflineEncryptedCopy(file) != null;
         if (alreadyHasOfflineCopy) {
           _logger.fine('File $fileID already available offline');
           successCount += 1;
@@ -122,15 +120,12 @@ class OfflineFilesService {
             e,
             s,
           );
-          await _clearOfflineState(
-            [fileID],
-            removeWorkingCopies: false,
-          );
+          await _clearOfflineState([fileID], removeWorkingCopies: false);
         }
       }
     } finally {
       try {
-        await dialog.hide();
+        await dialog?.hide();
       } catch (_) {}
     }
 
@@ -139,8 +134,9 @@ class OfflineFilesService {
     );
 
     if (successCount > 0) {
-      Bus.instance
-          .fire(CollectionsUpdatedEvent('offline_availability_changed'));
+      Bus.instance.fire(
+        CollectionsUpdatedEvent('offline_availability_changed'),
+      );
     }
 
     if (!context.mounted) {
@@ -150,24 +146,26 @@ class OfflineFilesService {
     if (failureCount == 0) {
       showToast(
         context,
-        context.l10n.filesAvailableOffline(successCount),
+        context.strings.filesAvailableOffline(count: successCount),
       );
     } else if (successCount > 0) {
       showToast(
         context,
-        context.l10n.filesAvailableOfflinePartial(successCount, failureCount),
+        context.strings.filesAvailableOfflinePartial(
+          failureCount: failureCount,
+          successCount: successCount,
+        ),
       );
     } else {
       showToast(
         context,
-        context.l10n.failedToSaveFilesOffline(failureCount),
+        context.strings.failedToSaveFilesOffline(count: failureCount),
       );
     }
 
     return successCount > 0;
   }
 
-  /// Clears offline state for the selected files on this device.
   Future<bool> unmarkFilesOffline(
     BuildContext context,
     Iterable<EnteFile> files,
@@ -197,8 +195,9 @@ class OfflineFilesService {
     await _clearOfflineState(fileIDsToUnmark);
 
     if (changedCount > 0) {
-      Bus.instance
-          .fire(CollectionsUpdatedEvent('offline_availability_changed'));
+      Bus.instance.fire(
+        CollectionsUpdatedEvent('offline_availability_changed'),
+      );
     }
 
     if (changedCount == 0 || !context.mounted) {
@@ -207,7 +206,7 @@ class OfflineFilesService {
 
     showToast(
       context,
-      context.l10n.filesRemovedFromOffline(changedCount),
+      context.strings.filesRemovedFromOffline(count: changedCount),
     );
     return true;
   }
@@ -245,8 +244,8 @@ class OfflineFilesService {
     await _clearOfflineState(staleFileIDs);
   }
 
-  /// Downloads first, then writes the local offline mark if the file is still
-  /// active in the current library view.
+  // Mark offline only after the encrypted copy is saved and the file is still
+  // active.
   Future<bool> _ensureOfflineCopyAndMark(EnteFile file) async {
     final fileID = file.uploadedFileID!;
     await ensureEncryptedOfflineCopy(file);
@@ -255,10 +254,7 @@ class OfflineFilesService {
       _logger.warning(
         'Skipping offline mark for file $fileID because it is no longer active',
       );
-      await _clearOfflineState(
-        [fileID],
-        removeWorkingCopies: false,
-      );
+      await _clearOfflineState([fileID], removeWorkingCopies: false);
       return false;
     }
 

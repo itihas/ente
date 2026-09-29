@@ -4,6 +4,7 @@ import {
     decryptStreamBytes,
     deriveKey,
 } from "ente-base/crypto";
+import { fetchPublicCollectionFile } from "ente-base/file-download";
 import {
     authenticatedPublicAlbumsDeviceLimitRequestHeaders,
     authenticatedPublicAlbumsInfoRequestHeaders,
@@ -12,7 +13,7 @@ import {
     linkDeviceTokenFromResponse,
     type PublicAlbumsCredentials,
 } from "ente-base/http";
-import { apiOrigin, apiURL } from "ente-base/origins";
+import { apiURL } from "ente-base/origins";
 import {
     decryptRemoteCollection,
     RemoteCollection,
@@ -261,8 +262,8 @@ const fetchPublicCollectionDiff = async (
             }
         }
         hasMore = parsed.hasMore;
-        // Defensive guard: if the server claims more pages but sinceTime did
-        // not advance, stop to avoid spinning on a broken server contract.
+        // Stop when the server claims more pages but sinceTime did not
+        // advance, to avoid looping forever on a broken pagination contract.
         if (hasMore && sinceTime === prevSinceTime) break;
     }
 
@@ -351,16 +352,17 @@ export const downloadPublicCollectionFile = async (
     fileDecryptionHeader: string,
     onProgress?: (progress: DownloadProgress) => void,
 ): Promise<void> => {
-    const url = `${await apiOrigin()}/public-collection/files/download/${fileID}`;
-    const response = await fetch(url, {
-        headers: authenticatedPublicAlbumsRequestHeaders(credentials),
-    });
+    const response = await fetchPublicCollectionFile(
+        fileID,
+        "file",
+        credentials,
+    );
     ensureOk(response);
 
     const totalHeader = response.headers.get("content-length");
     const total = totalHeader ? Number.parseInt(totalHeader, 10) : null;
 
-    let encryptedData: Uint8Array;
+    let encryptedData: Uint8Array<ArrayBuffer>;
     if (response.body) {
         const reader = response.body.getReader();
         const chunks: Uint8Array[] = [];
@@ -393,7 +395,7 @@ export const downloadPublicCollectionFile = async (
         fileKey,
     );
 
-    const blob = new Blob([new Uint8Array(decryptedData)]);
+    const blob = new Blob([decryptedData]);
     const blobUrl = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = blobUrl;

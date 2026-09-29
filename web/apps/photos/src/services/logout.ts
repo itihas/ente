@@ -1,8 +1,10 @@
+import exportService from "@/services/export";
 import {
     accountLogout,
     logoutClearStateAgain,
 } from "ente-accounts/services/logout";
 import log from "ente-base/log";
+import { logoutContacts } from "ente-contacts";
 import { resetSaveGroups } from "ente-gallery/components/utils/save-groups";
 import { logoutFileViewerDataSource } from "ente-gallery/components/viewer/data-source";
 import { downloadManager } from "ente-gallery/services/download";
@@ -10,40 +12,47 @@ import { clearFilesDB } from "ente-gallery/services/files-db";
 import { resetUploadState } from "ente-gallery/services/upload";
 import { resetVideoState } from "ente-gallery/services/video";
 import { logoutAppLock } from "ente-new/photos/services/app-lock";
-import exportService from "ente-new/photos/services/export";
 import { logoutML, terminateMLWorker } from "ente-new/photos/services/ml";
 import { logoutSearch } from "ente-new/photos/services/search";
 import { logoutSettings } from "ente-new/photos/services/settings";
 import { logoutUserDetails } from "ente-new/photos/services/user-details";
+import { clearAuthenticatedSession } from "./authenticated-session";
 import { uploadManager } from "./upload-manager";
 
-/**
- * Logout sequence for the photos app.
- *
- * This function is guaranteed not to throw any errors.
- *
- * See: [Note: Do not throw during logout].
- */
+// Individual cleanup failures must not abort logout.
 export const photosLogout = async () => {
     const ignoreError = (label: string, e: unknown) =>
         log.error(`Ignoring error during logout (${label})`, e);
 
-    // - Workers
+    // Session
 
-    // Terminate any workers that might access the DB before clearing persistent
-    // state. See: [Note: Caching IDB instances in separate execution contexts].
+    try {
+        clearAuthenticatedSession();
+    } catch (e) {
+        ignoreError("Authenticated session", e);
+    }
 
+    // Stop workers and schedulers before clearing persistent state.
     try {
         await terminateMLWorker();
     } catch (e) {
         ignoreError("ML/worker", e);
     }
 
-    // - Remote logout and clear state
+    const electron = globalThis.electron;
+    if (electron) {
+        try {
+            exportService.disableContinuousExport();
+        } catch (e) {
+            ignoreError("Export", e);
+        }
+    }
+
+    // Remote logout and clear state
 
     await accountLogout();
 
-    // - Photos specific logout
+    // Photos services
 
     log.info("logout (photos)");
 
@@ -57,6 +66,12 @@ export const photosLogout = async () => {
         logoutSettings();
     } catch (e) {
         ignoreError("Settings", e);
+    }
+
+    try {
+        logoutContacts();
+    } catch (e) {
+        ignoreError("Contacts", e);
     }
 
     try {
@@ -107,9 +122,8 @@ export const photosLogout = async () => {
         ignoreError("File viewer", e);
     }
 
-    // - Desktop
+    // Desktop
 
-    const electron = globalThis.electron;
     if (electron) {
         try {
             await logoutAppLock();
@@ -124,21 +138,15 @@ export const photosLogout = async () => {
         }
 
         try {
-            exportService.disableContinuousExport();
-        } catch (e) {
-            ignoreError("Export", e);
-        }
-
-        try {
             await electron.logout();
         } catch (e) {
             ignoreError("Electron", e);
         }
     }
 
-    // Clear the DB again to discard any in-flight completions that might've
-    // happened since we started.
+    // Final sweep and reload
 
+    // Clear again after in-flight work has had a chance to finish.
     await logoutClearStateAgain();
 
     try {
@@ -147,10 +155,6 @@ export const photosLogout = async () => {
         ignoreError("Files DB", e);
     }
 
-    // [Note: Full reload on logout]
-    //
-    // Do a full reload to discard any in-flight requests that might still
-    // remain.
-
+    // Reload to discard any requests still in flight.
     window.location.replace("/");
 };

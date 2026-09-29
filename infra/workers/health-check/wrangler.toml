@@ -13,5 +13,4 @@ tail_consumers = [{ service = "tail" }]
 # CHAT_ID = ""
 
 [triggers]
-# Every minute
 crons = [ "*/1 * * * *" ]

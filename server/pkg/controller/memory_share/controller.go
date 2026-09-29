@@ -5,11 +5,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/ente-io/museum/ente"
-	"github.com/ente-io/museum/pkg/controller/access"
-	"github.com/ente-io/museum/pkg/repo"
-	"github.com/ente-io/museum/pkg/utils/time"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	"github.com/ente/museum/pkg/controller/access"
+	"github.com/ente/museum/pkg/repo"
+	"github.com/ente/museum/pkg/utils/time"
+	"github.com/ente/stacktrace"
 	"github.com/gin-gonic/gin"
 	"github.com/lithammer/shortuuid/v3"
 )
@@ -18,14 +18,12 @@ const (
 	AccessTokenLength = 10
 )
 
-// Controller handles memory share operations
 type Controller struct {
 	Repo       *repo.MemoryShareRepository
 	FileRepo   *repo.FileRepository
 	AccessCtrl access.Controller
 }
 
-// NewController creates a new memory share controller
 func NewController(
 	repo *repo.MemoryShareRepository,
 	fileRepo *repo.FileRepository,
@@ -38,7 +36,6 @@ func NewController(
 	}
 }
 
-// Create creates a new memory share
 func (c *Controller) Create(ctx *gin.Context, userID int64, req ente.CreateMemoryShareRequest) (*ente.CreateMemoryShareResponse, error) {
 	shareType := req.Type
 	if shareType == "" {
@@ -102,7 +99,7 @@ func (c *Controller) Create(ctx *gin.Context, userID int64, req ente.CreateMemor
 	}
 
 	var share ente.MemoryShare
-	for attempt := 0; attempt < 5; attempt++ {
+	for range 5 {
 		// Retry on rare access-token collisions to match collection/file link behavior.
 		accessToken := strings.ToUpper(shortuuid.New()[0:AccessTokenLength])
 

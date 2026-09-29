@@ -1,9 +1,3 @@
-/**
- * Lane-style public memory viewer.
- * This file contains the stacked-card lane experience, including lane-specific
- * playback timing, scrubbing, captions, and decorative backgrounds. It is
- * rendered by `pages/index.tsx` for the `"lane"` variant.
- */
 import { styled } from "@mui/material";
 import log from "ente-base/log";
 import { downloadManager } from "ente-gallery/services/download";
@@ -86,10 +80,6 @@ function calculateLaneXOffset(
     return sideways * exitDistance + overshoot;
 }
 
-/**
- * Primary viewer for lane-style public memory shares.
- * Used by `pages/index.tsx` when `viewerVariant` resolves to `"lane"`.
- */
 export function LaneMemoryViewer({
     files,
     currentIndex,
@@ -1000,10 +990,6 @@ const LaneDesktopBackgroundGrid = styled("svg")({
         "radial-gradient(ellipse 82% 84% at 50% 56%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.74) 44%, rgba(0, 0, 0, 0.32) 72%, transparent 100%)",
 });
 
-/**
- * Shared SVG pattern definition for the lane background grids.
- * Used by both desktop and mobile lane background overlays in this file.
- */
 function LaneBackgroundGridFill({
     patternId,
     filterId,
@@ -1067,10 +1053,6 @@ function LaneBackgroundGridFill({
     );
 }
 
-/**
- * Desktop lane background grid overlay.
- * Used by `LaneBackground` for the non-compact layout branch.
- */
 function LaneDesktopBackgroundGridOverlay() {
     return (
         <LaneDesktopBackgroundGrid aria-hidden preserveAspectRatio="none">
@@ -1120,10 +1102,6 @@ const LaneMobileBackgroundGrid = styled("svg")({
         "linear-gradient(180deg, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.78) 10%, rgba(0, 0, 0, 0.42) 24%, rgba(0, 0, 0, 0.30) 52%, rgba(0, 0, 0, 0.52) 76%, rgba(0, 0, 0, 0.92) 100%)",
 });
 
-/**
- * Mobile lane background grid overlay.
- * Used by `LaneBackground` for the compact layout branch.
- */
 function LaneMobileBackgroundGridOverlay() {
     return (
         <LaneMobileBackgroundGrid aria-hidden preserveAspectRatio="none">
@@ -1135,10 +1113,6 @@ function LaneMobileBackgroundGridOverlay() {
     );
 }
 
-/**
- * Chooses the correct decorative background for the lane viewer.
- * Used only by `LaneMemoryViewer`.
- */
 function LaneBackground({
     isCompactLayout = false,
 }: {

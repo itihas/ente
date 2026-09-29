@@ -1,9 +1,27 @@
+import Avatar from "@/components/Avatar";
+import {
+    FileContextMenu,
+    type ContextMenuPosition,
+} from "@/components/FileContextMenu";
+import type { GalleryBarMode } from "@/components/gallery/reducer";
+import { StarIcon } from "@/components/icons/StarIcon";
+import {
+    selectedFavoriteCount as countSelectedFavorites,
+    type SelectedState,
+} from "@/utils/file";
+import {
+    getAvailableFileActions,
+    type FileContextAction,
+} from "@/utils/file-actions";
+import {
+    handleSelectCreator,
+    handleSelectCreatorMulti,
+} from "@/utils/photoFrame";
 import AlbumOutlinedIcon from "@mui/icons-material/AlbumOutlined";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import PlayCircleOutlineOutlinedIcon from "@mui/icons-material/PlayCircleOutlineOutlined";
 import { Box, Checkbox, Fab, Typography, styled } from "@mui/material";
-import Avatar from "components/Avatar";
 import type { LocalUser } from "ente-accounts/services/user";
 import { assertionFailed } from "ente-base/assert";
 import { Overlay } from "ente-base/components/containers";
@@ -13,12 +31,6 @@ import { downloadManager } from "ente-gallery/services/download";
 import type { EnteFile } from "ente-media/file";
 import { fileDurationString } from "ente-media/file-metadata";
 import { FileType } from "ente-media/file-type";
-import {
-    FileContextMenu,
-    type ContextMenuPosition,
-} from "ente-new/photos/components/FileContextMenu";
-import type { GalleryBarMode } from "ente-new/photos/components/gallery/reducer";
-import { StarIcon } from "ente-new/photos/components/icons/StarIcon";
 import {
     LoadingThumbnail,
     StaticThumbnail,
@@ -33,10 +45,6 @@ import {
     PseudoCollectionID,
     type CollectionSummary,
 } from "ente-new/photos/services/collection-summary";
-import {
-    getAvailableFileActions,
-    type FileContextAction,
-} from "ente-new/photos/utils/file-actions";
 import { batch } from "ente-utils/array";
 import { t } from "i18next";
 import React, {
@@ -53,238 +61,77 @@ import {
     areEqual,
     type ListChildComponentProps,
 } from "react-window";
-import { type SelectedState } from "utils/file";
-import {
-    handleSelectCreator,
-    handleSelectCreatorMulti,
-} from "utils/photoFrame";
 
-/**
- * A component with an explicit height suitable for being plugged in as the
- * {@link header} or {@link footer} of the {@link FileList}.
- */
 export interface FileListHeaderOrFooter {
-    /**
-     * The component itself.
-     */
     component: React.ReactNode;
-    /**
-     * The height of the component (in px).
-     */
     height: number;
-    /**
-     * By default, all items in the {@link FileList}, including headers and
-     * footers injected using this type, get an inline margin.
-     *
-     * Set this property to `true` to omit this default margin, and instead
-     * have the component extend to the container's edges.
-     */
     extendToInlineEdges?: boolean;
 }
 
-/**
- * Data needed to render each row in the variable size list that comprises the
- * file list.
- */
 type FileListItem =
     | {
           type: "file";
-          /**
-           * The height of the row that will render this item.
-           */
           height: number;
-          /**
-           * Groups of items that are shown in the row.
-           *
-           * Each group spans multiple columns (the number of columns being given by
-           * the length of {@link annotatedFiles} or the {@link span}). Groups are
-           * separated by gaps.
-           */
           groups: {
-              /**
-               * The annotated files in this group.
-               */
               annotatedFiles: FileListAnnotatedFile[];
-              /**
-               * The index of the first annotated file in the component's global list
-               * of annotated files.
-               */
               annotatedFilesStartIndex: number;
           }[];
       }
     | {
           type: "date";
           height: number;
-          groups: {
-              /**
-               * The date string to show.
-               */
-              date: string;
-              /**
-               * The number of columns to span.
-               */
-              dateSpan: number;
-          }[];
+          groups: { date: string; dateSpan: number }[];
       }
     | {
           type: "span";
           height: number;
-          /**
-           * The React component that is the rendered representation of the item.
-           */
           component: React.ReactNode;
           extendToInlineEdges?: boolean;
       };
 
 export interface FileListAnnotatedFile {
     file: EnteFile;
-    /**
-     * The date string using with the associated {@link file} should be shown in
-     * the timeline.
-     *
-     * [Note: Timeline date string]
-     *
-     * The timeline date string is a formatted date string under which a
-     * particular file should be grouped in the gallery listing. e.g. "Today",
-     * "Yesterday", "Fri, 21 Feb" etc.
-     *
-     * All files which have the same timelineDateString will be grouped under a
-     * single section in the gallery listing, prefixed by the timelineDateString
-     * itself, and a checkbox to select all files on that date.
-     */
     timelineDateString: string;
 }
 
-/**
- * A file augmented with the date when it will be permanently deleted.
- *
- * See: [Note: Files in trash pseudo collection have deleteBy]
- */
-export type EnteTrashFile = EnteFile & {
-    /**
-     * Timestamp (epoch microseconds) when the trash item (and its corresponding
-     * {@link EnteFile}) will be permanently deleted.
-     */
-    deleteBy?: number;
-};
+// deleteBy is an epoch-microsecond timestamp.
+type EnteTrashFile = EnteFile & { deleteBy?: number };
 
 export interface FileListProps {
-    /** The height we should occupy (needed since the list is virtualized). */
     height: number;
-    /** The width we should occupy.*/
     width: number;
-    /**
-     * Optional border radius to apply to the scrollable list container.
-     */
     listBorderRadius?: string;
-    /**
-     * The files to show, annotated with cached precomputed properties that are
-     * frequently needed by the {@link FileList}.
-     */
     annotatedFiles: FileListAnnotatedFile[];
     mode?: GalleryBarMode;
-    /**
-     * This is an experimental prop, to see if we can merge the separate
-     * "isInSearchMode" state kept by the gallery to be instead provided as a
-     * another mode in which the gallery operates.
-     */
     modePlus?: GalleryBarMode | "search";
-    /**
-     * An optional component shown before all the items in the list.
-     *
-     * It is not sticky, and scrolls along with the content of the list.
-     */
     header?: FileListHeaderOrFooter;
-    /**
-     * An optional component shown after all the items in the list.
-     *
-     * It is not sticky, and scrolls along with the content of the list.
-     */
     footer?: FileListHeaderOrFooter;
-    /**
-     * The logged in user, if any.
-     */
     user?: LocalUser;
-    /**
-     * If `true`, then the default behaviour of grouping files by their date is
-     * suppressed.
-     *
-     * This behaviour is used when showing magic search results.
-     */
     disableGrouping?: boolean;
-    /**
-     * If `true`, then the user can select files in the listing by clicking on
-     * their thumbnails (and other range selection mechanisms).
-     */
     enableSelect?: boolean;
     setSelected: (
         selected: SelectedState | ((selected: SelectedState) => SelectedState),
     ) => void;
     selected: SelectedState;
-    /** This will be set if mode is not "people". */
     activeCollectionID: number;
-    /** This will be set if mode is "people". */
     activePersonID?: string | undefined;
-    /**
-     * File IDs of all the files that the user has marked as a favorite.
-     */
     favoriteFileIDs?: Set<number>;
-    /**
-     * A map from known Ente user IDs to their emails.
-     */
     emailByUserID?: Map<number, string>;
-    /**
-     * Called when the user activates the thumbnail at the given {@link index}.
-     *
-     * This corresponding file would be at the corresponding index of
-     * {@link annotatedFiles}.
-     */
     onItemClick: (index: number) => void;
-    /**
-     * Called when the list scrolls, providing the current scroll offset.
-     */
     onScroll?: (scrollOffset: number) => void;
-    /**
-     * Called when the visible date at the top of the viewport changes.
-     */
     onVisibleDateChange?: (date: string | undefined) => void;
-    /**
-     * The collection summary for the current view.
-     *
-     * Used to determine available context menu actions.
-     */
     collectionSummary?: CollectionSummary;
-    /**
-     * Called when a context menu action is triggered on a file.
-     *
-     * @param action The action that was triggered.
-     */
     onContextMenuAction?: (
         action: FileContextAction,
         targetFile?: EnteFile,
         meta?: { isEphemeralSingleSelection: boolean },
     ) => void;
-    /**
-     * Whether to show the "Add Person" action in the context menu.
-     */
     showAddPersonAction?: boolean;
-    /**
-     * Whether to show the "Edit Location" action in the context menu.
-     */
     showEditLocationAction?: boolean;
-    /**
-     * Called when the context menu opens or closes.
-     */
     onContextMenuOpenChange?: (open: boolean) => void;
-    /**
-     * Hide selection visuals/interactions while keeping selection data.
-     */
     suppressSelectionUI?: boolean;
 }
 
-/**
- * A virtualized list of files, each represented by their thumbnail.
- */
 export const FileList: React.FC<FileListProps> = ({
     height,
     width,
@@ -321,31 +168,18 @@ export const FileList: React.FC<FileListProps> = ({
     );
     const [hoverIndex, setHoverIndex] = useState<number | undefined>(undefined);
     const [isShiftKeyPressed, setIsShiftKeyPressed] = useState(false);
-    // Timeline date strings for which all photos have been selected.
-    //
-    // See: [Note: Timeline date string]
     const [checkedTimelineDateStrings, setCheckedTimelineDateStrings] =
         useState(new Set<string>());
-    // Show back-to-top button when scrolled past threshold
     const [showBackToTop, setShowBackToTop] = useState(false);
 
-    // Context menu state
     const [contextMenu, setContextMenu] = useState<{
         position: ContextMenuPosition;
         file: EnteFile;
         fileIndex: number;
     } | null>(null);
 
-    // Track selection state before right-click modified it.
-    // If there are already 3 files explicitly selected via checkmarks,
-    // right-clicking an unselected item will store the previous selections
-    // in this ref and temporarily select only the right-clicked file.
-    // If no action is taken from the context menu, the previous selection
-    // is restored when the menu closes.
+    // Right-click temporarily replaces selection; restore it if no action runs.
     const previousSelectionRef = useRef<SelectedState | null>(null);
-    // Track whether an action was taken from the context menu.
-    // This ref works in conjunction with previousSelectionRef: if an action
-    // is taken, the previous selection is not reverted when the context menu closes.
     const contextMenuActionTakenRef = useRef(false);
 
     const listRef = useRef<VariableSizeList | null>(null);
@@ -357,14 +191,7 @@ export const FileList: React.FC<FileListProps> = ({
     );
 
     useEffect(() => {
-        // Since width and height are dependencies, there might be too many
-        // updates to the list during a resize. The list computation too, while
-        // fast, is non-trivial.
-        //
-        // To avoid these issues, the we use `useDeferredValue`: if it gets
-        // another update when processing one, React will restart the background
-        // rerender from scratch.
-
+        // Defer resize-heavy list rebuilds so React can discard stale renders.
         let items: FileListItem[] = [];
 
         if (header) items.push(asFullSpanFileListItem(header));
@@ -387,8 +214,6 @@ export const FileList: React.FC<FileListProps> = ({
                 ),
             );
         } else {
-            // A running counter of files that have been pushed into items, and
-            // a function to push them (incrementing the counter).
             let fileIndex = 0;
             const createFileItem = (splits: FileListAnnotatedFile[][]) =>
                 ({
@@ -406,8 +231,6 @@ export const FileList: React.FC<FileListProps> = ({
 
             const pushItemsFromSplits = (splits: FileListAnnotatedFile[][]) => {
                 if (splits.length > 1) {
-                    // If we get here, the combined number of files across
-                    // splits is less than the number of columns.
                     items.push({
                         height: dateListItemHeight,
                         type: "date",
@@ -418,8 +241,6 @@ export const FileList: React.FC<FileListProps> = ({
                     });
                     items.push(createFileItem(splits));
                 } else {
-                    // A single group of files, but the number of such files
-                    // might be more than what fits a single row.
                     items.push({
                         height: dateListItemHeight,
                         type: "date",
@@ -446,7 +267,6 @@ export const FileList: React.FC<FileListProps> = ({
                 );
                 const incomingColumns = split.length;
 
-                // Check if the files in this split can be added to same row.
                 if (
                     !isSmallerLayout &&
                     filledColumns +
@@ -508,7 +328,6 @@ export const FileList: React.FC<FileListProps> = ({
     ]);
 
     useEffect(() => {
-        // Refresh list
         listRef.current?.resetAfterIndex(0);
     }, [items]);
 
@@ -517,28 +336,21 @@ export const FileList: React.FC<FileListProps> = ({
             (af) => !selected[af.file.id],
         );
 
-        // Get dates of files which were manually unselected.
         const unselectedDates = new Set(
             notSelectedFiles.map((af) => af.timelineDateString),
         );
 
-        // Get files which were manually selected.
         const localSelectedFiles = annotatedFiles.filter(
             (af) => !unselectedDates.has(af.timelineDateString),
         );
 
-        // Get dates of files which were manually selected.
         const localSelectedDates = new Set(
             localSelectedFiles.map((af) => af.timelineDateString),
         );
 
         setCheckedTimelineDateStrings((prev) => {
             const checked = new Set(prev);
-            // Uncheck the "Select all" checkbox if any of the files on the date
-            // is unselected.
             unselectedDates.forEach((date) => checked.delete(date));
-            // Check the "Select all" checkbox if all of the files on a date are
-            // selected.
             localSelectedDates.forEach((date) => checked.add(date));
             return checked;
         });
@@ -569,7 +381,6 @@ export const FileList: React.FC<FileListProps> = ({
             }
             setCheckedTimelineDateStrings(next);
 
-            // All files on a checked/unchecked day.
             const filesOnADay = annotatedFiles.filter(
                 (af) => af.timelineDateString === date,
             );
@@ -661,41 +472,44 @@ export const FileList: React.FC<FileListProps> = ({
         if (selected.count == 0) setRangeStartIndex(undefined);
     }, [selected]);
 
-    const selectedFavoriteCount = useMemo(() => {
-        if (!favoriteFileIDs || selected.count == 0) return 0;
-        let count = 0;
-        for (const [key, value] of Object.entries(selected)) {
-            if (typeof value === "boolean" && value) {
-                if (favoriteFileIDs.has(Number(key))) {
-                    count += 1;
-                }
-            }
-        }
-        return count;
-    }, [favoriteFileIDs, selected]);
+    const selectedFavoriteCount = useMemo(
+        () => countSelectedFavorites(selected, favoriteFileIDs),
+        [favoriteFileIDs, selected],
+    );
 
-    // Compute available context menu actions based on stable context and
-    // the favorite status of the current selection (for toggling).
     const contextMenuActions = useMemo(() => {
-        if (!onContextMenuAction) return [];
+        if (!onContextMenuAction || !contextMenu) return [];
+        const isTemporarySingleSelection =
+            previousSelectionRef.current !== null;
+        let selectionCount: number;
+        let favoriteCount: number;
+        let hasOnlyOwnFiles: boolean;
+
+        if (isTemporarySingleSelection) {
+            selectionCount = 1;
+            favoriteCount = favoriteFileIDs?.has(contextMenu.file.id) ? 1 : 0;
+            hasOnlyOwnFiles = contextMenu.file.ownerID === user?.id;
+        } else {
+            selectionCount = selected.count;
+            favoriteCount = selectedFavoriteCount;
+            hasOnlyOwnFiles =
+                selectionCount > 0 && selected.ownCount === selectionCount;
+        }
         const actions = getAvailableFileActions({
             barMode: mode,
             isInSearchMode: modePlus === "search",
             collectionSummary,
+            hasOnlyOwnFiles,
             showAddPerson: !!showAddPersonAction,
-            showEditLocation: !!showEditLocationAction && selected.ownCount > 0,
-            showSendLink: selected.ownCount > 0,
+            showEditLocation: !!showEditLocationAction && hasOnlyOwnFiles,
         });
         if (!actions.includes("favorite")) return actions;
-        if (
-            selectedFavoriteCount > 0 &&
-            selectedFavoriteCount < selected.count
-        ) {
+        if (favoriteCount > 0 && favoriteCount < selectionCount) {
             return actions.filter(
                 (action) => action !== "favorite" && action !== "unfavorite",
             );
         }
-        if (selectedFavoriteCount === selected.count && selected.count > 0) {
+        if (favoriteCount === selectionCount && selectionCount > 0) {
             return actions.map((action) =>
                 action === "favorite" ? "unfavorite" : action,
             );
@@ -703,17 +517,19 @@ export const FileList: React.FC<FileListProps> = ({
         return actions;
     }, [
         onContextMenuAction,
+        contextMenu,
         mode,
         modePlus,
         collectionSummary,
         showAddPersonAction,
         showEditLocationAction,
+        favoriteFileIDs,
+        user?.id,
         selected.ownCount,
         selectedFavoriteCount,
         selected.count,
     ]);
 
-    // Handle context menu open
     const handleContextMenu = useCallback(
         (event: React.MouseEvent, file: EnteFile, fileIndex: number) => {
             if (!onContextMenuAction) return;
@@ -721,16 +537,11 @@ export const FileList: React.FC<FileListProps> = ({
             event.preventDefault();
             event.stopPropagation();
 
-            // Reset tracking for this menu open.
             previousSelectionRef.current = null;
             contextMenuActionTakenRef.current = false;
-
-            // Handle selection behavior on right-click
             if (!selected[file.id]) {
-                // Store current selection before replacing it
                 previousSelectionRef.current = { ...selected };
 
-                // File not selected: clear selection and select only this file
                 const isOwnFile = file.ownerID === user?.id;
                 const context =
                     mode === "people" && activePersonID
@@ -738,7 +549,8 @@ export const FileList: React.FC<FileListProps> = ({
                         : {
                               mode: (mode ?? "albums") as
                                   | "albums"
-                                  | "hidden-albums",
+                                  | "hidden-albums"
+                                  | "archive-albums",
                               collectionID: activeCollectionID,
                           };
                 setSelected({
@@ -749,7 +561,6 @@ export const FileList: React.FC<FileListProps> = ({
                     context,
                 });
             }
-            // If file is already selected, keep current multi-selection
 
             setContextMenu({
                 position: { top: event.clientY, left: event.clientX },
@@ -770,9 +581,8 @@ export const FileList: React.FC<FileListProps> = ({
         ],
     );
 
-    // Handle context menu close
     const handleContextMenuClose = useCallback(() => {
-        // Defer restore so a menu-item click can mark the close as action-driven.
+        // Menu close precedes item click, so restoration must wait a microtask.
         void Promise.resolve().then(() => {
             if (
                 !contextMenuActionTakenRef.current &&
@@ -791,14 +601,13 @@ export const FileList: React.FC<FileListProps> = ({
     const handleContextMenuActionWithTracking = useCallback(
         (action: FileContextAction) => {
             const isEphemeralSingleSelection =
-                selected.count === 1 &&
                 previousSelectionRef.current?.count === 0;
             contextMenuActionTakenRef.current = true;
             onContextMenuAction?.(action, contextMenu?.file, {
                 isEphemeralSingleSelection,
             });
         },
-        [onContextMenuAction, contextMenu, selected.count],
+        [onContextMenuAction, contextMenu],
     );
 
     const renderListItem = useCallback(
@@ -938,17 +747,14 @@ export const FileList: React.FC<FileListProps> = ({
         }
     }, []);
 
-    // Track the last reported date to avoid unnecessary callbacks
     const lastVisibleDateRef = useRef<string | undefined>(undefined);
 
     const handleScroll = useCallback(
         ({ scrollOffset }: { scrollOffset: number }) => {
             onScroll?.(scrollOffset);
 
-            // Show back-to-top button when scrolled past threshold
             setShowBackToTop(scrollOffset > 500);
 
-            // Calculate which date is visible at the current scroll position
             if (onVisibleDateChange && items.length > 0) {
                 let cumulativeHeight = 0;
                 let currentDate: string | undefined;
@@ -958,13 +764,11 @@ export const FileList: React.FC<FileListProps> = ({
                         currentDate = item.groups[0]?.date;
                     }
                     cumulativeHeight += item.height;
-                    // Found the item that contains the scroll position
                     if (cumulativeHeight > scrollOffset) {
                         break;
                     }
                 }
 
-                // Only call callback if date changed
                 if (currentDate !== lastVisibleDateRef.current) {
                     lastVisibleDateRef.current = currentDate;
                     onVisibleDateChange(currentDate);
@@ -982,11 +786,9 @@ export const FileList: React.FC<FileListProps> = ({
         return <></>;
     }
 
-    // The old, mode unaware, behaviour.
+    // A new key resets virtualization state when the view changes.
     let key = `${activeCollectionID}`;
     if (modePlus) {
-        // If the new experimental modePlus prop is provided, use it to derive a
-        // mode specific key.
         if (modePlus == "search") {
             key = "search";
         } else if (modePlus == "people") {
@@ -1039,10 +841,6 @@ export const FileList: React.FC<FileListProps> = ({
     );
 };
 
-/**
- * Return a new array of splits, each split containing {@link annotatedFiles}
- * which have the same {@link timelineDateString}.
- */
 const splitByDate = (annotatedFiles: FileListAnnotatedFile[]) =>
     annotatedFiles.reduce(
         (splits, annotatedFile) => (
@@ -1055,11 +853,6 @@ const splitByDate = (annotatedFiles: FileListAnnotatedFile[]) =>
         new Array<FileListAnnotatedFile[]>(),
     );
 
-/**
- * For each element of {@link xs}, obtain an array by applying {@link f},
- * then obtain a gap element by applying {@link g}. Return a flattened array
- * containing all of these, except the trailing gap.
- */
 const intersperseWithGaps = <T, U>(
     xs: T[],
     f: (x: T) => U[],
@@ -1069,9 +862,6 @@ const intersperseWithGaps = <T, U>(
     return ys.slice(0, ys.length - 1);
 };
 
-/**
- * A list item container that spans the full width.
- */
 const FullSpanListItem = styled("div")`
     display: flex;
     align-items: center;
@@ -1082,9 +872,6 @@ const NoFilesListItem = styled(FullSpanListItem)`
     justify-content: center;
 `;
 
-/**
- * Floating button to scroll back to the top of the file list.
- */
 const BackToTopButton = styled(Fab)(({ theme }) => ({
     position: "absolute",
     bottom: 24,
@@ -1096,10 +883,6 @@ const BackToTopButton = styled(Fab)(({ theme }) => ({
     [theme.breakpoints.down("sm")]: { display: "none" },
 }));
 
-/**
- * Convert a {@link FileListHeaderOrFooter} into a {@link FileListItem}
- * that spans the entire width available to the row.
- */
 const asFullSpanFileListItem = ({
     component,
     ...rest
@@ -1109,18 +892,12 @@ const asFullSpanFileListItem = ({
     component: <FullSpanListItem>{component}</FullSpanListItem>,
 });
 
-/**
- * An grid item, spanning {@link span} columns.
- */
 const GridSpanListItem = styled("div")<{ span: number }>`
     grid-column: span ${({ span }) => span};
     display: flex;
     align-items: center;
 `;
 
-/**
- * The fixed height (in px) of {@link DateListItem}.
- */
 const dateListItemHeight = 48;
 
 const DateListItem = styled(GridSpanListItem)(
@@ -1289,7 +1066,7 @@ const FileThumbnail: React.FC<FileThumbnailProps> = ({
         }
     };
 
-    // See: [Note: Files in trash pseudo collection have deleteBy]
+    // Trash entries carry deleteBy despite the EnteFile type.
     const deleteBy =
         activeCollectionID == PseudoCollectionID.trash &&
         (file as EnteTrashFile).deleteBy;
@@ -1392,6 +1169,7 @@ const FileThumbnail_ = styled("div")<{ disabled: boolean }>`
     border-radius: 4px;
 `;
 
+// Safari needs explicit display and positioning for these pseudo-elements.
 const Check = styled("input")<{ $active: boolean }>(
     ({ theme, $active }) => `
     appearance: none;
@@ -1412,19 +1190,19 @@ const Check = styled("input")<{ $active: boolean }>(
 
     &::before {
         content: "";
-        display: block; /* Critical for Safari */
+        display: block;
         width: 19px;
         height: 19px;
         background-color: #ddd;
         border-radius: 50%;
         margin: 6px;
         transition: background-color 0.3s ease, opacity 0.3s ease;
-        position: relative; /* Important for Safari */
+        position: relative;
     }
     
     &::after {
         content: "";
-        display: block; /* Critical for Safari */
+        display: block;
         position: absolute;
         top: 50%;
         left: 50%;
@@ -1437,10 +1215,7 @@ const Check = styled("input")<{ $active: boolean }>(
         transform-origin: center;
     }
 
-    /* Default state - hide both */
     visibility: hidden;
-    
-    /* When $active - show both with reduced opacity */
     ${
         $active &&
         `
@@ -1449,13 +1224,11 @@ const Check = styled("input")<{ $active: boolean }>(
     `
     };
     
-    /* Hover state - show both */
     &:hover {
         visibility: visible;
         opacity: 0.7;
     }
     
-    /* Checked state - show both with full opacity and colored */
     &:checked {
         visibility: visible;
         opacity: 1 !important;
@@ -1484,10 +1257,6 @@ const HoverOverlay = styled("div")<{ checked: boolean }>`
         "background:linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0))"};
 `;
 
-/**
- * An overlay showing the avatars of the person who shared the item, at the top
- * right.
- */
 const AvatarOverlay = styled(Overlay)`
     display: flex;
     justify-content: flex-end;
@@ -1495,9 +1264,6 @@ const AvatarOverlay = styled(Overlay)`
     padding: 5px;
 `;
 
-/**
- * An overlay showing the favorite icon at bottom left.
- */
 const FavoriteOverlay = styled(Overlay)`
     display: flex;
     justify-content: flex-start;
@@ -1507,10 +1273,6 @@ const FavoriteOverlay = styled(Overlay)`
     opacity: 0.6;
 `;
 
-/**
- * An overlay with a gradient, showing the file type indicator (e.g. live photo,
- * video) at the bottom right.
- */
 const FileTypeIndicatorOverlay = styled(Overlay)`
     display: flex;
     justify-content: flex-end;
@@ -1561,18 +1323,9 @@ const VideoDurationOverlay: React.FC<VideoDurationOverlayProps> = ({
     </FileTypeIndicatorOverlay>
 );
 
-/**
- * Return `true` if the owner or uploader name avatar indicator should be shown
- * for the given {@link file}.
- */
 const shouldShowAvatar = (file: EnteFile, user: LocalUser | undefined) => {
-    // Public albums app.
     if (!user) return false;
-    // A file shared with the user.
     if (file.ownerID != user.id) return true;
-    // A public collected file (i.e. a file owned by the user, uploaded by an
-    // named guest via a public collect link)
     if (file.pubMagicMetadata?.data.uploaderName) return true;
-    // Regular file.
     return false;
 };

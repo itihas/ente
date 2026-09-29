@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/ente-io/cli/cmd"
-	"github.com/ente-io/cli/internal"
-	"github.com/ente-io/cli/internal/api"
-	"github.com/ente-io/cli/pkg"
-	"github.com/ente-io/cli/pkg/secrets"
-	"github.com/ente-io/cli/utils/constants"
+	"github.com/ente/cli/cmd"
+	"github.com/ente/cli/internal"
+	"github.com/ente/cli/internal/api"
+	"github.com/ente/cli/pkg"
+	"github.com/ente/cli/pkg/secrets"
+	"github.com/ente/cli/utils/constants"
 	"github.com/spf13/viper"
 	"log"
 	"os"
@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-var AppVersion = "0.2.3"
+var AppVersion = "v0.3.0"
 
 func main() {
 	cliConfigDir, err := GetCLIConfigDir()
@@ -50,11 +50,9 @@ func main() {
 		}
 	}
 
-	// Define a set of commands that do not require KeyHolder or cli initialisation.
 	skipInitCommands := map[string]struct{}{"version": {}, "docs": {}, "help": {}}
 
 	var keyHolder *secrets.KeyHolder
-	// Only initialise KeyHolder if the command isn't in the skip list.
 	shouldInit := len(os.Args) > 1
 	if len(os.Args) > 1 {
 		if _, skip := skipInitCommands[os.Args[1]]; skip {
@@ -75,7 +73,6 @@ func main() {
 	}
 
 	if len(os.Args) == 1 {
-		// If no arguments are passed, show help
 		os.Args = append(os.Args, "help")
 	}
 	if len(os.Args) == 2 && os.Args[1] == "docs" {
@@ -104,10 +101,10 @@ func main() {
 }
 
 func initConfig(cliConfigDir string) {
-	viper.SetConfigName("config")           // name of config file (without extension)
-	viper.SetConfigType("yaml")             // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath(cliConfigDir + "/") // path to look for the config file in
-	viper.AddConfigPath(".")                // optionally look for config in the working directory
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(cliConfigDir + "/")
+	viper.AddConfigPath(".")
 
 	viper.SetDefault("endpoint.api", constants.EnteApiUrl)
 	viper.SetDefault("log.http", false)
@@ -119,21 +116,18 @@ func initConfig(cliConfigDir string) {
 	}
 }
 
-// GetCLIConfigDir returns the path to the .ente-cli folder and creates it if it doesn't exist.
 func GetCLIConfigDir() (string, error) {
 	var configDir = os.Getenv("ENTE_CLI_CONFIG_DIR")
 
 	if configDir == "" {
-		// for backward compatibility, check for ENTE_CLI_CONFIG_PATH
+		// ENTE_CLI_CONFIG_PATH is kept for backward compatibility.
 		configDir = os.Getenv("ENTE_CLI_CONFIG_PATH")
 	}
 
 	if configDir != "" {
-		// remove trailing slash (for all OS)
 		configDir = strings.TrimSuffix(configDir, string(filepath.Separator))
 		return configDir, nil
 	}
-	// Get the user's home directory
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
@@ -141,7 +135,6 @@ func GetCLIConfigDir() (string, error) {
 
 	cliDBPath := filepath.Join(homeDir, ".ente")
 
-	// Check if the folder already exists, if not, create it
 	if _, err := os.Stat(cliDBPath); os.IsNotExist(err) {
 		err := os.MkdirAll(cliDBPath, 0755)
 		if err != nil {

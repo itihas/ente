@@ -81,7 +81,6 @@ export const SharedItemDetails: React.FC<SharedItemDetailsProps> = ({
                     marginBottom: 4,
                 }}
             >
-                {/* Large File Icon */}
                 <Box
                     sx={{
                         backgroundColor: iconInfo.backgroundColor,
@@ -95,7 +94,6 @@ export const SharedItemDetails: React.FC<SharedItemDetailsProps> = ({
                     {iconInfo.icon}
                 </Box>
 
-                {/* File Name */}
                 <Typography
                     variant="h5"
                     sx={{
@@ -109,7 +107,6 @@ export const SharedItemDetails: React.FC<SharedItemDetailsProps> = ({
                     {itemInfo.fileName}
                 </Typography>
 
-                {/* File Size - only show for regular files */}
                 {!itemInfo.lockerType && (
                     <Typography
                         variant="body"
@@ -121,7 +118,6 @@ export const SharedItemDetails: React.FC<SharedItemDetailsProps> = ({
                     </Typography>
                 )}
 
-                {/* Locker Type Display */}
                 {itemInfo.lockerType && itemInfo.lockerInfoData && (
                     <LockerTypeDisplay
                         type={itemInfo.lockerType}
@@ -131,7 +127,6 @@ export const SharedItemDetails: React.FC<SharedItemDetailsProps> = ({
                 )}
             </Box>
 
-            {/* Download Button - only for regular files */}
             {!itemInfo.lockerType && onDownload && (
                 <Box sx={{ width: "100%", mt: 4 }}>
                     <Button

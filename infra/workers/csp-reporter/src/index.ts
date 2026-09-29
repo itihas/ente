@@ -1,9 +1,3 @@
-/**
- * Log CSP reports.
- *
- * See _headers in the web app source.
- */
-
 export default {
     async fetch(request: Request) {
         switch (request.method) {

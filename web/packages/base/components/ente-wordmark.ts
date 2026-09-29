@@ -1,6 +1,3 @@
-/**
- * Shared geometry for the Ente wordmark across React and non-React surfaces.
- */
 export const enteWordmarkViewBox = "0 0 844 264";
 
 export const enteWordmarkPaths = [

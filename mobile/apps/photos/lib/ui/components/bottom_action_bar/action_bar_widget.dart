@@ -1,8 +1,8 @@
+import 'package:ente_components/ente_components.dart' as components;
+import "package:ente_strings/ente_strings.dart";
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
-import "package:photos/generated/l10n.dart";
 import 'package:photos/models/selected_files.dart';
-import 'package:photos/theme/ente_theme.dart';
 
 class ActionBarWidget extends StatefulWidget {
   final SelectedFiles? selectedFiles;
@@ -42,7 +42,10 @@ class _ActionBarWidgetState extends State<ActionBarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = getEnteTextTheme(context);
+    final colors = components.ComponentTheme.colorsOf(context);
+    final miniStyle = components.TextStyles.mini.copyWith(
+      color: colors.textBase,
+    );
     return SizedBox(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
@@ -57,14 +60,14 @@ class _ActionBarWidgetState extends State<ActionBarWidget> {
                   return Text(
                     _selectedOwnedFilesNotifier.value !=
                             _selectedFilesNotifier.value
-                        ? AppLocalizations.of(context).selectedPhotosWithYours(
+                        ? context.strings.selectedPhotosWithYours(
                             count: _selectedFilesNotifier.value,
                             yourCount: _selectedOwnedFilesNotifier.value,
                           )
-                        : AppLocalizations.of(context).selectedPhotos(
+                        : context.strings.selectedPhotos(
                             count: _selectedFilesNotifier.value,
                           ),
-                    style: textTheme.miniMuted,
+                    style: miniStyle,
                   );
                 },
               ),
@@ -80,10 +83,7 @@ class _ActionBarWidgetState extends State<ActionBarWidget> {
                   },
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: Text(
-                      AppLocalizations.of(context).cancel,
-                      style: textTheme.mini,
-                    ),
+                    child: Text(context.strings.cancel, style: miniStyle),
                   ),
                 ),
               ),

@@ -1,6 +1,7 @@
 import "dart:async";
 
 import "package:ente_pure_utils/ente_pure_utils.dart";
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:photos/core/configuration.dart";
@@ -9,27 +10,26 @@ import "package:photos/events/app_mode_changed_event.dart";
 import "package:photos/events/files_updated_event.dart";
 import "package:photos/events/local_photos_updated_event.dart";
 import "package:photos/events/people_changed_event.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file_load_result.dart";
 import "package:photos/models/gallery_type.dart";
 import "package:photos/models/ml/face/person.dart";
 import "package:photos/models/selected_files.dart";
-import "package:photos/service_locator.dart" show isLocalGalleryMode;
+import "package:photos/service_locator.dart"
+    show flagService, isLocalGalleryMode;
 import "package:photos/services/machine_learning/face_ml/feedback/cluster_feedback.dart";
-import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
 import "package:photos/services/machine_learning/ml_result.dart";
+import "package:photos/services/memory_lane/memory_lane_service.dart";
 import "package:photos/ui/components/banners/name_face_banner.dart";
 import "package:photos/ui/notification/toast.dart";
 import "package:photos/ui/viewer/actions/file_selection_overlay_bar.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
-import "package:photos/ui/viewer/gallery/state/boundary_reporter_mixin.dart";
 import "package:photos/ui/viewer/gallery/state/gallery_boundaries_provider.dart";
 import "package:photos/ui/viewer/gallery/state/gallery_files_inherited_widget.dart";
 import "package:photos/ui/viewer/gallery/state/selection_state.dart";
 import "package:photos/ui/viewer/people/add_person_action_sheet.dart";
 import "package:photos/ui/viewer/people/cluster_app_bar.dart";
-import "package:photos/ui/viewer/people/merge_clusters_to_person_sheet.dart";
+import "package:photos/ui/viewer/people/memory_lane_page_v2.dart";
 import "package:photos/ui/viewer/people/people_page.dart";
 import "package:photos/ui/viewer/people/person_face_widget.dart";
 import "package:photos/ui/viewer/people/save_person_banner.dart";
@@ -70,7 +70,8 @@ class _ClusterPageState extends State<ClusterPage> {
   late final StreamSubscription<LocalPhotosUpdatedEvent> _filesUpdatedEvent;
   late final StreamSubscription<PeopleChangedEvent> _peopleChangedEvent;
   late final StreamSubscription<AppModeChangedEvent> _appModeChangedEvent;
-  bool _isNamingBannerDismissed = false;
+  late final ValueNotifier<Set<String>> _timelineNotifier;
+  late final VoidCallback _timelineListener;
   bool get _localGalleryUiMode =>
       isLocalGalleryMode && !Configuration.instance.hasConfiguredAccount();
 
@@ -114,6 +115,21 @@ class _ClusterPageState extends State<ClusterPage> {
         setState(() {});
       }
     });
+    _timelineNotifier = MemoryLaneService.instance.readyPersonIds;
+    _timelineListener = () {
+      if (mounted) setState(() {});
+    };
+    _timelineNotifier.addListener(_timelineListener);
+    if (flagService.internalUser) {
+      if (widget.personID == null) {
+        unawaited(
+          MemoryLaneService.instance.ensureTimelineReachability(
+            widget.clusterID,
+            isCluster: true,
+          ),
+        );
+      }
+    }
     kDebugMode
         ? ClusterFeedbackService.instance.debugLogClusterBlurValues(
             widget.clusterID,
@@ -127,6 +143,7 @@ class _ClusterPageState extends State<ClusterPage> {
     _filesUpdatedEvent.cancel();
     _peopleChangedEvent.cancel();
     _appModeChangedEvent.cancel();
+    _timelineNotifier.removeListener(_timelineListener);
     if (ClusterFeedbackService.lastViewedClusterID == widget.clusterID) {
       ClusterFeedbackService.resetLastViewedClusterID();
     }
@@ -159,45 +176,40 @@ class _ClusterPageState extends State<ClusterPage> {
     }
   }
 
-  Future<void> _handleMergePerson() async {
-    if (_localGalleryUiMode) {
-      return;
-    }
-    final selection = await showMergeClustersToPersonPage(
-      context,
-      seedClusterId: widget.clusterID,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (selection == null || selection.personId.isEmpty) {
-      return;
-    }
-    var person = selection.person;
-    person ??= await PersonService.instance.getPerson(selection.personId);
-    if (person == null) {
-      return;
-    }
-    if (selection.person == null ||
-        selection.seedClusterId != widget.clusterID) {
-      await ClusterFeedbackService.instance.addClusterToExistingPerson(
-        person: person,
-        clusterID: widget.clusterID,
+  Future<void> _openMemoryLanePage() async {
+    if (!flagService.internalUser) return;
+    if (widget.personID == null &&
+        MemoryLaneService.instance.hasReadyTimelineSync(
+          widget.clusterID,
+          isCluster: true,
+        )) {
+      await openMemoryLanePage(
+        context,
+        personId: widget.clusterID,
+        person: null,
+        isCluster: true,
       );
     }
-    if (!mounted) {
-      return;
-    }
-    Navigator.pop(context);
-    routeToPage(
-      context,
-      PeoplePage(person: person, searchResult: null),
-    ).ignore();
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    final appBar = ClusterAppBar.sliverConfig(
+      SearchResultPage.appBarType,
+      "${files.length} memories${widget.appendTitle}",
+      _selectedFiles,
+      widget.clusterID,
+      memoryLaneReady: flagService.internalUser && widget.personID == null
+          ? MemoryLaneService.instance.hasReadyTimelineSync(
+              widget.clusterID,
+              isCluster: true,
+            )
+          : false,
+      onMemoryLaneTap: flagService.internalUser ? _openMemoryLanePage : null,
+    );
     final gallery = Gallery(
+      appBar: appBar,
       asyncLoader: (creationStartTime, creationEndTime, {limit, asc}) {
         final result = files
             .where(
@@ -222,56 +234,21 @@ class _ClusterPageState extends State<ClusterPage> {
       selectedFiles: _selectedFiles,
       enableFileGrouping: widget.enableGrouping,
       initialFiles: files,
-      header: (_localGalleryUiMode || widget.showNamingBanner) &&
-              files.isNotEmpty &&
-              !_isNamingBannerDismissed
+      header:
+          (_localGalleryUiMode || widget.showNamingBanner) && files.isNotEmpty
           ? _localGalleryUiMode
-              ? const NameFaceBanner()
-              : SavePersonBanner(
-                  faceWidget: PersonFaceWidget(clusterID: widget.clusterID),
-                  text: AppLocalizations.of(context).savePerson,
-                  subText: AppLocalizations.of(context).findThemQuickly,
-                  primaryActionLabel: AppLocalizations.of(context).save,
-                  secondaryActionLabel: AppLocalizations.of(context).merge,
-                  onPrimaryTap: _handleSavePerson,
-                  onSecondaryTap: _handleMergePerson,
-                  onDismissed: () {
-                    if (!mounted) {
-                      return;
-                    }
-                    setState(() {
-                      _isNamingBannerDismissed = true;
-                    });
-                  },
-                  dismissibleKey: ValueKey(
-                    "save-person-banner-${widget.clusterID}",
-                  ),
-                )
+                ? const NameFaceBanner()
+                : SavePersonBanner(
+                    faceWidget: PersonFaceWidget(clusterID: widget.clusterID),
+                    text: context.strings.savePerson,
+                    subText: context.strings.findThemQuickly,
+                    onTap: _handleSavePerson,
+                  )
           : null,
     );
     return GalleryBoundariesProvider(
       child: GalleryFilesState(
         child: Scaffold(
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(50.0),
-            child: widget.enableGrouping
-                ? ClusterAppBar(
-                    SearchResultPage.appBarType,
-                    "${files.length} memories${widget.appendTitle}",
-                    _selectedFiles,
-                    widget.clusterID,
-                    key: ValueKey(files.length),
-                  )
-                : _AppBarWithBoundary(
-                    child: ClusterAppBar(
-                      SearchResultPage.appBarType,
-                      "${files.length} memories${widget.appendTitle}",
-                      _selectedFiles,
-                      widget.clusterID,
-                      key: ValueKey(files.length),
-                    ),
-                  ),
-          ),
           body: SelectionState(
             selectedFiles: _selectedFiles,
             child: Stack(
@@ -289,24 +266,5 @@ class _ClusterPageState extends State<ClusterPage> {
         ),
       ),
     );
-  }
-}
-
-/// Wrapper widget that reports the app bar as top boundary for auto-scroll
-/// when file grouping is disabled
-class _AppBarWithBoundary extends StatefulWidget {
-  final Widget child;
-
-  const _AppBarWithBoundary({required this.child});
-
-  @override
-  State<_AppBarWithBoundary> createState() => _AppBarWithBoundaryState();
-}
-
-class _AppBarWithBoundaryState extends State<_AppBarWithBoundary>
-    with BoundaryReporter {
-  @override
-  Widget build(BuildContext context) {
-    return boundaryWidget(position: BoundaryPosition.top, child: widget.child);
   }
 }

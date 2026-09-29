@@ -1,5 +1,4 @@
 // TODO: Audit this file (too many null assertions + other issues)
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import { useAlbumsAppContext } from "@/app/context/albums-app-context";
 import { LazyNotification } from "@/app/lazy/global-ui";
 import {
@@ -13,38 +12,23 @@ import {
     FeedIcon,
     ShareIcon,
 } from "@/public-album/components/ActionIcons";
-import { type FileListHeaderOrFooter } from "@/public-album/components/FileList";
+import type { FileListHeaderOrFooter } from "@/public-album/components/FileList";
 import { FileListWithViewer } from "@/public-album/components/FileListWithViewer";
 import type { TripLayoutProps } from "@/public-album/components/TripLayout";
 import { setPublicAlbumsCredentials } from "@/public-album/data/auth/public-link-credentials";
-import { quickLinkDateRangeForFiles } from "@/public-album/data/utils/quick-link";
 import { ActiveDownloadStatusNotifications } from "@/public-album/download/components/ActiveDownloadStatusNotifications";
 import { downloadManager } from "@/public-album/download/services/download-manager";
 import { thumbnailManager } from "@/public-album/media/thumbnails/thumbnail-manager";
 import { sortFiles } from "@/public-album/media/utils/sort-files";
-import type { FullScreenDropZoneProps } from "@/public-album/upload/components/CollectDropZone";
 import type { UploadProps } from "@/public-album/upload/components/Upload";
 import {
     getSelectedFiles,
     type SelectedState,
 } from "@/public-album/utils/file";
-import { type FileViewerInitialSidebar } from "@/public-album/viewer/components/FileViewer";
+import type { FileViewerInitialSidebar } from "@/public-album/viewer/components/FileViewer";
 import type { PublicAlbumSingleFileViewerProps } from "@/public-album/viewer/components/PublicAlbumSingleFileViewer";
-import { type PublicFeedItemClickInfo } from "@/public-album/viewer/components/PublicFeedSidebar";
+import type { PublicFeedItemClickInfo } from "@/public-album/viewer/components/PublicFeedSidebar";
 import { LazyPublicFeedSidebar } from "@/public-album/viewer/lib/lazy";
-import {
-    useSaveGroupsActions,
-    type AddSaveGroup,
-} from "@/shared/state/save-groups";
-import {
-    GalleryItemsHeaderAdapter,
-    GalleryItemsSummary,
-} from "@/shared/ui/gallery/GalleryItemsHeader";
-import {
-    LoadingThumbnail,
-    StaticThumbnail,
-} from "@/shared/ui/media/PlaceholderThumbnails";
-import { thumbnailGap } from "@/shared/utils/thumbnail-grid-layout";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -67,6 +51,8 @@ import { FocusVisibleButton } from "ente-base/components/mui/FocusVisibleButton"
 import { NavbarBase } from "ente-base/components/Navbar";
 import { useModalVisibility } from "ente-base/components/utils/modal";
 import { useBaseContext } from "ente-base/context";
+import { isDevBuild } from "ente-base/env";
+import { isNamedError } from "ente-base/error";
 import {
     isHTTP401Error,
     isHTTPErrorWithStatus,
@@ -74,17 +60,30 @@ import {
     type PublicAlbumsCredentials,
 } from "ente-base/http";
 import log from "ente-base/log";
+import { apiOrigin, isCustomAPIOrigin } from "ente-base/origins";
+import type { FullScreenDropZoneProps } from "ente-gallery/components/FullScreenDropZone";
 import {
-    albumsAppOrigin,
-    apiOrigin,
-    isCustomAlbumsAppOrigin,
-    isOfficialAlbumsApp,
-    photosAppOrigin,
-} from "ente-base/origins";
+    useSaveGroupsActions,
+    type AddSaveGroup,
+} from "ente-gallery/components/utils/save-groups";
+import {
+    isPossibleSingleFileQuickLinkName,
+    quickLinkDateRangeForFiles,
+} from "ente-gallery/utils/quick-link";
 import type { Collection } from "ente-media/collection";
-import { type EnteFile } from "ente-media/file";
-import { fileFileName } from "ente-media/file-metadata";
+import type { EnteFile } from "ente-media/file";
+import { fileCreationTime, fileFileName } from "ente-media/file-metadata";
 import { FileType } from "ente-media/file-type";
+import {
+    AlbumDescription,
+    GalleryItemsHeaderAdapter,
+    GalleryItemsSummary,
+} from "ente-new/photos/components/gallery/ListHeader";
+import {
+    LoadingThumbnail,
+    StaticThumbnail,
+} from "ente-new/photos/components/PlaceholderThumbnails";
+import { thumbnailGap } from "ente-new/photos/components/utils/thumbnail-grid-layout";
 import { t } from "i18next";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
@@ -97,14 +96,12 @@ import {
     type ComponentType,
     type PropsWithChildren,
 } from "react";
-import { type FileWithPath } from "react-dropzone";
+import type { FileWithPath } from "react-dropzone";
 
 const LazyPublicAlbumSingleFileViewer =
     dynamic<PublicAlbumSingleFileViewerProps>(
         () =>
-            import(
-                "@/public-album/viewer/components/PublicAlbumSingleFileViewer"
-            ).then(
+            import("@/public-album/viewer/components/PublicAlbumSingleFileViewer").then(
                 ({ PublicAlbumSingleFileViewer }) =>
                     PublicAlbumSingleFileViewer,
             ),
@@ -141,9 +138,8 @@ const loadJoinPublicAlbumRedirect = () =>
 
 const publicAlbumAllFilesCollectionID = 0;
 
-const isDeviceLimitExceededError = async (e: unknown) =>
-    isHTTPErrorWithStatus(e, 429) ||
-    (await isMuseumHTTPError(e, 403, "LINK_DEVICE_LIMIT_EXCEEDED"));
+const accessTokenFromURL = (url: URL) =>
+    url.searchParams.get("t") || url.pathname.split("/").find(Boolean);
 
 export default function PublicAlbumPage() {
     const { showMiniDialog, onGenericError } = useBaseContext();
@@ -181,7 +177,6 @@ export default function PublicAlbumPage() {
         useState(false);
     const publicFeedSidebarOpenRef = useRef(publicFeedVisibilityProps.open);
 
-    // Pending navigation from feed item click
     const [pendingFileNavigation, setPendingFileNavigation] = useState<{
         fileIndex: number;
         sidebar?: FileViewerInitialSidebar;
@@ -202,26 +197,19 @@ export default function PublicAlbumPage() {
         }
     }, []);
 
-    /**
-     * Handle clicks on feed items to navigate to the file and open sidebar.
-     */
     const handleFeedItemClick = (info: PublicFeedItemClickInfo) => {
         if (!publicFiles) return;
 
-        // Find the file index in publicFiles
         const fileIndex = publicFiles.findIndex((f) => f.id === info.fileID);
         if (fileIndex === -1) return;
 
-        // Close the feed sidebar
         publicFeedVisibilityProps.onClose();
 
-        // Determine which sidebar to open
         const sidebar: FileViewerInitialSidebar =
             info.type === "liked_photo" || info.type === "liked_video"
                 ? "likes"
                 : "comments";
 
-        // Set navigation state
         setPendingFileNavigation({
             fileIndex,
             sidebar,
@@ -242,52 +230,48 @@ export default function PublicAlbumPage() {
             continue: {
                 text: t("login"),
                 action: async () => {
-                    if (isOfficialAlbumsApp) {
-                        window.location.href = photosAppOrigin();
-                        return;
+                    if (isCustomAPIOrigin) {
+                        await router.push("/");
+                    } else {
+                        window.location.href = "https://photos.ente.com";
                     }
-                    await router.push("/");
                 },
             },
             cancel: false,
         });
 
-    /**
-     * Check if we need to redirect Trip albums from custom domains to albums.ente.com
-     * Returns true if a redirect was initiated, false otherwise.
-     * Reason: custom domains do not support the Trip layout fully
-     */
+    // Ente-hosted trip albums are only fully supported on albums.ente.com.
     const checkAndRedirectForTripAlbum = (collection: Collection): boolean => {
         if (
-            collection.pubMagicMetadata?.data.layout === "trip" &&
-            isOfficialAlbumsApp
+            isCustomAPIOrigin ||
+            collection.pubMagicMetadata?.data.layout !== "trip"
         ) {
-            const currentURL = new URL(window.location.href);
-            const albumsURL = new URL(albumsAppOrigin());
-
-            if (currentURL.host !== albumsURL.host) {
-                isRedirectingToAlbumsAppRef.current = true;
-
-                albumsURL.search = currentURL.search;
-                albumsURL.hash = currentURL.hash;
-
-                window.location.href = albumsURL.href;
-                return true;
-            }
+            return false;
         }
-        return false;
+
+        const currentURL = new URL(window.location.href);
+        const albumsURL = new URL("https://albums.ente.com");
+
+        if (currentURL.host === albumsURL.host) {
+            return false;
+        }
+
+        isRedirectingToAlbumsAppRef.current = true;
+
+        albumsURL.pathname = currentURL.pathname;
+        albumsURL.search = currentURL.search;
+        albumsURL.hash = currentURL.hash;
+
+        window.location.href = albumsURL.href;
+        return true;
     };
 
     useEffect(() => {
-        /**
-         * Determine credentials, read the locally cached state, then start
-         * pulling the latest from remote.
-         */
         const main = async () => {
             let redirectingToWebsite = false;
             try {
                 const currentURL = new URL(window.location.href);
-                const t = currentURL.searchParams.get("t");
+                const accessToken = accessTokenFromURL(currentURL);
                 const [
                     { extractCollectionKeyFromShareURL },
                     {
@@ -301,19 +285,17 @@ export default function PublicAlbumPage() {
                     loadPublicAlbumsFDB(),
                 ]);
                 const ck = await extractCollectionKeyFromShareURL(currentURL);
-                if (!t && !ck) {
-                    // Only redirect to ente.com if this is NOT a custom/self-hosted instance
-                    if (!isCustomAlbumsAppOrigin) {
+                if (!accessToken && !ck) {
+                    if (!isCustomAPIOrigin) {
                         window.location.href = "https://ente.com";
                         redirectingToWebsite = true;
                     }
                 }
-                if (!t || !ck) {
+                if (!accessToken || !ck) {
                     return;
                 }
                 collectionKey.current = ck;
                 const collection = await savedPublicCollectionByKey(ck);
-                const accessToken = t;
                 const currentAPIOrigin = await apiOrigin();
                 let accessTokenJWT: string | undefined;
                 const linkDeviceToken =
@@ -351,8 +333,7 @@ export default function PublicAlbumPage() {
                 }
             }
         };
-        main();
-        // TODO:
+        void main();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -379,10 +360,6 @@ export default function PublicAlbumPage() {
         }
     }, [dragAndDropFiles.length, isUploadInProgress, uploadTypeSelectorView]);
 
-    /**
-     * Pull the latest data related to the public album from remote, updating
-     * both our local database and component state.
-     */
     const publicAlbumsRemotePull = useCallback(async () => {
         const accessToken = credentials.current!.accessToken;
         showLoadingBar();
@@ -426,12 +403,10 @@ export default function PublicAlbumPage() {
             setIsPasswordProtected(isPasswordProtected);
             setErrorMessage("");
 
-            // Remove the locally cached accessTokenJWT if the sharer has
-            // disabled password protection on the link.
             if (!isPasswordProtected && credentials.current?.accessTokenJWT) {
                 credentials.current.accessTokenJWT = undefined;
                 setPublicAlbumsCredentials(credentials.current);
-                removePublicCollectionAccessTokenJWT(accessToken);
+                await removePublicCollectionAccessTokenJWT(accessToken);
             }
 
             if (isPasswordProtected && !credentials.current?.accessTokenJWT) {
@@ -447,16 +422,8 @@ export default function PublicAlbumPage() {
                             ),
                     );
                 } catch (e) {
-                    // If we reached the try block and attempted to pull files,
-                    // it means the accessToken itself is very likely valid
-                    // (since the `pullCollection` succeeded just a moment ago).
-                    //
-                    // So a 401 Unauthorized now indicates that the
-                    // accessTokenJWT is no longer valid since the sharer has
-                    // changed the password.
-                    //
-                    // Clear the locally cached accessTokenJWT and ask the user
-                    // to reenter the password.
+                    // Collection access already succeeded.
+                    // A 401 here means the password JWT is invalid.
                     if (isHTTP401Error(e)) {
                         credentials.current!.accessTokenJWT = undefined;
                         setPublicAlbumsCredentials(credentials.current);
@@ -466,16 +433,11 @@ export default function PublicAlbumPage() {
                 }
             }
         } catch (e) {
-            const isDeviceLimitExceeded = await isDeviceLimitExceededError(e);
-            // The 410 Gone or device-limit failure can arise from either the
-            // collection pull or the files pull since they're part of the
-            // remote's access token check sequence.
-            //
-            // In practice, it almost always will be a consequence of the
-            // collection pull since it happens first.
-            //
-            // The 401 Unauthorized can only arise from the collection pull
-            // since we already handle that separately for the files pull.
+            const isDeviceLimitExceeded = await isMuseumHTTPError(
+                e,
+                403,
+                "LINK_DEVICE_LIMIT_EXCEEDED",
+            );
             if (
                 isHTTPErrorWithStatus(e, 401) ||
                 isHTTPErrorWithStatus(e, 410) ||
@@ -493,15 +455,13 @@ export default function PublicAlbumPage() {
                         ? t("link_request_limit_exceeded")
                         : t("link_expired_message"),
                 );
-                // Sharing has been disabled. Clear out local cache.
                 await removePublicCollectionFileData(accessToken);
                 await removePublicCollectionByKey(collectionKey.current!);
                 setPublicCollection(undefined);
                 setPublicFiles(undefined);
             } else {
                 log.error("Public album remote pull failed", e);
-                // Don't use the `setErrorMessage`, show a dialog instead,
-                // because this might be a transient network error.
+                // Preserve cached state because this failure may be transient.
                 onGenericError(e);
             }
         } finally {
@@ -512,7 +472,7 @@ export default function PublicAlbumPage() {
         }
     }, [showLoadingBar, hideLoadingBar, onGenericError]);
 
-    // See: [Note: Visual feedback to acknowledge user actions]
+    // Briefly show the loading bar when an action has no other visible effect.
     const handleVisualFeedback = useCallback(() => {
         showLoadingBar();
         setTimeout(hideLoadingBar, 0);
@@ -547,9 +507,7 @@ export default function PublicAlbumPage() {
                 { verifyPublicAlbumPassword },
                 { savePublicCollectionAccessTokenJWT },
             ] = await Promise.all([
-                import(
-                    "@/public-album/access/services/verify-public-album-password"
-                ),
+                import("@/public-album/access/services/verify-public-album-password"),
                 loadPublicAlbumsFDB(),
             ]);
             const accessTokenJWT = await verifyPublicAlbumPassword(
@@ -589,9 +547,8 @@ export default function PublicAlbumPage() {
 
     const downloadFilesHelper = async () => {
         try {
-            const { downloadAndSaveFiles } = await import(
-                "@/public-album/download/services/save"
-            );
+            const { downloadAndSaveFiles } =
+                await import("@/public-album/download/services/save");
             const selectedFiles = getSelectedFiles(selected, publicFiles!);
             const singleFile =
                 selectedFiles.length === 1 ? selectedFiles[0] : undefined;
@@ -627,7 +584,9 @@ export default function PublicAlbumPage() {
 
     const commentsEnabled =
         publicCollection?.publicURLs[0]?.enableComment ?? false;
-    const joinEnabled = publicCollection?.publicURLs[0]?.enableJoin ?? false;
+    const joinEnabled =
+        (isDevBuild || !isCustomAPIOrigin) &&
+        (publicCollection?.publicURLs[0]?.enableJoin ?? false);
     const handleDrop = useCallback((files: FileWithPath[]) => {
         setShouldRenderUpload(true);
         setDragAndDropFiles(files);
@@ -641,11 +600,18 @@ export default function PublicAlbumPage() {
     const isMobileHeaderLayout = useMediaQuery("(width < 720px)");
     const showMobileMasonryCover =
         isMobileHeaderLayout && publicAlbumLayout === "masonry";
-    const fileListHeaderHeightForViewport = isMobileHeaderLayout
-        ? showMobileMasonryCover
-            ? mobileMasonryFileListHeaderHeight(viewportWidth)
-            : fileListHeaderHeightMobile
-        : fileListHeaderHeight;
+    const albumDescription =
+        publicCollection?.pubMagicMetadata?.data.caption?.trim();
+    const hasSummaryDescription = !!albumDescription && !showMobileMasonryCover;
+    const [descriptionHeight, setDescriptionHeight] = useState(0);
+
+    const fileListHeaderHeightForViewport =
+        (isMobileHeaderLayout
+            ? showMobileMasonryCover
+                ? mobileMasonryFileListHeaderHeight(viewportWidth)
+                : fileListHeaderHeightMobile
+            : fileListHeaderHeight) +
+        (hasSummaryDescription ? descriptionHeight : 0);
 
     const fileListHeader = useMemo<FileListHeaderOrFooter | undefined>(
         () =>
@@ -666,6 +632,7 @@ export default function PublicAlbumPage() {
                                   hasSelection,
                                   showMobileMasonryCover,
                               }}
+                              onDescriptionHeightChange={setDescriptionHeight}
                           />
                       ),
                       height: fileListHeaderHeightForViewport,
@@ -729,10 +696,16 @@ export default function PublicAlbumPage() {
 
     const layout = publicAlbumLayout;
     const quickLinkDateRange = quickLinkDateRangeForFiles(publicFiles);
+    const isSingleFileAlbum = publicFiles.length === 1;
     const isQuickLinkAlbum =
         quickLinkDateRange !== undefined &&
-        publicCollection?.name === quickLinkDateRange;
-    const isSingleFileAlbum = publicFiles.length === 1;
+        (publicCollection?.name === quickLinkDateRange ||
+            (isSingleFileAlbum &&
+                publicCollection !== undefined &&
+                isPossibleSingleFileQuickLinkName(
+                    publicCollection.name,
+                    fileCreationTime(publicFiles[0]!),
+                )));
     const shouldShowSingleFileViewer = isQuickLinkAlbum && isSingleFileAlbum;
 
     if (shouldShowSingleFileViewer) {
@@ -744,7 +717,7 @@ export default function PublicAlbumPage() {
                     collectionKey={collectionKey.current!}
                     enableDownload={downloadEnabled}
                     enableComment={commentsEnabled}
-                    enableJoin={publicCollection.publicURLs[0]?.enableJoin}
+                    enableJoin={joinEnabled}
                     onJoinAlbum={handleJoinAlbum}
                     onVisualFeedback={handleVisualFeedback}
                     onAddSaveGroup={onAddSaveGroup}
@@ -767,7 +740,7 @@ export default function PublicAlbumPage() {
                     collectionKey={collectionKey.current}
                     credentials={credentials}
                     enableComment={commentsEnabled}
-                    enableJoin={publicCollection?.publicURLs[0]?.enableJoin}
+                    enableJoin={joinEnabled}
                 />
             ) : (
                 <>
@@ -777,7 +750,7 @@ export default function PublicAlbumPage() {
                                 flex: "0 0 60px",
                                 px: "24px",
                                 "@media (width < 720px)": {
-                                    px: "4px",
+                                    px: "12px",
                                     ...(showMobileMasonryCover
                                         ? { borderBottom: "none" }
                                         : {}),
@@ -802,6 +775,8 @@ export default function PublicAlbumPage() {
                                 </EnteLogoLink>
                                 <Stack direction="row" spacing={2}>
                                     <SecondaryActionButton
+                                        onAddPhotos={onAddPhotos}
+                                        addPhotosDisabled={isUploadInProgress}
                                         enableJoin={joinEnabled}
                                         onJoinAlbum={handleJoinAlbum}
                                     />
@@ -826,7 +801,7 @@ export default function PublicAlbumPage() {
                         collectionKey={collectionKey.current}
                         onJoinAlbum={handleJoinAlbum}
                         enableComment={commentsEnabled}
-                        enableJoin={publicCollection?.publicURLs[0]?.enableJoin}
+                        enableJoin={joinEnabled}
                         pendingFileIndex={pendingFileNavigation?.fileIndex}
                         pendingFileSidebar={pendingFileNavigation?.sidebar}
                         pendingHighlightCommentID={
@@ -885,10 +860,6 @@ export default function PublicAlbumPage() {
     );
 }
 
-/**
- * Sort the given {@link files} using {@link sortFiles}, using the ascending
- * ordering preference if specified in the given {@link collection}'s metadata.
- */
 const sortFilesForCollection = (files: EnteFile[], collection?: Collection) =>
     sortFiles(files, collection?.pubMagicMetadata?.data.asc ?? false);
 
@@ -1002,7 +973,7 @@ const LazyCollectDropZone: React.FC<LazyCollectDropZoneProps> = ({
         if (!enabled || DropZoneComponent) return;
 
         let isCancelled = false;
-        void import("@/public-album/upload/components/CollectDropZone").then(
+        void import("ente-gallery/components/FullScreenDropZone").then(
             ({ FullScreenDropZone }) => {
                 if (isCancelled) return;
                 setDropZoneComponent(() => FullScreenDropZone);
@@ -1022,7 +993,6 @@ const LazyCollectDropZone: React.FC<LazyCollectDropZoneProps> = ({
 };
 
 const EnteLogoLink = styled("a")(({ theme }) => ({
-    // Remove the excess space at the top.
     svg: { verticalAlign: "middle" },
     color: theme.vars.palette.text.base,
     ":hover": { color: theme.vars.palette.accent.main },
@@ -1045,20 +1015,37 @@ const PrimaryActionButton: React.FC = () => {
 
     return (
         <GreenButton color="accent" onClick={handleGetEnte}>
-            {t("get_ente_photos")}
+            {t("join_ente")}
         </GreenButton>
     );
 };
 
 interface SecondaryActionButtonProps {
+    onAddPhotos?: () => void;
+    addPhotosDisabled?: boolean;
     enableJoin?: boolean;
     onJoinAlbum?: () => void;
 }
 
 const SecondaryActionButton: React.FC<SecondaryActionButtonProps> = ({
+    onAddPhotos,
+    addPhotosDisabled,
     enableJoin,
     onJoinAlbum,
 }) => {
+    if (onAddPhotos) {
+        return (
+            <FocusVisibleButton
+                color="secondary"
+                sx={navbarActionButtonSx}
+                onClick={onAddPhotos}
+                disabled={addPhotosDisabled}
+            >
+                {t("upload")}
+            </FocusVisibleButton>
+        );
+    }
+
     if (enableJoin) {
         return (
             <FocusVisibleButton
@@ -1133,26 +1120,13 @@ interface FileListHeaderProps {
     addPhotosDisabled: boolean;
     hasSelection: boolean;
     showMobileMasonryCover: boolean;
+    onDescriptionHeightChange?: (height: number) => void;
 }
 
-/**
- * The fixed height (in px) of {@link FileListHeader}.
- */
 const fileListHeaderHeight = 84;
 
-/**
- * The height (in px) of {@link FileListHeader} on mobile.
- *
- * Keep this fixed so the virtualized list has a stable header row height.
- */
 const fileListHeaderHeightMobile = 132;
 
-/**
- * A header shown before the listing of files.
- *
- * It scrolls along with the content. It has a fixed height,
- * {@link fileListHeaderHeight}.
- */
 const FileListHeader: React.FC<FileListHeaderProps> = ({
     publicCollection,
     publicFiles,
@@ -1163,8 +1137,11 @@ const FileListHeader: React.FC<FileListHeaderProps> = ({
     addPhotosDisabled,
     hasSelection,
     showMobileMasonryCover,
+    onDescriptionHeightChange,
 }) => {
     const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+    const albumDescription =
+        publicCollection.pubMagicMetadata?.data.caption?.trim();
 
     const memoriesDateRange = useMemo(() => {
         return quickLinkDateRangeForFiles(publicFiles);
@@ -1204,7 +1181,7 @@ const FileListHeader: React.FC<FileListHeaderProps> = ({
                 await navigator.share({ text: shareText });
                 return;
             } catch (error) {
-                if (error instanceof Error && error.name === "AbortError") {
+                if (isNamedError(error, "AbortError")) {
                     return;
                 }
             }
@@ -1251,6 +1228,7 @@ const FileListHeader: React.FC<FileListHeaderProps> = ({
                     <PublicAlbumCoverHero
                         coverFile={coverFile}
                         title={publicCollection.name}
+                        description={albumDescription}
                         fileCount={publicFiles.length}
                         dateRange={
                             isQuickLinkAlbum ? undefined : memoriesDateRange
@@ -1279,6 +1257,10 @@ const FileListHeader: React.FC<FileListHeaderProps> = ({
                         >
                             <GalleryItemsSummary
                                 name={publicCollection.name}
+                                description={albumDescription}
+                                onDescriptionHeightChange={
+                                    onDescriptionHeightChange
+                                }
                                 fileCount={publicFiles.length}
                                 endIcon={
                                     !isQuickLinkAlbum && memoriesDateRange ? (
@@ -1425,6 +1407,7 @@ const actionButtonSx = (variant: "default" | "cover") =>
 interface PublicAlbumCoverHeroProps {
     coverFile: EnteFile | undefined;
     title: string;
+    description?: string;
     fileCount: number;
     dateRange?: string;
     actions?: React.ReactNode;
@@ -1433,6 +1416,7 @@ interface PublicAlbumCoverHeroProps {
 const PublicAlbumCoverHero: React.FC<PublicAlbumCoverHeroProps> = ({
     coverFile,
     title,
+    description,
     fileCount,
     dateRange,
     actions,
@@ -1460,7 +1444,7 @@ const PublicAlbumCoverHero: React.FC<PublicAlbumCoverHeroProps> = ({
                 return false;
             };
 
-            let didSetThumbnail = false;
+            let didSetThumbnail: boolean;
             try {
                 const cachedURL = await thumbnailManager.renderableThumbnailURL(
                     coverFile,
@@ -1554,6 +1538,15 @@ const PublicAlbumCoverHero: React.FC<PublicAlbumCoverHeroProps> = ({
             <MobileMasonryCoverGradient $isPlaceholder={isPlaceholder} />
             <MobileMasonryCoverContent>
                 <MobileMasonryCoverTitle>{title}</MobileMasonryCoverTitle>
+                <AlbumDescription
+                    description={description}
+                    sx={{
+                        maxWidth: "100%",
+                        mt: "-6px",
+                        opacity: 0.8,
+                        textAlign: "center",
+                    }}
+                />
                 <Typography
                     variant="small"
                     sx={{
@@ -1695,22 +1688,10 @@ const MobileMasonryCoverTitle = styled(Typography)({
     overflowWrap: "anywhere",
 });
 
-/**
- * The default height (in px) of {@link FileListFooter}.
- */
 const fileListFooterHeight = 24;
 
-/**
- * The compact trailing gap used after the final photo in the mobile masonry
- * cover layout.
- */
 const mobileMasonryFileListFooterHeight = thumbnailGap;
 
-/**
- * A footer shown after the listing of files.
- *
- * It scrolls along with the content.
- */
 const FileListFooter: React.FC<{ height: number }> = ({ height }) => (
     <Box sx={{ height }} />
 );

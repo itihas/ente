@@ -28,11 +28,7 @@ class FileDataEntity {
   final Map<String, dynamic> remoteRawData;
   final DataType type;
 
-  FileDataEntity(
-    this.fileID,
-    this.remoteRawData,
-    this.type,
-  );
+  FileDataEntity(this.fileID, this.remoteRawData, this.type);
 
   void validate() {
     if (type == DataType.mlData) {
@@ -52,11 +48,7 @@ class FileDataEntity {
     String type,
     Map<String, dynamic> json,
   ) {
-    return FileDataEntity(
-      fileID,
-      json,
-      DataType.fromString(type),
-    );
+    return FileDataEntity(fileID, json, DataType.fromString(type));
   }
 
   static FileDataEntity empty(int fileID, DataType type) {
@@ -80,14 +72,13 @@ class FileDataEntity {
         )
       : null;
 
-  RemoteClipEmbedding? getClipEmbeddingIfCompatible(
-    int minClipMlVersion,
-  ) {
+  RemoteClipEmbedding? getClipEmbeddingIfCompatible(int minClipMlVersion) {
     final clipData = remoteRawData[_clipKey];
     if (clipData == null) return null;
 
-    final clipEmbedding =
-        RemoteClipEmbedding.fromJson(clipData as Map<String, dynamic>);
+    final clipEmbedding = RemoteClipEmbedding.fromJson(
+      clipData as Map<String, dynamic>,
+    );
     return clipEmbedding.version >= minClipMlVersion ? clipEmbedding : null;
   }
 }
@@ -95,15 +86,11 @@ class FileDataEntity {
 class RemoteFaceEmbedding {
   final List<Face> faces;
   final int version;
-
-  // packageName/version
   final String client;
   final int height;
   final int width;
 
-  /// Bitmask describing properties of this index (e.g. which runtime produced
-  /// it). Bits are defined in `ml_versions.dart`. Absent on the wire => 0
-  /// (legacy).
+  // Bits are defined in ml_versions.dart; absent on the wire means legacy 0.
   final int flags;
 
   RemoteFaceEmbedding(
@@ -115,17 +102,15 @@ class RemoteFaceEmbedding {
     this.flags = 0,
   });
 
-  // toJson
   Map<String, dynamic> toJson() => {
-        'faces': faces.map((x) => x.toJson()).toList(),
-        'version': version,
-        'client': client,
-        'height': height,
-        'width': width,
-        if (flags != 0) 'flags': flags,
-      };
+    'faces': faces.map((x) => x.toJson()).toList(),
+    'version': version,
+    'client': client,
+    'height': height,
+    'width': width,
+    if (flags != 0) 'flags': flags,
+  };
 
-  // fromJson
   factory RemoteFaceEmbedding.fromJson(Map<String, dynamic> json) {
     return RemoteFaceEmbedding(
       List<Face>.from(
@@ -145,9 +130,7 @@ class RemoteClipEmbedding {
   final String client;
   final List<double> embedding;
 
-  /// Bitmask describing properties of this index (e.g. which runtime produced
-  /// it). Bits are defined in `ml_versions.dart`. Absent on the wire => 0
-  /// (legacy).
+  // Bits are defined in ml_versions.dart; absent on the wire means legacy 0.
   final int flags;
 
   RemoteClipEmbedding(
@@ -157,15 +140,13 @@ class RemoteClipEmbedding {
     this.flags = 0,
   });
 
-  // toJson
   Map<String, dynamic> toJson() => {
-        'embedding': embedding,
-        'version': version,
-        'client': client,
-        if (flags != 0) 'flags': flags,
-      };
+    'embedding': embedding,
+    'version': version,
+    'client': client,
+    if (flags != 0) 'flags': flags,
+  };
 
-  // fromJson
   factory RemoteClipEmbedding.fromJson(Map<String, dynamic> json) {
     return RemoteClipEmbedding(
       parseAsDoubleList(json['embedding'] as List),
@@ -176,7 +157,6 @@ class RemoteClipEmbedding {
   }
 }
 
-// FDStatus represents the status of a file data entry.
 class FDStatus {
   final int fileID;
   final int userID;
@@ -215,9 +195,5 @@ class PreviewInfo {
   final String objectId;
   final int objectSize;
   String? nonce;
-  PreviewInfo({
-    required this.objectId,
-    required this.objectSize,
-    this.nonce,
-  });
+  PreviewInfo({required this.objectId, required this.objectSize, this.nonce});
 }

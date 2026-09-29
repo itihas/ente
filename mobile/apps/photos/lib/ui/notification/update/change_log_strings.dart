@@ -1,407 +1,974 @@
 import 'dart:ui';
 
 class ChangeLogStrings {
-  final String title1;
-  final String desc1;
-  final String desc1Item1;
-  final String desc1Item2;
-  final String title2;
-  final String desc2;
-  final String title3;
-  final String desc3;
-  final String title4;
-  final String desc4;
+  final List<ChangeLogEntryStrings> entries;
 
-  const ChangeLogStrings({
-    required this.title1,
-    required this.desc1,
-    this.desc1Item1 = '',
-    this.desc1Item2 = '',
-    this.title2 = '',
-    this.desc2 = '',
-    this.title3 = '',
-    this.desc3 = '',
-    this.title4 = '',
-    this.desc4 = '',
-  });
-
-  bool get hasVisibleEntries =>
-      title1.trim().isNotEmpty ||
-      desc1.trim().isNotEmpty ||
-      desc1Item1.trim().isNotEmpty ||
-      desc1Item2.trim().isNotEmpty ||
-      title2.trim().isNotEmpty ||
-      desc2.trim().isNotEmpty ||
-      title3.trim().isNotEmpty ||
-      desc3.trim().isNotEmpty ||
-      title4.trim().isNotEmpty ||
-      desc4.trim().isNotEmpty;
+  const ChangeLogStrings({required this.entries});
 
   static ChangeLogStrings? maybeForLocale(
     Locale locale, {
     bool isLocalGallery = false,
+    required bool isAndroid,
   }) {
     final key = locale.countryCode != null && locale.countryCode!.isNotEmpty
         ? '${locale.languageCode}_${locale.countryCode}'
         : locale.languageCode;
-    final translations = isLocalGallery ? _offlineTranslations : _translations;
-    final strings = translations[key] ??
-        translations[locale.languageCode] ??
-        translations['en'];
+    final strings =
+        _translations[key] ??
+        _translations[locale.languageCode] ??
+        _translations['en'];
 
-    if (strings == null || !strings.hasVisibleEntries) {
+    if (strings == null) {
       return null;
     }
-    return strings;
+
+    return strings.forAudience(
+      isLocalGallery: isLocalGallery,
+      isAndroid: isAndroid,
+    );
+  }
+
+  ChangeLogStrings? forAudience({
+    bool isLocalGallery = false,
+    required bool isAndroid,
+  }) {
+    final visibleEntries = entries
+        .where((entry) => !entry.isAndroidOnly || isAndroid)
+        .where((entry) => !entry.isIOSOnly || !isAndroid)
+        .where(
+          (entry) =>
+              isLocalGallery ? !entry.isOnlineOnly : !entry.isLocalGalleryOnly,
+        )
+        .toList(growable: false);
+    return visibleEntries.isEmpty
+        ? null
+        : ChangeLogStrings(entries: visibleEntries);
   }
 
   static bool hasContentForLocale(
     Locale locale, {
     bool isLocalGallery = false,
+    required bool isAndroid,
   }) {
     return maybeForLocale(
           locale,
           isLocalGallery: isLocalGallery,
+          isAndroid: isAndroid,
         ) !=
         null;
   }
 
   static const Map<String, ChangeLogStrings> _translations = {
     'en': ChangeLogStrings(
-      title1: 'Smoother memories',
-      desc1:
-          'Rediscovering old memories feels better, with new haptics and under-the-hood improvements.',
-      title2: 'Faster browsing',
-      desc2:
-          "Your photos and videos load faster. We've updated our infrastructure, so everything feels snappier.",
-      title3: 'Better memory lane',
-      desc3:
-          'Memory lanes now appear for more people in your life, including kids 3 and up. Shared links load faster, with smoother animations.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Preview strip in the viewer',
+          description:
+              'Thumbnails at the bottom of the viewer let you jump between photos and videos faster.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Share photos of a person',
+          description:
+              'Share photos of a person with a link that can automatically include new photos of them.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Set photos as wallpaper',
+          description: 'Set a photo as your home screen, lock screen, or both.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Hold for 2× playback',
+          description: 'Press and hold a video to watch it at 2× speed.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'And more!',
+          description:
+              'More efficient gallery scrolling and back buttons that are easier to tap.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'And more!',
+          description:
+              'More efficient gallery scrolling, back buttons that are easier to tap, and improved backups.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'And more!',
+          description:
+              'More efficient gallery scrolling and back buttons that are easier to tap.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
+    ),
+    'ca': ChangeLogStrings(
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Franja de previsualitzacions al visor',
+          description:
+              'Les miniatures de la part inferior del visor et permeten saltar més ràpidament entre fotos i vídeos.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Comparteix les fotos d’una persona',
+          description:
+              'Comparteix les fotos d’una persona amb un enllaç que pot incloure automàticament fotos noves seves.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Estableix fotos com a fons de pantalla',
+          description:
+              'Estableix una foto com a fons de la pantalla d’inici, de bloqueig o de totes dues.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Mantén premut per reproduir a 2×',
+          description: 'Mantén premut un vídeo per veure’l a velocitat 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'I més coses!',
+          description:
+              'Desplaçament més eficient per la galeria i botons Enrere més fàcils de tocar.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'I més coses!',
+          description:
+              'Desplaçament més eficient per la galeria, botons Enrere més fàcils de tocar i còpies de seguretat millorades.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'I més coses!',
+          description:
+              'Desplaçament més eficient per la galeria i botons Enrere més fàcils de tocar.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'cs': ChangeLogStrings(
-      title1: 'Plynulejší vzpomínky',
-      desc1:
-          'Znovuobjevování starých vzpomínek je příjemnější díky nové haptické odezvě a vylepšením na pozadí.',
-      title2: 'Rychlejší prohlížení',
-      desc2:
-          'Vaše fotky a videa se načítají rychleji. Aktualizovali jsme naši infrastrukturu, takže vše působí svižněji.',
-      title3: 'Lepší memory lane',
-      desc3:
-          'Memory lane se nyní zobrazuje pro více lidí ve vašem životě, včetně dětí od 3 let. Sdílené odkazy se načítají rychleji a animace jsou plynulejší.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Pás náhledů v prohlížeči',
+          description:
+              'Miniatury ve spodní části prohlížeče umožňují rychleji přecházet mezi fotografiemi a videi.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Sdílení fotografií osoby',
+          description:
+              'Sdílejte fotografie osoby pomocí odkazu, který může automaticky zahrnovat její nové fotografie.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Nastavení fotografií jako tapety',
+          description:
+              'Nastavte fotografii jako tapetu domovské obrazovky, zamykací obrazovky nebo obou.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Podržením přehrajete 2× rychleji',
+          description:
+              'Stisknutím a podržením videa ho můžete sledovat 2× rychleji.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'A mnohem více!',
+          description:
+              'Efektivnější posouvání v galerii a tlačítka Zpět, na která se snáze klepá.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'A mnohem více!',
+          description:
+              'Efektivnější posouvání v galerii, tlačítka Zpět, na která se snáze klepá, a vylepšené zálohování.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'A mnohem více!',
+          description:
+              'Efektivnější posouvání v galerii a tlačítka Zpět, na která se snáze klepá.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'de': ChangeLogStrings(
-      title1: 'Flüssigere Erinnerungen',
-      desc1:
-          'Das Wiederentdecken alter Erinnerungen fühlt sich mit neuer Haptik und Verbesserungen im Hintergrund besser an.',
-      title2: 'Schnelleres Browsen',
-      desc2:
-          'Ihre Fotos und Videos laden schneller. Wir haben unsere Infrastruktur aktualisiert, damit sich alles reaktionsschneller anfühlt.',
-      title3: 'Bessere Memory Lane',
-      desc3:
-          'Memory Lanes erscheinen jetzt für mehr Menschen in Ihrem Leben, einschließlich Kindern ab 3 Jahren. Geteilte Links laden schneller und Animationen laufen flüssiger.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Vorschauleiste in der Fotoansicht',
+          description:
+              'Über die Miniaturansichten am unteren Rand kannst du schneller zwischen Fotos und Videos wechseln.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Fotos einer Person teilen',
+          description:
+              'Teile die Fotos einer Person über einen Link, der neue Fotos von ihr automatisch aufnehmen kann.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Fotos als Hintergrund festlegen',
+          description:
+              'Lege ein Foto als Hintergrund für den Startbildschirm, den Sperrbildschirm oder beide fest.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Für 2× Wiedergabe gedrückt halten',
+          description:
+              'Halte ein Video gedrückt, um es mit 2× Geschwindigkeit anzusehen.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Und mehr!',
+          description:
+              'Effizienteres Scrollen in der Galerie und Zurück-Schaltflächen, die sich leichter antippen lassen.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Und mehr!',
+          description:
+              'Effizienteres Scrollen in der Galerie, Zurück-Schaltflächen, die sich leichter antippen lassen, und verbesserte Datensicherungen.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Und mehr!',
+          description:
+              'Effizienteres Scrollen in der Galerie und Zurück-Schaltflächen, die sich leichter antippen lassen.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'es': ChangeLogStrings(
-      title1: 'Recuerdos más fluidos',
-      desc1:
-          'Redescubrir recuerdos antiguos se siente mejor, con nuevas respuestas hápticas y mejoras internas.',
-      title2: 'Navegación más rápida',
-      desc2:
-          'Tus fotos y videos cargan más rápido. Hemos actualizado nuestra infraestructura para que todo se sienta más ágil.',
-      title3: 'Mejor memory lane',
-      desc3:
-          'Las memory lanes ahora aparecen para más personas en tu vida, incluidos niños de 3 años en adelante. Los enlaces compartidos cargan más rápido, con animaciones más fluidas.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Tira de vistas previas en el visor',
+          description:
+              'Las miniaturas de la parte inferior del visor te permiten saltar más rápido entre fotos y vídeos.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Compartir fotos de una persona',
+          description:
+              'Comparte las fotos de una persona con un enlace que puede incluir automáticamente nuevas fotos suyas.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Usar fotos como fondo de pantalla',
+          description:
+              'Establece una foto como fondo de la pantalla de inicio, de la pantalla de bloqueo o de ambas.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Mantén pulsado para reproducir a 2×',
+          description:
+              'Mantén pulsado un vídeo para verlo a una velocidad de 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: '¡Y mucho más!',
+          description:
+              'Desplazamiento más eficiente por la galería y botones Atrás más fáciles de tocar.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '¡Y mucho más!',
+          description:
+              'Desplazamiento más eficiente por la galería, botones Atrás más fáciles de tocar y copias de seguridad mejoradas.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '¡Y mucho más!',
+          description:
+              'Desplazamiento más eficiente por la galería y botones Atrás más fáciles de tocar.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'fr': ChangeLogStrings(
-      title1: 'Souvenirs plus fluides',
-      desc1:
-          'Redécouvrir d’anciens souvenirs est plus agréable, avec de nouvelles vibrations et des améliorations internes.',
-      title2: 'Navigation plus rapide',
-      desc2:
-          'Vos photos et vidéos se chargent plus vite. Nous avons mis à jour notre infrastructure pour rendre l’ensemble plus réactif.',
-      title3: 'Meilleure memory lane',
-      desc3:
-          'Les memory lanes apparaissent désormais pour davantage de personnes de votre vie, y compris les enfants de 3 ans et plus. Les liens partagés se chargent plus vite, avec des animations plus fluides.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Bandeau d’aperçus dans la visionneuse',
+          description:
+              'Les vignettes au bas de la visionneuse vous permettent de passer plus rapidement d’une photo ou vidéo à l’autre.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Partager les photos d’une personne',
+          description:
+              'Partagez les photos d’une personne avec un lien qui peut inclure automatiquement ses nouvelles photos.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Définir des photos comme fond d’écran',
+          description:
+              'Définissez une photo comme fond de l’écran d’accueil, de l’écran de verrouillage ou des deux.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Maintenir pour lire à 2×',
+          description:
+              'Appuyez longuement sur une vidéo pour la regarder à vitesse 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Et plus encore !',
+          description:
+              'Défilement plus efficace dans la galerie et boutons de retour plus faciles à toucher.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Et plus encore !',
+          description:
+              'Défilement plus efficace dans la galerie, boutons de retour plus faciles à toucher et sauvegardes améliorées.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Et plus encore !',
+          description:
+              'Défilement plus efficace dans la galerie et boutons de retour plus faciles à toucher.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'it': ChangeLogStrings(
-      title1: 'Ricordi più fluidi',
-      desc1:
-          'Riscoprire vecchi ricordi è più piacevole, con nuovi feedback aptici e miglioramenti interni.',
-      title2: 'Navigazione più veloce',
-      desc2:
-          'Le tue foto e i tuoi video si caricano più velocemente. Abbiamo aggiornato la nostra infrastruttura, così tutto risulta più reattivo.',
-      title3: 'Memory lane migliorata',
-      desc3:
-          'Le memory lane ora appaiono per più persone nella tua vita, inclusi i bambini dai 3 anni in su. I link condivisi si caricano più rapidamente, con animazioni più fluide.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Striscia di anteprime nel visualizzatore',
+          description:
+              'Le miniature nella parte inferiore del visualizzatore ti consentono di passare più velocemente da una foto o un video all’altro.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Condividi le foto di una persona',
+          description:
+              'Condividi le foto di una persona con un link che può includere automaticamente le sue nuove foto.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Imposta foto come sfondo',
+          description:
+              'Imposta una foto come sfondo della schermata Home, della schermata di blocco o di entrambe.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Tieni premuto per la riproduzione a 2×',
+          description: 'Tieni premuto un video per guardarlo a velocità 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'E non è tutto!',
+          description:
+              'Scorrimento più efficiente della galleria e pulsanti Indietro più facili da toccare.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'E non è tutto!',
+          description:
+              'Scorrimento più efficiente della galleria, pulsanti Indietro più facili da toccare e backup migliorati.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'E non è tutto!',
+          description:
+              'Scorrimento più efficiente della galleria e pulsanti Indietro più facili da toccare.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'ja': ChangeLogStrings(
-      title1: 'よりスムーズな思い出',
-      desc1: '新しい触覚フィードバックと内部改善により、昔の思い出を振り返る体験がより心地よくなりました。',
-      title2: 'より速い閲覧',
-      desc2: '写真や動画の読み込みが速くなりました。インフラを更新し、全体がより軽快に感じられます。',
-      title3: 'より良いメモリーレーン',
-      desc3:
-          '3歳以上のお子さまを含め、より多くの大切な人のメモリーレーンが表示されるようになりました。共有リンクの読み込みも速くなり、アニメーションもよりスムーズです。',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'ビューアーのプレビューストリップ',
+          description: 'ビューアー下部のサムネイルから、写真やビデオへすばやく移動できます。',
+        ),
+        ChangeLogEntryStrings(
+          title: '人物の写真を共有',
+          description: '人物の写真をリンクで共有できます。リンクにはその人物の新しい写真を自動で追加できます。',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '写真を壁紙に設定',
+          description: '写真をホーム画面、ロック画面、またはその両方の壁紙に設定できます。',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '長押しで2×再生',
+          description: 'ビデオを長押しすると、2×の速度で再生できます。',
+        ),
+        ChangeLogEntryStrings(
+          title: 'ほかにも！',
+          description: 'ギャラリーのスクロール効率が向上し、「戻る」ボタンがタップしやすくなりました。',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'ほかにも！',
+          description: 'ギャラリーのスクロール効率が向上し、「戻る」ボタンがタップしやすくなり、バックアップも改善しました。',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'ほかにも！',
+          description: 'ギャラリーのスクロール効率が向上し、「戻る」ボタンがタップしやすくなりました。',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'nl': ChangeLogStrings(
-      title1: 'Soepelere herinneringen',
-      desc1:
-          'Oude herinneringen herontdekken voelt beter, met nieuwe haptiek en verbeteringen onder de motorkap.',
-      title2: 'Sneller bladeren',
-      desc2:
-          'Je foto’s en video’s laden sneller. We hebben onze infrastructuur bijgewerkt, zodat alles vlotter aanvoelt.',
-      title3: 'Betere memory lane',
-      desc3:
-          'Memory lanes verschijnen nu voor meer mensen in je leven, inclusief kinderen vanaf 3 jaar. Gedeelde links laden sneller, met soepelere animaties.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Voorbeeldstrook in de viewer',
+          description:
+              "Miniaturen onderaan de viewer laten je sneller tussen foto's en video's springen.",
+        ),
+        ChangeLogEntryStrings(
+          title: "Foto's van een persoon delen",
+          description:
+              "Deel foto's van een persoon via een link die automatisch nieuwe foto's van die persoon kan bevatten.",
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: "Foto's als achtergrond instellen",
+          description:
+              'Stel een foto in als achtergrond van je startscherm, vergrendelscherm of beide.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Vasthouden voor afspelen op 2×',
+          description:
+              'Houd een video ingedrukt om deze op 2× snelheid te bekijken.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'En meer!',
+          description:
+              'Efficiënter scrollen door de galerij en terugknoppen die makkelijker zijn aan te tikken.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'En meer!',
+          description:
+              'Efficiënter scrollen door de galerij, terugknoppen die makkelijker zijn aan te tikken en verbeterde back-ups.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'En meer!',
+          description:
+              'Efficiënter scrollen door de galerij en terugknoppen die makkelijker zijn aan te tikken.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'no': ChangeLogStrings(
-      title1: 'Jevnere minner',
-      desc1:
-          'Det føles bedre å gjenoppdage gamle minner, med ny haptikk og forbedringer under panseret.',
-      title2: 'Raskere blaing',
-      desc2:
-          'Bildene og videoene dine lastes raskere. Vi har oppdatert infrastrukturen vår, slik at alt føles kvikkere.',
-      title3: 'Bedre memory lane',
-      desc3:
-          'Memory lanes vises nå for flere personer i livet ditt, inkludert barn fra 3 år og oppover. Delte lenker lastes raskere, med jevnere animasjoner.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Forhåndsvisningsstripe i visningen',
+          description:
+              'Miniatyrbilder nederst i visningen gjør at du kan hoppe raskere mellom bilder og videoer.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Del bilder av en person',
+          description:
+              'Del bilder av en person med en lenke som automatisk kan ta med nye bilder av personen.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Bruk bilder som bakgrunn',
+          description:
+              'Bruk et bilde som bakgrunn på startskjermen, låseskjermen eller begge.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Hold inne for 2× avspilling',
+          description: 'Trykk og hold på en video for å se den i 2× hastighet.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Og mer!',
+          description:
+              'Mer effektiv rulling i galleriet og tilbakeknapper som er enklere å trykke på.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Og mer!',
+          description:
+              'Mer effektiv rulling i galleriet, tilbakeknapper som er enklere å trykke på og bedre sikkerhetskopiering.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Og mer!',
+          description:
+              'Mer effektiv rulling i galleriet og tilbakeknapper som er enklere å trykke på.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'pl': ChangeLogStrings(
-      title1: 'Płynniejsze wspomnienia',
-      desc1:
-          'Odkrywanie dawnych wspomnień jest przyjemniejsze dzięki nowym reakcjom haptycznym i ulepszeniom pod spodem.',
-      title2: 'Szybsze przeglądanie',
-      desc2:
-          'Twoje zdjęcia i filmy ładują się szybciej. Zaktualizowaliśmy naszą infrastrukturę, więc wszystko działa sprawniej.',
-      title3: 'Lepsza memory lane',
-      desc3:
-          'Memory lane pojawia się teraz dla większej liczby osób w Twoim życiu, w tym dzieci od 3. roku życia. Udostępnione linki ładują się szybciej, a animacje są płynniejsze.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Pasek podglądu w przeglądarce',
+          description:
+              'Miniatury u dołu przeglądarki pozwalają szybciej przechodzić między zdjęciami i filmami.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Udostępnianie zdjęć osoby',
+          description:
+              'Udostępniaj zdjęcia osoby za pomocą linku, który może automatycznie uwzględniać jej nowe zdjęcia.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Ustawianie zdjęć jako tapety',
+          description:
+              'Ustaw zdjęcie jako tapetę ekranu głównego, ekranu blokady lub obu.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Przytrzymaj, aby odtwarzać 2× szybciej',
+          description:
+              'Naciśnij i przytrzymaj film, aby oglądać go 2× szybciej.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'I jeszcze więcej!',
+          description:
+              'Wydajniejsze przewijanie galerii i łatwiejsze do naciśnięcia przyciski Wstecz.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'I jeszcze więcej!',
+          description:
+              'Wydajniejsze przewijanie galerii, łatwiejsze do naciśnięcia przyciski Wstecz i ulepszone tworzenie kopii zapasowych.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'I jeszcze więcej!',
+          description:
+              'Wydajniejsze przewijanie galerii i łatwiejsze do naciśnięcia przyciski Wstecz.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'pt_BR': ChangeLogStrings(
-      title1: 'Memórias mais suaves',
-      desc1:
-          'Redescobrir memórias antigas ficou melhor, com novos retornos táteis e melhorias internas.',
-      title2: 'Navegação mais rápida',
-      desc2:
-          'Suas fotos e vídeos carregam mais rápido. Atualizamos nossa infraestrutura, então tudo fica mais ágil.',
-      title3: 'Memory lane melhor',
-      desc3:
-          'As memory lanes agora aparecem para mais pessoas na sua vida, incluindo crianças a partir de 3 anos. Links compartilhados carregam mais rápido, com animações mais suaves.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Faixa de prévias no visualizador',
+          description:
+              'As miniaturas na parte inferior do visualizador permitem alternar mais rapidamente entre fotos e vídeos.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Compartilhe fotos de uma pessoa',
+          description:
+              'Compartilhe fotos de uma pessoa com um link que pode incluir automaticamente novas fotos dela.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Defina fotos como papel de parede',
+          description:
+              'Defina uma foto como papel de parede da tela inicial, da tela de bloqueio ou de ambas.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Segure para reproduzir em 2×',
+          description:
+              'Mantenha um vídeo pressionado para assisti-lo em velocidade 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'E muito mais!',
+          description:
+              'Rolagem mais eficiente na galeria e botões Voltar mais fáceis de tocar.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'E muito mais!',
+          description:
+              'Rolagem mais eficiente na galeria, botões Voltar mais fáceis de tocar e backups aprimorados.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'E muito mais!',
+          description:
+              'Rolagem mais eficiente na galeria e botões Voltar mais fáceis de tocar.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'pt_PT': ChangeLogStrings(
-      title1: 'Memórias mais suaves',
-      desc1:
-          'Redescobrir memórias antigas ficou melhor, com nova resposta háptica e melhorias internas.',
-      title2: 'Navegação mais rápida',
-      desc2:
-          'As suas fotografias e vídeos carregam mais depressa. Atualizámos a nossa infraestrutura, para que tudo pareça mais ágil.',
-      title3: 'Memory lane melhor',
-      desc3:
-          'As memory lanes aparecem agora para mais pessoas na sua vida, incluindo crianças a partir dos 3 anos. As ligações partilhadas carregam mais depressa, com animações mais suaves.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Faixa de pré-visualizações no visualizador',
+          description:
+              'As miniaturas na parte inferior do visualizador permitem alternar mais rapidamente entre fotografias e vídeos.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Partilhar fotografias de uma pessoa',
+          description:
+              'Partilhe fotografias de uma pessoa através de uma ligação que pode incluir automaticamente novas fotografias dessa pessoa.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Definir fotografias como fundo',
+          description:
+              'Defina uma fotografia como fundo do ecrã principal, do ecrã de bloqueio ou de ambos.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Manter premido para reproduzir a 2×',
+          description: 'Mantenha um vídeo premido para o ver à velocidade 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'E muito mais!',
+          description:
+              'Deslocamento mais eficiente na galeria e botões Voltar mais fáceis de tocar.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'E muito mais!',
+          description:
+              'Deslocamento mais eficiente na galeria, botões Voltar mais fáceis de tocar e cópias de segurança melhoradas.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'E muito mais!',
+          description:
+              'Deslocamento mais eficiente na galeria e botões Voltar mais fáceis de tocar.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'ro': ChangeLogStrings(
-      title1: 'Amintiri mai fluide',
-      desc1:
-          'Redescoperirea amintirilor vechi se simte mai bine, cu vibrații noi și îmbunătățiri interne.',
-      title2: 'Navigare mai rapidă',
-      desc2:
-          'Fotografiile și videoclipurile tale se încarcă mai rapid. Ne-am actualizat infrastructura, așa că totul pare mai sprinten.',
-      title3: 'Memory lane mai bun',
-      desc3:
-          'Memory lane apare acum pentru mai multe persoane din viața ta, inclusiv copii de 3 ani și peste. Linkurile partajate se încarcă mai rapid, cu animații mai fluide.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Bandă de previzualizare în vizualizator',
+          description:
+              'Miniaturile din partea de jos a vizualizatorului te ajută să treci mai repede între fotografii și videoclipuri.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Partajează fotografiile unei persoane',
+          description:
+              'Partajează fotografiile unei persoane cu un link care poate include automat fotografii noi cu aceasta.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Setează fotografii ca fundal',
+          description:
+              'Setează o fotografie ca fundal pentru ecranul principal, ecranul de blocare sau ambele.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Ține apăsat pentru redare la 2×',
+          description:
+              'Ține apăsat pe un videoclip pentru a-l viziona la viteza 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Și altele!',
+          description:
+              'Derulare mai eficientă în galerie și butoane Înapoi mai ușor de atins.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Și altele!',
+          description:
+              'Derulare mai eficientă în galerie, butoane Înapoi mai ușor de atins și copii de rezervă îmbunătățite.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Și altele!',
+          description:
+              'Derulare mai eficientă în galerie și butoane Înapoi mai ușor de atins.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'ru': ChangeLogStrings(
-      title1: 'Более плавные воспоминания',
-      desc1:
-          'Возвращаться к старым воспоминаниям стало приятнее благодаря новой тактильной отдаче и внутренним улучшениям.',
-      title2: 'Более быстрый просмотр',
-      desc2:
-          'Ваши фото и видео загружаются быстрее. Мы обновили инфраструктуру, поэтому всё ощущается более отзывчивым.',
-      title3: 'Улучшенная memory lane',
-      desc3:
-          'Memory lane теперь появляется для большего числа людей в вашей жизни, включая детей от 3 лет. Общие ссылки загружаются быстрее, а анимации стали плавнее.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Лента превью в режиме просмотра',
+          description:
+              'Миниатюры в нижней части экрана просмотра позволяют быстрее переходить между фото и видео.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Делитесь фотографиями человека',
+          description:
+              'Делитесь фотографиями человека по ссылке, в которую могут автоматически добавляться его новые фотографии.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Устанавливайте фото как обои',
+          description:
+              'Установите фотографию на главный экран, экран блокировки или на оба экрана.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Удерживайте для воспроизведения 2×',
+          description:
+              'Нажмите и удерживайте видео, чтобы смотреть его со скоростью 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'И многое другое!',
+          description:
+              'Более эффективная прокрутка галереи и кнопки «Назад», на которые проще нажимать.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'И многое другое!',
+          description:
+              'Более эффективная прокрутка галереи, кнопки «Назад», на которые проще нажимать, и улучшенное резервное копирование.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'И многое другое!',
+          description:
+              'Более эффективная прокрутка галереи и кнопки «Назад», на которые проще нажимать.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'tr': ChangeLogStrings(
-      title1: 'Daha akıcı anılar',
-      desc1:
-          'Eski anıları yeniden keşfetmek, yeni dokunsal geri bildirimler ve altyapı iyileştirmeleriyle daha iyi hissettiriyor.',
-      title2: 'Daha hızlı gezinme',
-      desc2:
-          'Fotoğraflarınız ve videolarınız daha hızlı yükleniyor. Altyapımızı güncelledik, böylece her şey daha çevik hissettiriyor.',
-      title3: 'Daha iyi memory lane',
-      desc3:
-          'Memory lane artık hayatınızdaki daha fazla kişi için, 3 yaş ve üzeri çocuklar dahil, görünüyor. Paylaşılan bağlantılar daha hızlı yükleniyor ve animasyonlar daha akıcı.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Fotoğraf görüntüleyicide önizleme şeridi',
+          description:
+              'Görüntüleyicinin altındaki küçük resimler, fotoğraflar ve videolar arasında daha hızlı geçiş yapmanızı sağlar.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Bir kişinin fotoğraflarını paylaşın',
+          description:
+              'Bir kişinin fotoğraflarını, o kişinin yeni fotoğraflarını otomatik olarak ekleyebilen bir bağlantıyla paylaşın.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Fotoğrafları duvar kâğıdı yapın',
+          description:
+              'Bir fotoğrafı ana ekranınızın, kilit ekranınızın veya her ikisinin duvar kâğıdı olarak ayarlayın.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '2× oynatma için basılı tutun',
+          description:
+              'Bir videoyu 2× hızda izlemek için videoya basılı tutun.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Ve daha fazlası!',
+          description:
+              'Galeride daha verimli kaydırma ve daha kolay dokunulan Geri düğmeleri.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Ve daha fazlası!',
+          description:
+              'Galeride daha verimli kaydırma, daha kolay dokunulan Geri düğmeleri ve iyileştirilmiş yedeklemeler.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Ve daha fazlası!',
+          description:
+              'Galeride daha verimli kaydırma ve daha kolay dokunulan Geri düğmeleri.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'uk': ChangeLogStrings(
-      title1: 'Плавніші спогади',
-      desc1:
-          'Повертатися до старих спогадів стало приємніше завдяки новій тактильній віддачі та внутрішнім покращенням.',
-      title2: 'Швидший перегляд',
-      desc2:
-          'Ваші фото й відео завантажуються швидше. Ми оновили інфраструктуру, тож усе відчувається жвавішим.',
-      title3: 'Краща memory lane',
-      desc3:
-          'Memory lane тепер з’являється для більшої кількості людей у вашому житті, зокрема дітей від 3 років. Спільні посилання завантажуються швидше, а анімації стали плавнішими.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Стрічка попереднього перегляду у вікні перегляду',
+          description:
+              'Мініатюри внизу вікна перегляду дають змогу швидше переходити між фото й відео.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Діліться фотографіями людини',
+          description:
+              'Діліться фотографіями людини за посиланням, до якого можуть автоматично додаватися її нові фотографії.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Установлюйте фото як шпалери',
+          description:
+              'Установіть фотографію як шпалери головного екрана, екрана блокування або обох.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Утримуйте для відтворення у 2×',
+          description:
+              'Натисніть і утримуйте відео, щоб дивитися його зі швидкістю 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'І не тільки!',
+          description:
+              'Ефективніше прокручування галереї та кнопки «Назад», яких легше торкатися.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'І не тільки!',
+          description:
+              'Ефективніше прокручування галереї, кнопки «Назад», яких легше торкатися, і поліпшене резервне копіювання.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'І не тільки!',
+          description:
+              'Ефективніше прокручування галереї та кнопки «Назад», яких легше торкатися.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'vi': ChangeLogStrings(
-      title1: 'Kỷ niệm mượt mà hơn',
-      desc1:
-          'Việc khám phá lại các kỷ niệm cũ nay dễ chịu hơn, với phản hồi rung mới và các cải thiện bên trong.',
-      title2: 'Duyệt nhanh hơn',
-      desc2:
-          'Ảnh và video của bạn tải nhanh hơn. Chúng tôi đã cập nhật hạ tầng để mọi thứ phản hồi nhanh hơn.',
-      title3: 'Memory lane tốt hơn',
-      desc3:
-          'Memory lane nay xuất hiện cho nhiều người hơn trong cuộc sống của bạn, bao gồm cả trẻ từ 3 tuổi trở lên. Liên kết chia sẻ tải nhanh hơn, với hoạt ảnh mượt mà hơn.',
+      entries: [
+        ChangeLogEntryStrings(
+          title: 'Dải xem trước trong trình xem',
+          description:
+              'Hình thu nhỏ ở cuối trình xem giúp bạn chuyển nhanh hơn giữa các ảnh và video.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Chia sẻ ảnh của một người',
+          description:
+              'Chia sẻ ảnh của một người bằng liên kết có thể tự động bao gồm ảnh mới của họ.',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Đặt ảnh làm hình nền',
+          description:
+              'Đặt một ảnh làm hình nền màn hình chính, màn hình khóa hoặc cả hai.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Nhấn giữ để phát ở tốc độ 2×',
+          description: 'Nhấn và giữ video để xem ở tốc độ 2×.',
+        ),
+        ChangeLogEntryStrings(
+          title: 'Và còn nhiều hơn thế!',
+          description:
+              'Cuộn thư viện hiệu quả hơn và các nút Quay lại dễ nhấn hơn.',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Và còn nhiều hơn thế!',
+          description:
+              'Cuộn thư viện hiệu quả hơn, các nút Quay lại dễ nhấn hơn và tính năng sao lưu được cải thiện.',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: 'Và còn nhiều hơn thế!',
+          description:
+              'Cuộn thư viện hiệu quả hơn và các nút Quay lại dễ nhấn hơn.',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
     'zh_CN': ChangeLogStrings(
-      title1: '更流畅的回忆',
-      desc1: '通过新的触觉反馈和底层改进，重新发现旧回忆的体验更好了。',
-      title2: '更快的浏览',
-      desc2: '你的照片和视频加载更快。我们更新了基础设施，让一切感觉更迅速。',
-      title3: '更好的 memory lane',
-      desc3: '现在，memory lane 会为你生活中的更多人显示，包括 3 岁及以上的孩子。共享链接加载更快，动画也更流畅。',
+      entries: [
+        ChangeLogEntryStrings(
+          title: '查看器中的预览条',
+          description: '查看器底部的缩略图可让你更快地在照片和视频之间跳转。',
+        ),
+        ChangeLogEntryStrings(
+          title: '分享某个人的照片',
+          description: '通过链接分享某个人的照片，链接中可自动加入此人的新照片。',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '将照片设为壁纸',
+          description: '将照片设为主屏幕、锁定屏幕或两者的壁纸。',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '长按以2×速度播放',
+          description: '长按视频即可用2×速度观看。',
+        ),
+        ChangeLogEntryStrings(
+          title: '还有更多！',
+          description: '图库滚动更高效，返回按钮更易于点击。',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '还有更多！',
+          description: '图库滚动更高效，返回按钮更易于点击，备份也有所改进。',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '还有更多！',
+          description: '图库滚动更高效，返回按钮更易于点击。',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
+    ),
+    'zh_TW': ChangeLogStrings(
+      entries: [
+        ChangeLogEntryStrings(
+          title: '檢視器中的預覽列',
+          description: '檢視器底部的縮圖可讓您更快地在照片與影片之間切換。',
+        ),
+        ChangeLogEntryStrings(
+          title: '分享某個人的照片',
+          description: '透過連結分享某個人的照片，連結中可自動加入此人的新照片。',
+          isOnlineOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '將照片設為桌布',
+          description: '將照片設為主畫面、鎖定畫面或兩者的桌布。',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '長按以2×速度播放',
+          description: '長按影片即可用2×速度觀看。',
+        ),
+        ChangeLogEntryStrings(
+          title: '還有更多！',
+          description: '圖片庫捲動更有效率，返回按鈕更容易點按。',
+          isAndroidOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '還有更多！',
+          description: '圖片庫捲動更有效率，返回按鈕更容易點按，備份也有所改善。',
+          isOnlineOnly: true,
+          isIOSOnly: true,
+        ),
+        ChangeLogEntryStrings(
+          title: '還有更多！',
+          description: '圖片庫捲動更有效率，返回按鈕更容易點按。',
+          isLocalGalleryOnly: true,
+          isIOSOnly: true,
+        ),
+      ],
     ),
   };
+}
 
-  static const Map<String, ChangeLogStrings> _offlineTranslations = {
-    'en': ChangeLogStrings(
-      title1: 'Smoother memories',
-      desc1:
-          'Rediscovering old memories feels better, with new haptics and under-the-hood improvements.',
-      title2: 'Faster browsing',
-      desc2:
-          "Your photos and videos load faster. We've updated our infrastructure, so everything feels snappier.",
-    ),
-    'cs': ChangeLogStrings(
-      title1: 'Plynulejší vzpomínky',
-      desc1:
-          'Znovuobjevování starých vzpomínek je příjemnější díky nové haptické odezvě a vylepšením na pozadí.',
-      title2: 'Rychlejší prohlížení',
-      desc2:
-          'Vaše fotky a videa se načítají rychleji. Aktualizovali jsme naši infrastrukturu, takže vše působí svižněji.',
-    ),
-    'de': ChangeLogStrings(
-      title1: 'Flüssigere Erinnerungen',
-      desc1:
-          'Das Wiederentdecken alter Erinnerungen fühlt sich mit neuer Haptik und Verbesserungen im Hintergrund besser an.',
-      title2: 'Schnelleres Browsen',
-      desc2:
-          'Ihre Fotos und Videos laden schneller. Wir haben unsere Infrastruktur aktualisiert, damit sich alles reaktionsschneller anfühlt.',
-    ),
-    'es': ChangeLogStrings(
-      title1: 'Recuerdos más fluidos',
-      desc1:
-          'Redescubrir recuerdos antiguos se siente mejor, con nuevas respuestas hápticas y mejoras internas.',
-      title2: 'Navegación más rápida',
-      desc2:
-          'Tus fotos y videos cargan más rápido. Hemos actualizado nuestra infraestructura para que todo se sienta más ágil.',
-    ),
-    'fr': ChangeLogStrings(
-      title1: 'Souvenirs plus fluides',
-      desc1:
-          'Redécouvrir d’anciens souvenirs est plus agréable, avec de nouvelles vibrations et des améliorations internes.',
-      title2: 'Navigation plus rapide',
-      desc2:
-          'Vos photos et vidéos se chargent plus vite. Nous avons mis à jour notre infrastructure pour rendre l’ensemble plus réactif.',
-    ),
-    'it': ChangeLogStrings(
-      title1: 'Ricordi più fluidi',
-      desc1:
-          'Riscoprire vecchi ricordi è più piacevole, con nuovi feedback aptici e miglioramenti interni.',
-      title2: 'Navigazione più veloce',
-      desc2:
-          'Le tue foto e i tuoi video si caricano più velocemente. Abbiamo aggiornato la nostra infrastruttura, così tutto risulta più reattivo.',
-    ),
-    'ja': ChangeLogStrings(
-      title1: 'よりスムーズな思い出',
-      desc1: '新しい触覚フィードバックと内部改善により、昔の思い出を振り返る体験がより心地よくなりました。',
-      title2: 'より速い閲覧',
-      desc2: '写真や動画の読み込みが速くなりました。インフラを更新し、全体がより軽快に感じられます。',
-    ),
-    'nl': ChangeLogStrings(
-      title1: 'Soepelere herinneringen',
-      desc1:
-          'Oude herinneringen herontdekken voelt beter, met nieuwe haptiek en verbeteringen onder de motorkap.',
-      title2: 'Sneller bladeren',
-      desc2:
-          'Je foto’s en video’s laden sneller. We hebben onze infrastructuur bijgewerkt, zodat alles vlotter aanvoelt.',
-    ),
-    'no': ChangeLogStrings(
-      title1: 'Jevnere minner',
-      desc1:
-          'Det føles bedre å gjenoppdage gamle minner, med ny haptikk og forbedringer under panseret.',
-      title2: 'Raskere blaing',
-      desc2:
-          'Bildene og videoene dine lastes raskere. Vi har oppdatert infrastrukturen vår, slik at alt føles kvikkere.',
-    ),
-    'pl': ChangeLogStrings(
-      title1: 'Płynniejsze wspomnienia',
-      desc1:
-          'Odkrywanie dawnych wspomnień jest przyjemniejsze dzięki nowym reakcjom haptycznym i ulepszeniom pod spodem.',
-      title2: 'Szybsze przeglądanie',
-      desc2:
-          'Twoje zdjęcia i filmy ładują się szybciej. Zaktualizowaliśmy naszą infrastrukturę, więc wszystko działa sprawniej.',
-    ),
-    'pt_BR': ChangeLogStrings(
-      title1: 'Memórias mais suaves',
-      desc1:
-          'Redescobrir memórias antigas ficou melhor, com novos retornos táteis e melhorias internas.',
-      title2: 'Navegação mais rápida',
-      desc2:
-          'Suas fotos e vídeos carregam mais rápido. Atualizamos nossa infraestrutura, então tudo fica mais ágil.',
-    ),
-    'pt_PT': ChangeLogStrings(
-      title1: 'Memórias mais suaves',
-      desc1:
-          'Redescobrir memórias antigas ficou melhor, com nova resposta háptica e melhorias internas.',
-      title2: 'Navegação mais rápida',
-      desc2:
-          'As suas fotografias e vídeos carregam mais depressa. Atualizámos a nossa infraestrutura, para que tudo pareça mais ágil.',
-    ),
-    'ro': ChangeLogStrings(
-      title1: 'Amintiri mai fluide',
-      desc1:
-          'Redescoperirea amintirilor vechi se simte mai bine, cu vibrații noi și îmbunătățiri interne.',
-      title2: 'Navigare mai rapidă',
-      desc2:
-          'Fotografiile și videoclipurile tale se încarcă mai rapid. Ne-am actualizat infrastructura, așa că totul pare mai sprinten.',
-    ),
-    'ru': ChangeLogStrings(
-      title1: 'Более плавные воспоминания',
-      desc1:
-          'Возвращаться к старым воспоминаниям стало приятнее благодаря новой тактильной отдаче и внутренним улучшениям.',
-      title2: 'Более быстрый просмотр',
-      desc2:
-          'Ваши фото и видео загружаются быстрее. Мы обновили инфраструктуру, поэтому всё ощущается более отзывчивым.',
-    ),
-    'tr': ChangeLogStrings(
-      title1: 'Daha akıcı anılar',
-      desc1:
-          'Eski anıları yeniden keşfetmek, yeni dokunsal geri bildirimler ve altyapı iyileştirmeleriyle daha iyi hissettiriyor.',
-      title2: 'Daha hızlı gezinme',
-      desc2:
-          'Fotoğraflarınız ve videolarınız daha hızlı yükleniyor. Altyapımızı güncelledik, böylece her şey daha çevik hissettiriyor.',
-    ),
-    'uk': ChangeLogStrings(
-      title1: 'Плавніші спогади',
-      desc1:
-          'Повертатися до старих спогадів стало приємніше завдяки новій тактильній віддачі та внутрішнім покращенням.',
-      title2: 'Швидший перегляд',
-      desc2:
-          'Ваші фото й відео завантажуються швидше. Ми оновили інфраструктуру, тож усе відчувається жвавішим.',
-    ),
-    'vi': ChangeLogStrings(
-      title1: 'Kỷ niệm mượt mà hơn',
-      desc1:
-          'Việc khám phá lại các kỷ niệm cũ nay dễ chịu hơn, với phản hồi rung mới và các cải thiện bên trong.',
-      title2: 'Duyệt nhanh hơn',
-      desc2:
-          'Ảnh và video của bạn tải nhanh hơn. Chúng tôi đã cập nhật hạ tầng để mọi thứ phản hồi nhanh hơn.',
-    ),
-    'zh_CN': ChangeLogStrings(
-      title1: '更流畅的回忆',
-      desc1: '通过新的触觉反馈和底层改进，重新发现旧回忆的体验更好了。',
-      title2: '更快的浏览',
-      desc2: '你的照片和视频加载更快。我们更新了基础设施，让一切感觉更迅速。',
-    ),
-  };
+class ChangeLogEntryStrings {
+  final String title;
+  final String description;
+  final bool isOnlineOnly;
+  final bool isLocalGalleryOnly;
+  final bool isAndroidOnly;
+  final bool isIOSOnly;
+
+  const ChangeLogEntryStrings({
+    required this.title,
+    required this.description,
+    this.isOnlineOnly = false,
+    this.isLocalGalleryOnly = false,
+    this.isAndroidOnly = false,
+    this.isIOSOnly = false,
+  }) : assert(!(isOnlineOnly && isLocalGalleryOnly)),
+       assert(!(isAndroidOnly && isIOSOnly));
 }

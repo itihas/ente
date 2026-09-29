@@ -1,5 +1,5 @@
-import "dart:io" show Directory, File, Platform;
-import "dart:math" as math show sqrt, min, max;
+import "dart:io" show File, Platform;
+import "dart:math" as math show min;
 
 import "package:dio/dio.dart";
 import "package:ente_pure_utils/ente_pure_utils.dart";
@@ -7,8 +7,8 @@ import "package:flutter/services.dart" show PlatformException;
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/db/files_db.dart";
+import "package:photos/db/ml/base.dart";
 import "package:photos/db/ml/db.dart";
-import "package:photos/db/ml/filedata.dart";
 import "package:photos/db/offline_files_db.dart";
 import "package:photos/events/files_updated_event.dart";
 import "package:photos/events/local_photos_updated_event.dart";
@@ -20,23 +20,22 @@ import "package:photos/models/ml/face/dimension.dart";
 import "package:photos/models/ml/face/face.dart";
 import "package:photos/models/ml/ml_typedefs.dart";
 import "package:photos/models/ml/ml_versions.dart";
+import "package:photos/module/download/file.dart";
+import "package:photos/module/download/thumbnail.dart";
 import "package:photos/service_locator.dart";
 import "package:photos/services/collections_service.dart";
 import "package:photos/services/filedata/model/file_data.dart";
 import "package:photos/services/filedata/model/response.dart";
 import "package:photos/services/machine_learning/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/machine_learning/face_ml/face_detection/detection.dart";
-import "package:photos/services/machine_learning/face_ml/face_recognition_service.dart";
 import "package:photos/services/machine_learning/ml_exceptions.dart";
+import "package:photos/services/machine_learning/ml_file_retrieval.dart";
 import "package:photos/services/machine_learning/ml_result.dart";
-import "package:photos/services/machine_learning/semantic_search/semantic_search_service.dart";
+import "package:photos/services/machine_learning/ml_run_control.dart";
 import "package:photos/services/search_service.dart";
-import "package:photos/services/sync/local_sync_service.dart";
+import "package:photos/services/sync/origin_fetch_tracker.dart";
 import "package:photos/src/rust/api/ml_indexing_api.dart" as rust_ml;
-import "package:photos/utils/file_util.dart";
-import "package:photos/utils/image_ml_util.dart";
 import "package:photos/utils/network_util.dart";
-import "package:photos/utils/thumbnail_util.dart";
 
 final _logger = Logger("MlUtil");
 const _kMlStaleCleanupMaxIds = 5;
@@ -101,68 +100,104 @@ class _OnlineMLIndexingCandidates {
   });
 }
 
+// Keep these eligibility rules in sync with candidate enumeration below.
 Future<IndexStatus> getIndexStatus() async {
   try {
-    final MLMode mode =
-        isLocalGalleryMode ? MLMode.localGallery : MLMode.enteGallery;
-    final mlDataDB = mode == MLMode.localGallery
+    final bool localGallery = isLocalGalleryMode;
+    final mlDataDB = localGallery
         ? MLDataDB.localGalleryInstance
         : MLDataDB.instance;
-    final int indexableFiles = await _getIndexableFileCount(mode: mode);
-    final int facesIndexedFiles = await mlDataDB.getFaceIndexedFileCount();
-    final int clipIndexedFiles = await mlDataDB.getClipIndexedFileCount();
-    int indexedFiles = math.min(facesIndexedFiles, clipIndexedFiles);
-    if (flagService.petEnabled &&
+    final bool petActive =
+        flagService.petEnabled &&
         localSettings.petRecognitionEnabled &&
-        localSettings.isMLLocalIndexingEnabled &&
-        (flagService.useRustForML || isLocalGalleryMode)) {
-      final int petIndexedFiles = await mlDataDB.getPetIndexedFileCount();
-      indexedFiles = math.min(indexedFiles, petIndexedFiles);
+        (localGallery || localSettings.isMLLocalIndexingEnabled);
+    final Set<int> indexedFileKeys = await mlDataDB.getFullyIndexedFileIds(
+      includePets: petActive,
+    );
+    final enteFiles = await SearchService.instance.getAllFilesForSearch();
+    final Set<int> seenKeys = {};
+    int total = 0;
+    int indexed = 0;
+    if (localGallery) {
+      final localIds = <String>[];
+      for (final EnteFile enteFile in enteFiles) {
+        if (enteFile.fileType == FileType.other) {
+          continue;
+        }
+        if ((enteFile.localID ?? '').isEmpty ||
+            (enteFile.uploadedFileID != null &&
+                enteFile.uploadedFileID != -1)) {
+          continue;
+        }
+        localIds.add(enteFile.localID!);
+      }
+      final localIdToIntId = await OfflineFilesDB.instance.ensureLocalIntIds(
+        localIds,
+      );
+      for (final localId in localIds) {
+        final localIntId = localIdToIntId[localId];
+        if (localIntId == null || !seenKeys.add(localIntId)) {
+          continue;
+        }
+        total++;
+        if (indexedFileKeys.contains(localIntId)) {
+          indexed++;
+        }
+      }
+    } else {
+      final hiddenFiles = await SearchService.instance.getHiddenFiles();
+      for (final EnteFile enteFile in enteFiles.followedBy(hiddenFiles)) {
+        if (enteFile.skipIndex) {
+          continue;
+        }
+        final id = enteFile.uploadedFileID;
+        if (id == null || id == -1 || !seenKeys.add(id)) {
+          continue;
+        }
+        total++;
+        if (indexedFileKeys.contains(id)) {
+          indexed++;
+        }
+      }
     }
-
-    final showIndexedFiles = math.min(indexedFiles, indexableFiles);
-    final showPendingFiles = math.max(indexableFiles - indexedFiles, 0);
     final hasWifiEnabled = await canUseHighBandwidth();
     _logger.info(
-      "Shown IndexStatus: indexedFiles: $showIndexedFiles, pendingFiles: $showPendingFiles, hasWifiEnabled: $hasWifiEnabled, ifOffline: $isLocalGalleryMode. Real values: indexedFiles: $indexedFiles (faces: $facesIndexedFiles, clip: $clipIndexedFiles), indexableFiles: $indexableFiles",
+      "IndexStatus: $indexed indexed of $total total (localGallery: $localGallery, petActive: $petActive, hasWifiEnabled: $hasWifiEnabled)",
     );
-    return IndexStatus(showIndexedFiles, showPendingFiles, hasWifiEnabled);
+    return IndexStatus(indexed, total - indexed, hasWifiEnabled);
   } catch (e, s) {
     _logger.severe('Error getting ML status', e, s);
     rethrow;
   }
 }
 
-// _lastFetchTimeForOthersIndexed indicates the last time we tried to
-// fetch embeddings for files that are owned by others. This is only used
-// when local indexing is disabled.
+// Throttles remote embedding checks for files owned by others when local
+// indexing is disabled.
 int _lastFetchTimeForOthersIndexed = 0;
 
 Future<_OnlineMLIndexingCandidates>
-    _getOnlineFilesForMlIndexingCandidates() async {
+_getOnlineFilesForMlIndexingCandidates() async {
   final mlDataDB = MLDataDB.instance;
   final time = DateTime.now();
-  // Get indexed fileIDs for each ML service
   final Map<int, int> faceIndexedFileIDs = await mlDataDB.faceIndexedFileIds();
-  final Map<int, int> clipIndexedFileIDs =
-      await mlDataDB.clipIndexedFileWithVersion();
-  final bool petEnabled = flagService.petEnabled &&
+  final Map<int, int> clipIndexedFileIDs = await mlDataDB
+      .clipIndexedFileWithVersion();
+  final bool petEnabled =
+      flagService.petEnabled &&
       localSettings.petRecognitionEnabled &&
-      localSettings.isMLLocalIndexingEnabled &&
-      (flagService.useRustForML || isLocalGalleryMode);
-  final Map<int, int> petIndexedFileIDs =
-      petEnabled ? await mlDataDB.petIndexedFileIds() : const {};
+      localSettings.isMLLocalIndexingEnabled;
+  final Map<int, int> petIndexedFileIDs = petEnabled
+      ? await mlDataDB.petIndexedFileIds()
+      : const {};
   final Set<int> queuedFiledIDs = {};
 
   final Set<int> filesWithFDStatus = await mlDataDB.getFileIDsWithFDData(
     type: DataType.mlData,
   );
 
-  // Get all regular files and all hidden files
   final enteFiles = await SearchService.instance.getAllFilesForSearch();
   final hiddenFiles = await SearchService.instance.getHiddenFiles();
 
-  // Sort out what should be indexed and in what order
   final List<FileMLInstruction> filesWithLocalID = [];
   final List<FileMLInstruction> filesWithoutLocalID = [];
   final List<FileMLInstruction> hiddenFilesToIndex = [];
@@ -188,7 +223,8 @@ Future<_OnlineMLIndexingCandidates>
       clipIndexedFileIDs,
       clipMlVersion,
     );
-    final shouldRunPets = petEnabled &&
+    final shouldRunPets =
+        petEnabled &&
         _shouldRunIndexing(enteFile, petIndexedFileIDs, petMlVersion);
     if (!shouldRunFaces && !shouldRunClip && !shouldRunPets) {
       continue;
@@ -227,7 +263,8 @@ Future<_OnlineMLIndexingCandidates>
       clipIndexedFileIDs,
       clipMlVersion,
     );
-    final shouldRunPets = petEnabled &&
+    final shouldRunPets =
+        petEnabled &&
         _shouldRunIndexing(enteFile, petIndexedFileIDs, petMlVersion);
     if (!shouldRunFaces && !shouldRunClip && !shouldRunPets) {
       continue;
@@ -260,7 +297,6 @@ Future<_OnlineMLIndexingCandidates>
   );
 }
 
-/// Return a list of file instructions for files that should be indexed for ML
 Future<List<FileMLInstruction>> getFilesForMlIndexing() async {
   _logger.info('getFilesForMlIndexing called');
   final candidateSplit = await _getOnlineFilesForMlIndexingCandidates();
@@ -290,13 +326,13 @@ Future<List<FileMLInstruction>> getLocalGalleryFilesForMlIndexing() async {
   _logger.info('getLocalGalleryFilesForMlIndexing called');
   final mlDataDB = MLDataDB.localGalleryInstance;
   final Map<int, int> faceIndexedFileIDs = await mlDataDB.faceIndexedFileIds();
-  final Map<int, int> clipIndexedFileIDs =
-      await mlDataDB.clipIndexedFileWithVersion();
-  final bool petEnabled = flagService.petEnabled &&
-      localSettings.petRecognitionEnabled &&
-      (flagService.useRustForML || isLocalGalleryMode);
-  final Map<int, int> petIndexedFileIDs =
-      petEnabled ? await mlDataDB.petIndexedFileIds() : const {};
+  final Map<int, int> clipIndexedFileIDs = await mlDataDB
+      .clipIndexedFileWithVersion();
+  final bool petEnabled =
+      flagService.petEnabled && localSettings.petRecognitionEnabled;
+  final Map<int, int> petIndexedFileIDs = petEnabled
+      ? await mlDataDB.petIndexedFileIds()
+      : const {};
   final Set<int> queuedFileIDs = {};
 
   final enteFiles = await SearchService.instance.getAllFilesForSearch();
@@ -341,7 +377,8 @@ Future<List<FileMLInstruction>> getLocalGalleryFilesForMlIndexing() async {
       clipIndexedFileIDs,
       clipMlVersion,
     );
-    final shouldRunPets = petEnabled &&
+    final shouldRunPets =
+        petEnabled &&
         _shouldRunIndexingWithFileId(
           localIntId,
           petIndexedFileIDs,
@@ -411,7 +448,6 @@ Stream<List<FileMLInstruction>> fetchEmbeddingsAndInstructions(
       }
     }
   }
-  // Yield any remaining instructions
   if (batchToYield.isNotEmpty) {
     _logger.info("queueing indexing for  ${batchToYield.length}");
     yield batchToYield;
@@ -419,7 +455,8 @@ Stream<List<FileMLInstruction>> fetchEmbeddingsAndInstructions(
 }
 
 Future<RemoteMLHydrationSummary> hydrateOwnedRemoteMLData({
-  required MLDataDB mlDataDB,
+  required IMLDataDB<int> mlDataDB,
+  MlRunControl? control,
   int? skipHydrationIfCandidateFileCountAtMost,
 }) async {
   final candidateSplit = await _getOnlineFilesForMlIndexingCandidates();
@@ -442,9 +479,14 @@ Future<RemoteMLHydrationSummary> hydrateOwnedRemoteMLData({
   int hydratedFaces = 0;
   int hydratedClips = 0;
   int remainingLocalMl = 0;
-  for (int start = 0;
-      start < ownedCandidates.length;
-      start += embeddingFetchLimit) {
+  for (
+    int start = 0;
+    start < ownedCandidates.length;
+    start += embeddingFetchLimit
+  ) {
+    if (control?.stopRequested ?? false) {
+      break;
+    }
     final end = math.min(start + embeddingFetchLimit, ownedCandidates.length);
     final chunk = ownedCandidates.sublist(start, end);
     final facePendingBefore = chunk.where((i) => i.shouldRunFaces).length;
@@ -453,9 +495,11 @@ Future<RemoteMLHydrationSummary> hydrateOwnedRemoteMLData({
       chunk,
       mlDataDB: mlDataDB,
     );
-    hydratedFaces += facePendingBefore -
+    hydratedFaces +=
+        facePendingBefore -
         pendingAfterHydration.where((i) => i.shouldRunFaces).length;
-    hydratedClips += clipPendingBefore -
+    hydratedClips +=
+        clipPendingBefore -
         pendingAfterHydration.where((i) => i.shouldRunClip).length;
     remainingLocalMl += pendingAfterHydration.length;
   }
@@ -538,7 +582,7 @@ Future<FileDataResponse> _fetchFilesDataForMlHydrationWithRecovery(
 
 Future<List<FileMLInstruction>> hydrateRemoteMLDataForInstructions(
   List<FileMLInstruction> instructions, {
-  required MLDataDB mlDataDB,
+  required IMLDataDB<int> mlDataDB,
 }) async {
   if (instructions.isEmpty) {
     return <FileMLInstruction>[];
@@ -568,7 +612,7 @@ Future<List<FileMLInstruction>> hydrateRemoteMLDataForInstructions(
       continue;
     }
     final facesFromRemoteEmbedding = _getFacesFromRemoteEmbedding(fileMl);
-    // Note: always do null check; an empty value means no face was found.
+    // A non-null result is compatible remote data, even when no face was found.
     if (facesFromRemoteEmbedding != null) {
       faces.addAll(facesFromRemoteEmbedding);
       existingInstruction.shouldRunFaces = false;
@@ -601,8 +645,6 @@ Future<List<FileMLInstruction>> hydrateRemoteMLDataForInstructions(
       .toList();
 }
 
-// Returns a list of faces from the given remote fileML. null if the version is less than the current version
-// or if the remote faceEmbedding is null.
 List<Face>? _getFacesFromRemoteEmbedding(FileDataEntity fileMl) {
   final RemoteFaceEmbedding? remoteFaceEmbedding = fileMl.faceEmbedding;
   if (_shouldDiscardRemoteEmbedding(fileMl)) {
@@ -633,7 +675,6 @@ bool _shouldDiscardRemoteEmbedding(FileDataEntity fileML) {
     );
     return true;
   }
-  // are all landmarks equal?
   bool allLandmarksEqual = true;
   if (faceEmbedding.faces.isEmpty) {
     allLandmarksEqual = false;
@@ -669,21 +710,6 @@ Future<int> getIndexableFileCount() async {
   return FilesDB.instance.remoteFileCount();
 }
 
-Future<int> _getIndexableFileCount({required MLMode mode}) async {
-  if (mode == MLMode.localGallery) {
-    final files = await SearchService.instance.getAllFilesForSearch();
-    return files
-        .where(
-          (file) =>
-              (file.localID ?? '').isNotEmpty &&
-              (file.uploadedFileID == null || file.uploadedFileID == -1) &&
-              file.fileType != FileType.other,
-        )
-        .length;
-  }
-  return getIndexableFileCount();
-}
-
 Future<String> getImagePathForML(EnteFile enteFile) async {
   String? imagePath;
 
@@ -702,17 +728,23 @@ Future<String> getImagePathForML(EnteFile enteFile) async {
       throw ThumbnailRetrievalException(e.toString(), s);
     }
   } else {
-    // Don't process the file if it's too large (more than 100MB)
     if (enteFile.fileSize != null && enteFile.fileSize! > maxFileDownloadSize) {
       throw Exception(
         "FileSizeTooLargeForMobileIndexing: size is ${enteFile.fileSize}",
       );
     }
     try {
-      if (Platform.isIOS && enteFile.localID != null) {
-        trackOriginFetchForUploadOrML.put(enteFile.localID!, true);
+      if (Platform.isIOS) {
+        originFetchTracker.record(
+          localID: enteFile.localID,
+          modificationTime: enteFile.modificationTime,
+        );
       }
-      file = await getFile(enteFile, isOrigin: true);
+      file = await downloadAndLoadFileForMlWithDecryptionRetry(
+        () => getFile(enteFile, isOrigin: true, throwOnDecryptionFailure: true),
+      );
+    } on RepeatedFileDecryptionError {
+      rethrow;
     } catch (e, s) {
       _logger.severe("Could not get file for $enteFile", e, s);
     }
@@ -724,8 +756,11 @@ Future<String> getImagePathForML(EnteFile enteFile) async {
   );
 
   if (imagePath == null) {
+    final fileIdentifier = isLocalGalleryMode
+        ? "localID ${enteFile.localID}"
+        : "uploadedFileID ${enteFile.uploadedFileID}";
     _logger.severe(
-      "Failed to get any data for enteFile with uploadedFileID ${enteFile.uploadedFileID} and format ${enteFile.displayName.split('.').last} and size ${enteFile.fileSize} since its file path is null (isVideo: $isVideo)",
+      "Failed to get any data for enteFile with $fileIdentifier and format ${enteFile.displayName.split('.').last} and size ${enteFile.fileSize} since its file path is null (isVideo: $isVideo)",
     );
     throw CouldNotRetrieveAnyFileData();
   }
@@ -749,91 +784,6 @@ bool _shouldRunIndexingWithFileId(
 ) {
   return !indexedFileIds.containsKey(fileId) ||
       indexedFileIds[fileId]! < newestVersion;
-}
-
-void normalizeEmbedding(List<double> embedding) {
-  double normalization = 0;
-  for (int i = 0; i < embedding.length; i++) {
-    normalization += embedding[i] * embedding[i];
-  }
-  final double sqrtNormalization = math.sqrt(normalization);
-  for (int i = 0; i < embedding.length; i++) {
-    embedding[i] = embedding[i] / sqrtNormalization;
-  }
-}
-
-Future<MLResult> analyzeImageStatic(Map args) async {
-  try {
-    final int enteFileID = args["enteFileID"] as int;
-    final String imagePath = args["filePath"] as String;
-    final bool runFaces = args["runFaces"] as bool;
-    final bool runClip = args["runClip"] as bool;
-    final int faceDetectionAddress = args["faceDetectionAddress"] as int;
-    final int faceEmbeddingAddress = args["faceEmbeddingAddress"] as int;
-    final int clipImageAddress = args["clipImageAddress"] as int;
-
-    _logger.info(
-      "Start analyzeImageStatic for fileID $enteFileID (runFaces: $runFaces, runClip: $runClip)",
-    );
-    final startTime = DateTime.now();
-
-    // Decode the image once to use for both face detection and alignment
-    final decodedImage = await decodeImageFromPath(
-      imagePath,
-      includeRgbaBytes: true,
-      includeDartUiImage: false,
-    );
-    final rawRgbaBytes = decodedImage.rawRgbaBytes!;
-    final imageDimensions = decodedImage.dimensions;
-    final result = MLResult.fromEnteFileID(enteFileID);
-    result.decodedImageSize = imageDimensions;
-    if (!runFaces) result.faces = null;
-    final decodeTime = DateTime.now();
-    final decodeMs = decodeTime.difference(startTime).inMilliseconds;
-
-    String faceMsString = "", clipMsString = "";
-    final pipelines = await Future.wait([
-      runFaces
-          ? FaceRecognitionService.runFacesPipeline(
-              enteFileID,
-              imageDimensions,
-              rawRgbaBytes,
-              faceDetectionAddress,
-              faceEmbeddingAddress,
-            ).then((result) {
-              faceMsString =
-                  ", faces: ${DateTime.now().difference(decodeTime).inMilliseconds} ms";
-              return result;
-            })
-          : Future.value(null),
-      runClip
-          ? SemanticSearchService.runClipImage(
-              enteFileID,
-              imageDimensions,
-              rawRgbaBytes,
-              clipImageAddress,
-            ).then((result) {
-              clipMsString =
-                  ", clip: ${DateTime.now().difference(decodeTime).inMilliseconds} ms";
-              return result;
-            })
-          : Future.value(null),
-    ]);
-
-    if (pipelines[0] != null) result.faces = pipelines[0] as List<FaceResult>;
-    if (pipelines[1] != null) result.clip = pipelines[1] as ClipResult;
-
-    final totalMs = DateTime.now().difference(startTime).inMilliseconds;
-
-    _logger.info(
-      'Finished analyzeImageStatic for fileID $enteFileID, in $totalMs ms (decode: $decodeMs ms$faceMsString$clipMsString)',
-    );
-
-    return result;
-  } catch (e, s) {
-    _logger.severe("Could not analyze image", e, s);
-    rethrow;
-  }
 }
 
 Future<MLResult> analyzeImageRust(Map args) async {
@@ -860,11 +810,6 @@ Future<MLResult> analyzeImageRust(Map args) async {
         args["petBodyEmbeddingDogModelPath"] as String?;
     final String? petBodyEmbeddingCatModelPath =
         args["petBodyEmbeddingCatModelPath"] as String?;
-    final bool preferCoreml = args["preferCoreml"] as bool? ?? true;
-    final bool preferNnapi = args["preferNnapi"] as bool? ?? true;
-    final bool preferXnnpack = args["preferXnnpack"] as bool? ?? false;
-    final bool allowCpuFallback = args["allowCpuFallback"] as bool? ?? true;
-
     bool isMissingModelPath(String? path) =>
         path == null || path.trim().isEmpty;
     final missingModelPaths = <String>[];
@@ -905,6 +850,13 @@ Future<MLResult> analyzeImageRust(Map args) async {
       );
     }
 
+    // The Rust runtime creates sessions lazily, so configure execution
+    // behavior here as well in case the runtime was not prepared explicitly
+    // in this isolate.
+    await rust_ml.setMlExecutionConfig(
+      enableWebgpu: (args["enableWebGpu"] as bool?) ?? false,
+    );
+
     final modelPaths = rust_ml.RustModelPaths(
       faceDetection: faceDetectionModelPath ?? "",
       faceEmbedding: faceEmbeddingModelPath ?? "",
@@ -917,13 +869,6 @@ Future<MLResult> analyzeImageRust(Map args) async {
       petBodyEmbeddingDog: petBodyEmbeddingDogModelPath ?? "",
       petBodyEmbeddingCat: petBodyEmbeddingCatModelPath ?? "",
     );
-    final providerPolicy = rust_ml.RustExecutionProviderPolicy(
-      preferCoreml: preferCoreml,
-      preferNnapi: preferNnapi,
-      preferXnnpack: preferXnnpack,
-      allowCpuFallback: allowCpuFallback,
-    );
-
     Future<rust_ml.AnalyzeImageResult> runRustAnalyzeForPath(
       String analyzePath,
     ) {
@@ -935,7 +880,6 @@ Future<MLResult> analyzeImageRust(Map args) async {
           runClip: runClip,
           runPets: runPets,
           modelPaths: modelPaths,
-          providerPolicy: providerPolicy,
         ),
       );
     }
@@ -945,136 +889,73 @@ Future<MLResult> analyzeImageRust(Map args) async {
     try {
       rustResult = await runRustAnalyzeForPath(imagePath);
     } catch (e, s) {
-      if (!_isRustDecodeIssue(e)) {
+      if (!_isRustImageIssue(e)) {
+        if (_isRustCorruptModelIssue(e)) {
+          rethrow;
+        }
         _logger.severe(
-          "Rust pipeline failed (non-decode) for fileID $enteFileID (format: $fileFormat)",
+          "Rust pipeline failed (non-image) for fileID $enteFileID (format: $fileFormat)",
           e,
           s,
         );
         rethrow;
       }
 
-      _logger.warning(
-        "Rust decode failed for fileID $enteFileID (format: $fileFormat), retrying with JPEG fallback",
+      // A Rust image error is deterministic for this file. In particular, a
+      // decode error may be a resource-limit rejection, so retrying it through
+      // an unbounded Dart decoder can exhaust the mobile process.
+      throw _asInvalidImageFormatExceptionForRustImageFailure(
+        enteFileID: enteFileID,
+        fileFormat: fileFormat,
+        primaryError: e,
       );
-      final _DecodeFallbackFile? fallback;
-      try {
-        fallback = await _createJpegDecodeFallbackFile(imagePath: imagePath);
-      } catch (fallbackError, fallbackStack) {
-        if (_shouldStoreEmptyResultForRustDecodeFailure(
-          primaryError: e,
-          fallbackError: fallbackError,
-        )) {
-          _logger.warning(
-            "JPEG fallback conversion failed for fileID $enteFileID (format: $fileFormat); storing empty result instead",
-          );
-          throw _asInvalidImageFormatExceptionForRustDecodeFailure(
-            enteFileID: enteFileID,
-            fileFormat: fileFormat,
-            primaryError: e,
-            fallbackError: fallbackError,
-          );
-        }
-        _logger.severe(
-          "JPEG fallback conversion threw for fileID $enteFileID (format: $fileFormat)",
-          fallbackError,
-          fallbackStack,
-        );
-        rethrow;
-      }
-      if (fallback == null) {
-        if (_shouldStoreEmptyResultForRustDecodeFailure(
-          primaryError: e,
-          fallbackReturnedEmpty: true,
-        )) {
-          _logger.warning(
-            "JPEG fallback conversion returned null/empty bytes for fileID $enteFileID (format: $fileFormat); storing empty result instead",
-          );
-          throw _asInvalidImageFormatExceptionForRustDecodeFailure(
-            enteFileID: enteFileID,
-            fileFormat: fileFormat,
-            primaryError: e,
-          );
-        }
-        _logger.severe(
-          "JPEG fallback conversion returned null/empty bytes for fileID $enteFileID (format: $fileFormat)",
-          e,
-          s,
-        );
-        throw Exception(
-          "RustMLDecodeFallbackFailed: JPEG fallback conversion returned null/empty bytes for fileID $enteFileID (format: $fileFormat)",
-        );
-      }
-
-      try {
-        rustResult = await runRustAnalyzeForPath(fallback.file.path);
-        _logger.info(
-          "Rust decode fallback succeeded for fileID $enteFileID (original format: $fileFormat)",
-        );
-      } catch (retryError, retryStack) {
-        if (_shouldStoreEmptyResultForRustDecodeFailure(
-          primaryError: e,
-          fallbackError: retryError,
-        )) {
-          _logger.warning(
-            "Rust decode fallback retry failed for fileID $enteFileID (format: $fileFormat); storing empty result instead",
-          );
-          throw _asInvalidImageFormatExceptionForRustDecodeFailure(
-            enteFileID: enteFileID,
-            fileFormat: fileFormat,
-            primaryError: e,
-            fallbackError: retryError,
-          );
-        }
-        _logger.severe(
-          "Rust decode fallback retry failed for fileID $enteFileID (original format: $fileFormat)",
-          retryError,
-          retryStack,
-        );
-        rethrow;
-      } finally {
-        await _cleanupDecodeFallback(fallback);
-      }
     }
 
-    final result = MLResult.fromEnteFileID(enteFileID);
+    final result = MLResult.fromEnteFileID(
+      enteFileID,
+      remoteFlags:
+          mlIndexFlagRuntimeRust |
+          (rustResult.usedCoreml ? mlIndexFlagCoreML : 0) |
+          (rustResult.usedWebgpu ? mlIndexFlagWebGPU : 0),
+    );
     result.decodedImageSize = Dimensions(
       width: rustResult.decodedImageSize.width,
       height: rustResult.decodedImageSize.height,
     );
 
-    // Nullify faces/clip when their pipelines were not requested so that
-    // facesRan/clipRan correctly report false and processImage does not
-    // overwrite existing remote embeddings with empty payloads.
+    // Null means the pipeline did not run; an empty result would overwrite
+    // remote embeddings.
     if (!runFaces) result.faces = null;
 
     if (runFaces) {
       final rustFaces = rustResult.faces ?? const <rust_ml.RustFaceResult>[];
-      result.faces = rustFaces.map((face) {
-        final detection = FaceDetectionRelative(
-          score: face.detection.score,
-          box: face.detection.boxXyxy.toList(growable: false),
-          allKeypoints: face.detection.allKeypoints
-              .map((point) => point.toList(growable: false))
-              .toList(growable: false),
-        );
-        final alignment = AlignmentResult(
-          affineMatrix: face.alignment.affineMatrix
-              .map((row) => row.toList(growable: false))
-              .toList(growable: false),
-          center: face.alignment.center.toList(growable: false),
-          size: face.alignment.size,
-          rotation: face.alignment.rotation,
-        );
-        return FaceResult(
-          fileId: enteFileID,
-          faceId: face.faceId,
-          detection: detection,
-          blurValue: face.blurValue,
-          alignment: alignment,
-          embedding: face.embedding,
-        );
-      }).toList(growable: false);
+      result.faces = rustFaces
+          .map((face) {
+            final detection = FaceDetectionRelative(
+              score: face.detection.score,
+              box: face.detection.boxXyxy.toList(growable: false),
+              allKeypoints: face.detection.allKeypoints
+                  .map((point) => point.toList(growable: false))
+                  .toList(growable: false),
+            );
+            final alignment = AlignmentResult(
+              affineMatrix: face.alignment.affineMatrix
+                  .map((row) => row.toList(growable: false))
+                  .toList(growable: false),
+              center: face.alignment.center.toList(growable: false),
+              size: face.alignment.size,
+              rotation: face.alignment.rotation,
+            );
+            return FaceResult(
+              fileId: enteFileID,
+              faceId: face.faceId,
+              detection: detection,
+              blurValue: face.blurValue,
+              alignment: alignment,
+              embedding: face.embedding,
+            );
+          })
+          .toList(growable: false);
     }
 
     if (runClip) {
@@ -1090,42 +971,46 @@ Future<MLResult> analyzeImageRust(Map args) async {
 
     if (runPets) {
       if (rustResult.petFaces != null) {
-        result.petFaces = rustResult.petFaces!.map((face) {
-          final detection = FaceDetectionRelative(
-            score: face.detection.score,
-            box: face.detection.boxXyxy.toList(growable: false),
-            allKeypoints: face.detection.keypoints
-                .map((point) => point.toList(growable: false))
-                .toList(growable: false),
-          );
-          final alignment = AlignmentResult(
-            // Pet alignment is done in Rust; no Dart-side affine matrix needed.
-            affineMatrix: const [],
-            center: face.alignment.center.toList(growable: false),
-            size: face.alignment.cropSize,
-            rotation: face.alignment.angle,
-          );
-          return PetFaceResult(
-            fileId: enteFileID,
-            petFaceId: face.petFaceId,
-            detection: detection,
-            alignment: alignment,
-            species: face.species,
-            embedding: Embedding.from(face.faceEmbedding),
-          );
-        }).toList(growable: false);
+        result.petFaces = rustResult.petFaces!
+            .map((face) {
+              final detection = FaceDetectionRelative(
+                score: face.detection.score,
+                box: face.detection.boxXyxy.toList(growable: false),
+                allKeypoints: face.detection.keypoints
+                    .map((point) => point.toList(growable: false))
+                    .toList(growable: false),
+              );
+              final alignment = AlignmentResult(
+                // Rust already aligned pet faces; no Dart matrix is needed.
+                affineMatrix: const [],
+                center: face.alignment.center.toList(growable: false),
+                size: face.alignment.cropSize,
+                rotation: face.alignment.angle,
+              );
+              return PetFaceResult(
+                fileId: enteFileID,
+                petFaceId: face.petFaceId,
+                detection: detection,
+                alignment: alignment,
+                species: face.species,
+                embedding: Embedding.from(face.faceEmbedding),
+              );
+            })
+            .toList(growable: false);
       }
 
       if (rustResult.petBodies != null) {
-        result.petBodies = rustResult.petBodies!.map((body) {
-          return PetBodyResult(
-            boxXyxy: body.boxXyxy.toList(growable: false),
-            score: body.score,
-            cocoClass: body.cocoClass,
-            petBodyId: body.petBodyId,
-            embedding: Embedding.from(body.bodyEmbedding),
-          );
-        }).toList(growable: false);
+        result.petBodies = rustResult.petBodies!
+            .map((body) {
+              return PetBodyResult(
+                boxXyxy: body.boxXyxy.toList(growable: false),
+                score: body.score,
+                cocoClass: body.cocoClass,
+                petBodyId: body.petBodyId,
+                embedding: Embedding.from(body.bodyEmbedding),
+              );
+            })
+            .toList(growable: false);
       }
     }
 
@@ -1140,6 +1025,9 @@ Future<MLResult> analyzeImageRust(Map args) async {
 }
 
 bool isExpectedMlSkipError(Object error) {
+  if (error is RepeatedFileDecryptionError) {
+    return true;
+  }
   final message = _normalizedErrorMessage(error);
   const acceptedIssueMarkers = <String>[
     "thumbnailretrievalexception",
@@ -1151,6 +1039,9 @@ bool isExpectedMlSkipError(Object error) {
 }
 
 String formatExpectedMlSkipReasonForLogs(Object error) {
+  if (error is RepeatedFileDecryptionError) {
+    return "origin decryption failed after three retries with identical ciphertext";
+  }
   final normalized = _normalizedErrorMessage(error);
   if (normalized.contains("invalidimageformatexception")) {
     return "image decode failed";
@@ -1168,81 +1059,12 @@ String formatExpectedMlSkipReasonForLogs(Object error) {
   return firstLine.isEmpty ? "unknown ML skip reason" : firstLine;
 }
 
-bool _isRustDecodeIssue(Object error) {
-  final message = error.toString().toLowerCase();
-  return message.contains("decode error");
+bool _isRustImageIssue(Object error) {
+  return error is rust_ml.RustMlError_InvalidImage;
 }
 
-bool _shouldStoreEmptyResultForRustDecodeFailure({
-  required Object primaryError,
-  Object? fallbackError,
-  bool fallbackReturnedEmpty = false,
-}) {
-  if (fallbackReturnedEmpty) {
-    return _isFileSpecificDecodeFailure(primaryError);
-  }
-
-  if (fallbackError == null) {
-    return false;
-  }
-
-  if (_isInfrastructureFallbackFailure(fallbackError)) {
-    return false;
-  }
-
-  if (_isFileSpecificDecodeFailure(fallbackError)) {
-    return true;
-  }
-  return false;
-}
-
-bool _isFileSpecificDecodeFailure(Object error) {
-  final message = _normalizedErrorMessage(error);
-  if (_isInfrastructureFallbackFailure(error)) {
-    return false;
-  }
-
-  const fileIssueMarkers = <String>[
-    "failed to decode",
-    "failed to guess image format",
-    "format error",
-    "required tag",
-    "unsupported image format",
-    "unsupported tiff pixel format",
-    "invalid image",
-    "invalid data",
-    "not an image",
-    "cannot decode",
-    "could not decode",
-    "corrupt",
-    "corrupted",
-    "buffer length does not match dimensions",
-  ];
-  return fileIssueMarkers.any(message.contains);
-}
-
-bool _isInfrastructureFallbackFailure(Object error) {
-  final message = _normalizedErrorMessage(error);
-
-  const infrastructureMarkers = <String>[
-    "failed to open image file",
-    "no such file or directory",
-    "permission denied",
-    "operation not permitted",
-    "read-only file system",
-    "file system",
-    "filesystem",
-    "space left on device",
-    "channel-error",
-    "missingplugin",
-    "unable to establish connection on channel",
-    "platformexception(channel-error",
-    "out of memory",
-    "outofmemory",
-    "timed out",
-    "timeout",
-  ];
-  return infrastructureMarkers.any(message.contains);
+bool _isRustCorruptModelIssue(Object error) {
+  return error is rust_ml.RustMlError_CorruptModel;
 }
 
 String _normalizedErrorMessage(Object error) {
@@ -1257,54 +1079,14 @@ String _normalizedErrorMessage(Object error) {
   return error.toString().toLowerCase();
 }
 
-Exception _asInvalidImageFormatExceptionForRustDecodeFailure({
+Exception _asInvalidImageFormatExceptionForRustImageFailure({
   required int enteFileID,
   required String fileFormat,
   required Object primaryError,
-  Object? fallbackError,
 }) {
   final details = <String>[
-    "InvalidImageFormatException: Rust decode failed for fileID $enteFileID (format: $fileFormat)",
+    "InvalidImageFormatException: Rust image processing failed for fileID $enteFileID (format: $fileFormat)",
     "primary_error: $primaryError",
-    if (fallbackError != null) "fallback_error: $fallbackError",
   ];
   return Exception(details.join("; "));
-}
-
-class _DecodeFallbackFile {
-  final File file;
-  final Directory directory;
-
-  const _DecodeFallbackFile({required this.file, required this.directory});
-}
-
-Future<_DecodeFallbackFile?> _createJpegDecodeFallbackFile({
-  required String imagePath,
-}) async {
-  final convertedData = await createSafeJpegDecodeFallbackBytes(
-    imagePath: imagePath,
-  );
-  if (convertedData == null || convertedData.isEmpty) {
-    return null;
-  }
-
-  final tempDirectory = await Directory.systemTemp.createTemp(
-    "ente_ml_decode_fallback_",
-  );
-  final fallbackFile = File("${tempDirectory.path}/ml_decode_retry.jpg");
-  await fallbackFile.writeAsBytes(convertedData, flush: true);
-  return _DecodeFallbackFile(file: fallbackFile, directory: tempDirectory);
-}
-
-Future<void> _cleanupDecodeFallback(_DecodeFallbackFile fallback) async {
-  try {
-    if (await fallback.file.exists()) {
-      await fallback.file.delete();
-    }
-    if (await fallback.directory.exists()) {
-      await fallback.directory.delete(recursive: true);
-    }
-  } catch (e, s) {
-    _logger.warning("Could not cleanup decode fallback file", e, s);
-  }
 }

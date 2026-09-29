@@ -5,15 +5,14 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/ente-io/museum/ente"
-	"github.com/ente-io/museum/pkg/controller"
-	"github.com/ente-io/museum/pkg/repo"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	"github.com/ente/museum/pkg/controller"
+	"github.com/ente/museum/pkg/repo"
+	"github.com/ente/stacktrace"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
-// MemoryShareController handles public memory share operations
 type MemoryShareController struct {
 	Repo           *repo.MemoryShareRepository
 	FileRepo       *repo.FileRepository
@@ -21,7 +20,6 @@ type MemoryShareController struct {
 	FileController *controller.FileController
 }
 
-// NewMemoryShareController creates a new public memory share controller
 func NewMemoryShareController(
 	repo *repo.MemoryShareRepository,
 	fileRepo *repo.FileRepository,
@@ -36,7 +34,6 @@ func NewMemoryShareController(
 	}
 }
 
-// GetPublicMemoryShare retrieves a public memory share by access token
 func (c *MemoryShareController) GetPublicMemoryShare(ctx context.Context, accessToken string) (*ente.MemoryShare, error) {
 	share, err := c.Repo.GetByAccessToken(ctx, accessToken)
 	if err != nil {
@@ -51,7 +48,6 @@ func (c *MemoryShareController) GetPublicMemoryShare(ctx context.Context, access
 	return share, nil
 }
 
-// GetPublicFiles retrieves all files in a public memory share
 func (c *MemoryShareController) GetPublicFiles(ctx context.Context, shareID int64) (*ente.PublicMemoryShareFilesResponse, error) {
 	shareFiles, err := c.Repo.GetFiles(ctx, shareID)
 	if err != nil {
@@ -122,7 +118,6 @@ func (c *MemoryShareController) GetAccessibleFileOwnerID(ctx context.Context, sh
 	return ownerID, nil
 }
 
-// GetPublicFileURL returns a signed URL for accessing a file in a public memory share
 func (c *MemoryShareController) GetPublicFileURL(ctx *gin.Context, shareID int64, fileID int64, objType ente.ObjectType) (string, error) {
 	_, err := c.GetAccessibleFileOwnerID(ctx, shareID, fileID)
 	if err != nil {

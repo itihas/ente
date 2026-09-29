@@ -10,7 +10,7 @@ import type {
     LaneMemoryViewerProps,
     MemoryViewerProps,
 } from "../components/PublicMemoryViewerShared";
-import { usePublicMemoryPage } from "../hooks/usePublicMemoryPage";
+import { usePublicMemoryPage } from "../hooks/use-public-memory-page";
 
 function ViewerChunkLoadingFallback() {
     return <PublicMemoryLoadingContent />;
@@ -32,17 +32,9 @@ const MemoryViewer = dynamic<MemoryViewerProps>(
     { loading: ViewerChunkLoadingFallback },
 );
 
-/**
- * Index page that handles both root redirect and memory share links
- *
- * - Root domain (/) redirects to the configured memories landing page
- * - Share links (/TOKEN#key) render the memory viewer
- *
- * This page is served for all routes via:
- * - _redirects file for Cloudflare Pages
- * - Next.js rewrites for local development
- * - nginx try_files for Docker deployment
- */
+// This single page serves every path: share links like /TOKEN#key reach it
+// via the _redirects file (Cloudflare Pages), Next.js rewrites (dev), and
+// nginx try_files (Docker), so do not add per-route pages.
 export default function PublicMemoryPage() {
     const {
         currentIndex,

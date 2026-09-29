@@ -1,3 +1,5 @@
+import { CollectionMappingChoice } from "@/components/CollectionMappingChoice";
+import watcher from "@/services/watch";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import DoNotDisturbOutlinedIcon from "@mui/icons-material/DoNotDisturbOutlined";
@@ -33,24 +35,14 @@ import {
 } from "ente-base/electron";
 import { basename, dirname } from "ente-base/file-name";
 import type { CollectionMapping, FolderWatch } from "ente-base/types/ipc";
-import { CollectionMappingChoice } from "ente-new/photos/components/CollectionMappingChoice";
 import { t } from "i18next";
 import React, { useEffect, useRef, useState } from "react";
-import watcher from "services/watch";
 
-/**
- * View the state of and manage folder watches.
- *
- * This is the screen that controls that "watch folder" feature in the app.
- */
 export const WatchFolder: React.FC<ModalVisibilityProps> = ({
     open,
     onClose,
 }) => {
-    // The folders we are watching
     const [watches, setWatches] = useState<FolderWatch[] | undefined>();
-    // Temporarily stash the folder path while we show a choice dialog to the
-    // user to select the collection mapping.
     const [savedFolderPath, setSavedFolderPath] = useState<
         string | undefined
     >();
@@ -66,8 +58,7 @@ export const WatchFolder: React.FC<ModalVisibilityProps> = ({
         void refreshWatches();
     }, []);
 
-    // Refresh watches when window gains focus while dialog is open.
-    // This ensures the UI updates when a folder becomes accessible again.
+    // Recheck inaccessible folders when the window regains focus.
     useEffect(() => {
         if (!open) return;
 
@@ -92,7 +83,6 @@ export const WatchFolder: React.FC<ModalVisibilityProps> = ({
         return () => {
             removeEventListener("drop", handleWatchFolderDrop);
         };
-        // TODO:
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
@@ -246,7 +236,6 @@ const WatchEntry: React.FC<WatchEntryProps> = ({
     const isAccessible = watch.isAccessible !== false;
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Cleanup timer on unmount to avoid state update on unmounted component.
     useEffect(() => {
         return () => {
             if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -265,10 +254,10 @@ const WatchEntry: React.FC<WatchEntryProps> = ({
         });
 
     const handleRetry = async () => {
-        if (isRetrying) return; // Prevent multiple rapid clicks.
+        if (isRetrying) return;
         setIsRetrying(true);
         await onRetry();
-        // Keep spinner visible briefly so user sees feedback.
+        // Keep feedback visible long enough to notice.
         retryTimerRef.current = setTimeout(() => setIsRetrying(false), 1000);
     };
 
@@ -370,11 +359,5 @@ const EntryOptions: React.FC<EntryOptionsProps> = ({
     </OverflowMenu>
 );
 
-/**
- * Return true if all the paths in the given list are items that belong to the
- * same (arbitrary) directory.
- *
- * Empty list of paths is considered to be in the same directory.
- */
 const areAllInSameDirectory = (paths: string[]) =>
     new Set(paths.map(dirname)).size == 1;

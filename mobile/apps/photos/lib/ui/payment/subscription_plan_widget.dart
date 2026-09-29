@@ -1,8 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:ente_components/theme/text_styles.dart';
 import 'package:ente_pure_utils/ente_pure_utils.dart';
+import "package:ente_strings/ente_strings.dart";
 import 'package:flutter/material.dart';
-import "package:photos/generated/l10n.dart";
 import "package:photos/service_locator.dart";
 import "package:photos/theme/ente_theme.dart";
 
@@ -38,11 +39,7 @@ class SubscriptionPlanWidget extends StatelessWidget {
     final bool isSelected = isActive;
 
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: 24,
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -68,7 +65,8 @@ class SubscriptionPlanWidget extends StatelessWidget {
                         text: TextSpan(
                           style: TextStyle(
                             color: colorScheme.contentDarker,
-                            fontFamily: "Nunito",
+                            fontFamily: TextStyles.outfitFontFamily,
+                            package: TextStyles.fontPackage,
                             fontWeight: FontWeight.w900,
                           ),
                           children: [
@@ -120,10 +118,7 @@ class SubscriptionPlanWidget extends StatelessWidget {
                   Flexible(
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: _Price(
-                        price: price,
-                        period: period,
-                      ),
+                      child: _Price(price: price, period: period),
                     ),
                   ),
                 ],
@@ -145,15 +140,13 @@ class SubscriptionPlanWidget extends StatelessWidget {
                     horizontal: 8,
                     vertical: 2,
                   ),
-                  child: const Text(
+                  child: Text(
                     "Most popular",
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: TextStyles.tiny.copyWith(
                       color: Colors.white,
-                      fontFamily: "Nunito",
-                      fontWeight: FontWeight.w800,
-                      fontSize: 10,
-                      height: 20 / 10,
+                      fontFamily: TextStyles.outfitFontFamily,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -169,10 +162,7 @@ class _Price extends StatelessWidget {
   final String price;
   final String period;
 
-  const _Price({
-    required this.price,
-    required this.period,
-  });
+  const _Price({required this.price, required this.period});
 
   @override
   Widget build(BuildContext context) {
@@ -200,10 +190,8 @@ class _Price extends StatelessWidget {
           children: [
             TextSpan(text: price),
             TextSpan(
-              text: "/${AppLocalizations.of(context).month}",
-              style: textTheme.small.copyWith(
-                color: colorScheme.contentLight,
-              ),
+              text: "/${context.strings.month}",
+              style: textTheme.small.copyWith(color: colorScheme.contentLight),
             ),
           ],
         ),
@@ -219,8 +207,10 @@ class _Price extends StatelessWidget {
       String pricePerMonthString = pricePerMonth.toStringAsFixed(2);
 
       if (pricePerMonthString.endsWith(".00")) {
-        pricePerMonthString =
-            pricePerMonthString.substring(0, pricePerMonthString.length - 3);
+        pricePerMonthString = pricePerMonthString.substring(
+          0,
+          pricePerMonthString.length - 3,
+        );
       }
 
       final bool isPlayStore = updateService.isPlayStoreFlavor();
@@ -238,7 +228,7 @@ class _Price extends StatelessWidget {
                 children: [
                   TextSpan(text: price),
                   TextSpan(
-                    text: "/${AppLocalizations.of(context).yearShort}",
+                    text: "/${context.strings.yearShort}",
                     style: textTheme.small.copyWith(
                       color: colorScheme.contentLight,
                     ),
@@ -249,13 +239,13 @@ class _Price extends StatelessWidget {
             ),
           if (isPlayStore)
             Text(
-              "$currencySymbol$pricePerMonthString / ${AppLocalizations.of(context).month}",
+              "$currencySymbol$pricePerMonthString / ${context.strings.month}",
               style: textTheme.tiny.copyWith(color: colorScheme.contentLight),
               textAlign: TextAlign.end,
             ),
           if (!isPlayStore)
             Text(
-              "$currencySymbol$pricePerMonthString / ${AppLocalizations.of(context).month}",
+              "$currencySymbol$pricePerMonthString / ${context.strings.month}",
               style: textTheme.largeBold.copyWith(
                 color: colorScheme.contentDarker,
               ),
@@ -264,14 +254,10 @@ class _Price extends StatelessWidget {
           if (!isPlayStore)
             Text.rich(
               TextSpan(
-                style: textTheme.tiny.copyWith(
-                  color: colorScheme.contentLight,
-                ),
+                style: textTheme.tiny.copyWith(color: colorScheme.contentLight),
                 children: [
                   TextSpan(text: price),
-                  TextSpan(
-                    text: "/${AppLocalizations.of(context).yearShort}",
-                  ),
+                  TextSpan(text: "/${context.strings.yearShort}"),
                 ],
               ),
               textAlign: TextAlign.end,

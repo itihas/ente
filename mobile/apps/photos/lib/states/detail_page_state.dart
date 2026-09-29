@@ -2,14 +2,13 @@ import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:photos/models/file/file.dart";
 
-/// Continuous zoom transform from the photo viewer.
-///
-/// [scale] is relative to the initial "contained" scale (1.0 = no zoom).
-/// [offset] is the pan translation in logical pixels.
+// Scale is relative to the contained image; offset is in logical pixels.
 @immutable
 class ZoomTransform {
-  static const ZoomTransform identity =
-      ZoomTransform(scale: 1.0, offset: Offset.zero);
+  static const ZoomTransform identity = ZoomTransform(
+    scale: 1.0,
+    offset: Offset.zero,
+  );
 
   final double scale;
   final Offset offset;
@@ -25,15 +24,10 @@ class ZoomTransform {
   int get hashCode => Object.hash(scale, offset);
 }
 
-enum FullScreenRequestReason {
-  userInteraction,
-  playbackStateChange,
-}
+enum FullScreenRequestReason { userInteraction, playbackStateChange }
 
-typedef FullScreenRequestCallback = void Function(
-  bool shouldEnable,
-  FullScreenRequestReason reason,
-);
+typedef FullScreenRequestCallback =
+    void Function(bool shouldEnable, FullScreenRequestReason reason);
 
 String? detailPageFileIdentifier(EnteFile file) {
   if (file.uploadedFileID != null) {
@@ -51,19 +45,11 @@ String? detailPageFileIdentifier(EnteFile file) {
 class InheritedDetailPageState extends InheritedWidget {
   final ValueNotifier<bool> enableFullScreenNotifier;
   final ValueNotifier<bool> isInSharedCollectionNotifier;
-
-  /// Holds the stable identifier of the file currently showing thumbnail
-  /// fallback. Only the file with matching ID should display the indicator.
   final ValueNotifier<String?> showingThumbnailFallbackNotifier;
-
-  /// Whether the photo viewer is currently zoomed in.
   final ValueNotifier<bool> isZoomedNotifier;
-
-  /// Continuous zoom transform (scale + offset) from the photo viewer.
-  /// Updated on every gesture frame so overlays can track the zoom.
   final ValueNotifier<ZoomTransform> zoomTransformNotifier;
+  final ValueNotifier<double> bottomControlsAdditionalInsetNotifier;
 
-  // Cannot be const because we accept a ValueNotifier instance at runtime
   // ignore: prefer_const_constructors_in_immutables
   InheritedDetailPageState({
     super.key,
@@ -73,6 +59,7 @@ class InheritedDetailPageState extends InheritedWidget {
     required this.showingThumbnailFallbackNotifier,
     required this.isZoomedNotifier,
     required this.zoomTransformNotifier,
+    required this.bottomControlsAdditionalInsetNotifier,
   });
 
   static InheritedDetailPageState of(BuildContext context) =>
@@ -105,10 +92,7 @@ class InheritedDetailPageState extends InheritedWidget {
     enableFullScreenNotifier.value = shouldEnable;
     if (shouldEnable) {
       Future.delayed(const Duration(milliseconds: 200), () {
-        SystemChrome.setEnabledSystemUIMode(
-          SystemUiMode.manual,
-          overlays: [],
-        );
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
       });
     } else {
       SystemChrome.setEnabledSystemUIMode(
@@ -125,5 +109,7 @@ class InheritedDetailPageState extends InheritedWidget {
       oldWidget.showingThumbnailFallbackNotifier !=
           showingThumbnailFallbackNotifier ||
       oldWidget.isZoomedNotifier != isZoomedNotifier ||
-      oldWidget.zoomTransformNotifier != zoomTransformNotifier;
+      oldWidget.zoomTransformNotifier != zoomTransformNotifier ||
+      oldWidget.bottomControlsAdditionalInsetNotifier !=
+          bottomControlsAdditionalInsetNotifier;
 }

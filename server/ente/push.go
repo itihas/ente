@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// PushTokenRequest represents a push token
 type PushTokenRequest struct {
 	FCMToken             string `json:"fcmToken" binding:"required"`
 	APNSToken            string `json:"apnsToken"`

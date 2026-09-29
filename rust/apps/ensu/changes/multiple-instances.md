@@ -1,0 +1,1 @@
+- Opening Ensu again on Windows and Linux now brings the existing window forward, preventing duplicate instances from making Your Notes unavailable.

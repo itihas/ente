@@ -1,9 +1,3 @@
-/**
- * Shared types, constants, helpers, and reusable styled primitives for the
- * public memories viewers. This file supports both `MemoryViewer` and
- * `LaneMemoryViewer`, and is also imported by `pages/index.tsx` for viewer prop
- * types.
- */
 import { Button, styled } from "@mui/material";
 import type { EnteFile } from "ente-media/file";
 import type {
@@ -11,7 +5,7 @@ import type {
     PublicMemoryShareMetadata,
 } from "../services/public-memory";
 
-export interface PublicMemoryViewerBaseProps {
+interface PublicMemoryViewerBaseProps {
     files: EnteFile[];
     currentIndex: number;
     memoryName: string;
@@ -30,7 +24,6 @@ export type MemoryViewerProps = PublicMemoryViewerBaseProps;
 export const IMAGE_AUTO_PROGRESS_DURATION_MS = 5000;
 export const MOBILE_LAYOUT_BREAKPOINT_PX = 600;
 export const EDGE_NAV_TAP_ZONE_RATIO = 0.2;
-export const HOLD_TO_PAUSE_NAV_SUPPRESSION_MS = 250;
 export const ENTE_BRAND_TAG_IMAGE_PATH = "/images/ente-brand-tag.svg";
 
 export function readViewport() {
@@ -52,7 +45,6 @@ export function isInteractiveTapTarget(target: EventTarget | null) {
     );
 }
 
-// Shared fullscreen root used by both `MemoryViewer` and `LaneMemoryViewer`.
 export const ViewerRoot = styled("div")({
     position: "relative",
     width: "100vw",
@@ -69,7 +61,6 @@ export const ViewerRoot = styled("div")({
     touchAction: "manipulation",
 });
 
-// Shared branded anchor used in the footer and header CTA areas of both viewers.
 export const BrandLink = styled("a")({
     color: "inherit",
     textDecoration: "none",
@@ -79,7 +70,6 @@ export const BrandLink = styled("a")({
     flexShrink: 0,
 });
 
-// Shared Ente wordmark image used inside `BrandLink` in both viewers.
 export const EnteBrandTagImage = styled("img")({
     width: "76px",
     height: "auto",
@@ -101,15 +91,8 @@ const JoinNowButtonRoot = styled(Button)({
     paddingBlock: "14px",
     paddingInline: "30px",
 });
-const MobileJoinNowButtonRoot = styled(Button)(joinNowButtonStyles);
-
-// Desktop-sized CTA used by both `MemoryViewer` and `LaneMemoryViewer`.
 export const JoinNowButton = JoinNowButtonRoot as typeof Button;
 
-// Mobile CTA used by both viewer variants when actions collapse into the footer.
-export const MobileJoinNowButton = MobileJoinNowButtonRoot as typeof Button;
-
-// Shared mobile footer action row used by both viewers.
 export const ViewerFooterBar = styled("div")({
     width: "100%",
     display: "flex",
@@ -120,7 +103,6 @@ export const ViewerFooterBar = styled("div")({
     paddingBottom: "max(2px, env(safe-area-inset-bottom, 0px))",
 });
 
-// Shared gesture-aware media container used by both viewers around the active media.
 export const PhotoContainer = styled("div")({
     position: "relative",
     display: "flex",

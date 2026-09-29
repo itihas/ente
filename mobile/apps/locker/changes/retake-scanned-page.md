@@ -1,0 +1,1 @@
+- Retake an individual scanned page before saving a document.

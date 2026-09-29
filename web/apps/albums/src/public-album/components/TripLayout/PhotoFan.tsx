@@ -109,7 +109,6 @@ export const PhotoFan = memo<PhotoFanProps>(({ cluster, onPhotoClick }) => {
     );
 });
 
-// Styled components
 const PhotoFanContainer = styled(Box)(({ theme }) => ({
     position: "relative",
     width: "180px",

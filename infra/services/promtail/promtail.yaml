@@ -1,11 +1,6 @@
-# https://grafana.com/docs/loki/latest/clients/promtail/configuration/
-
-# We don't want Promtail's HTTP / GRPC server.
 server:
     disable: true
 
-# Loki URL
-# For Grafana Cloud, it can be found in the integrations section.
 clients:
     - url: http://loki:3100/loki/api/v1/push
 
@@ -13,8 +8,6 @@ clients:
 # - Retains flexibility in file names.
 # - Makes adding job labels easy.
 # - Does not get in the way of logrotation.
-#
-# In addition, also scrape logs from all docker containers.
 scrape_configs:
     - job_name: museum
       static_configs:

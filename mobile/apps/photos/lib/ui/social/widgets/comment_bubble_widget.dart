@@ -1,19 +1,19 @@
 import "dart:async";
 
 import "package:ente_icons/ente_icons.dart";
+import "package:ente_strings/ente_strings.dart";
+import "package:ente_ui/components/loading_widget.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/comment_deleted_event.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/models/api/collection/user.dart";
 import "package:photos/models/social/comment.dart";
 import "package:photos/models/social/reaction.dart";
 import "package:photos/models/social/social_data_provider.dart";
 import "package:photos/theme/colors.dart";
 import "package:photos/theme/ente_theme.dart";
-import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/notification/toast.dart";
 import "package:photos/ui/sharing/user_avator_widget.dart";
 import "package:photos/ui/social/comment_likes_bottom_sheet.dart";
@@ -21,7 +21,7 @@ import "package:photos/ui/social/widgets/comment_actions_popup.dart";
 import "package:photos/ui/social/widgets/comment_like_count_capsule.dart";
 import "package:photos/ui/social/widgets/delete_comment_confirmation_dialog.dart";
 import "package:photos/ui/social/widgets/resolved_social_user_name.dart";
-import "package:photos/utils/social/relative_time_formatter.dart";
+import "package:photos/utils/relative_time_formatter.dart";
 
 final _logger = Logger("CommentBubbleWidget");
 
@@ -38,16 +38,12 @@ class CommentBubbleWidget extends StatefulWidget {
   final User Function(Comment) userResolver;
   final VoidCallback? onCommentDeleted;
 
-  /// Whether this comment should be visually highlighted.
   final bool isHighlighted;
 
-  /// Callback invoked when auto-highlight animation completes (dismissed).
   final VoidCallback? onAutoHighlightDismissed;
 
-  /// Callback invoked when the user taps on the parent quote preview.
   final VoidCallback? onParentQuoteTap;
 
-  /// Callback invoked when the user taps the visible author header.
   final VoidCallback? onAuthorTap;
 
   const CommentBubbleWidget({
@@ -98,7 +94,7 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
   late final AnimationController _overlayAnimationController;
   late final Animation<double> _overlayAnimation;
   late final StreamSubscription<CommentDeletedEvent>
-      _commentDeletedSubscription;
+  _commentDeletedSubscription;
 
   bool get _isOverlayDismissed =>
       _overlayAnimationController.status == AnimationStatus.dismissed;
@@ -115,16 +111,16 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
       curve: Curves.fastOutSlowIn,
     );
     _overlayAnimationController.addStatusListener(_onOverlayStatusChange);
-    _commentDeletedSubscription =
-        Bus.instance.on<CommentDeletedEvent>().listen((event) {
-      if (mounted && _parentComment?.id == event.commentId) {
-        _fetchParentComment();
-      }
-    });
+    _commentDeletedSubscription = Bus.instance.on<CommentDeletedEvent>().listen(
+      (event) {
+        if (mounted && _parentComment?.id == event.commentId) {
+          _fetchParentComment();
+        }
+      },
+    );
     _loadData();
     _measureContent();
 
-    // Trigger auto-highlight if widget is created with isHighlighted = true
     if (widget.isHighlighted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -147,7 +143,6 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
       _measureContent();
     }
 
-    // Trigger auto-highlight when isHighlighted becomes true
     if (widget.isHighlighted && !oldWidget.isHighlighted) {
       _triggerAutoHighlight();
     }
@@ -169,14 +164,12 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
   }
 
   Future<void> _loadData() async {
-    // Load parent if reply
     if (widget.comment.isReply && widget.onFetchParent != null) {
       setState(() => _isLoadingParent = true);
       _parentComment = await widget.onFetchParent!();
       if (mounted) setState(() => _isLoadingParent = false);
     }
 
-    // Load reactions
     setState(() => _isLoadingReactions = true);
     _reactions = await widget.onFetchReactions();
     _isLiked = _reactions.any(
@@ -229,15 +222,11 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
           _isLiked = previousState;
           _optimisticLikeDelta = previousDelta;
         });
-        showShortToast(
-          context,
-          AppLocalizations.of(context).failedToLikeComment,
-        );
+        showShortToast(context, context.strings.failedToLikeComment);
       }
       return;
     }
 
-    // Refresh reactions after successful toggle (best-effort, no rollback if fails)
     _reactions = await widget.onFetchReactions();
     if (mounted) {
       setState(() {
@@ -248,7 +237,7 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
 
   void _showHighlight() {
     if (_isAutoHighlight) {
-      return; // Don't allow long-press during auto-highlight
+      return;
     }
     HapticFeedback.mediumImpact();
     setState(() => _dragOffset = 0.0);
@@ -267,7 +256,6 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
     _overlayController.show();
     _overlayAnimationController.forward();
 
-    // Auto-dismiss after 700ms
     Future.delayed(const Duration(milliseconds: 700), () {
       if (mounted && _isAutoHighlight) {
         _hideAutoHighlight();
@@ -326,10 +314,7 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
       } catch (e) {
         _logger.severe("Failed to delete comment", e);
         if (mounted) {
-          showShortToast(
-            context,
-            AppLocalizations.of(context).failedToDeleteComment,
-          );
+          showShortToast(context, context.strings.failedToDeleteComment);
         }
       }
     }
@@ -379,8 +364,10 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
                       bottom: 0,
                       child: Center(
                         child: Opacity(
-                          opacity:
-                              (_dragOffset / _replyThreshold).clamp(0.0, 1.0),
+                          opacity: (_dragOffset / _replyThreshold).clamp(
+                            0.0,
+                            1.0,
+                          ),
                           child: Icon(
                             EnteIcons.reply,
                             color: colorScheme.textMuted,
@@ -419,7 +406,6 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
             _overlayAnimationController.status == AnimationStatus.reverse;
         return Stack(
           children: [
-            // Full-screen barrier with black opacity
             GestureDetector(
               onTap: _isAutoHighlight ? _hideAutoHighlight : _hideHighlight,
               child: Builder(
@@ -434,16 +420,17 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
                 },
               ),
             ),
-            // Highlighted comment + popup menu
             CompositedTransformFollower(
               link: _layerLink,
               showWhenUnlinked: false,
-              targetAnchor:
-                  widget.isOwnComment ? Alignment.topRight : Alignment.topLeft,
-              followerAnchor:
-                  widget.isOwnComment ? Alignment.topRight : Alignment.topLeft,
-              child: _contentSize != null &&
-                      _contentSize!.width >= _minPopupWidth
+              targetAnchor: widget.isOwnComment
+                  ? Alignment.topRight
+                  : Alignment.topLeft,
+              followerAnchor: widget.isOwnComment
+                  ? Alignment.topRight
+                  : Alignment.topLeft,
+              child:
+                  _contentSize != null && _contentSize!.width >= _minPopupWidth
                   ? SizedBox(
                       width: _contentSize!.width,
                       child: Opacity(
@@ -490,7 +477,8 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
       _lastNonZeroLikeCount = likeCount;
     }
     final displayCount = likeCount > 0 ? likeCount : _lastNonZeroLikeCount;
-    final showCapsule = !_isLoadingReactions &&
+    final showCapsule =
+        !_isLoadingReactions &&
         showActionsCapsule &&
         likeCount > 0 &&
         _isOverlayDismissed;
@@ -509,9 +497,7 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
           Opacity(
             opacity: showHeader ? 1 : 0,
             child: Padding(
-              padding: EdgeInsets.only(
-                right: widget.isOwnComment ? 18 : 0,
-              ),
+              padding: EdgeInsets.only(right: widget.isOwnComment ? 18 : 0),
               child: _Header(
                 isOwnComment: widget.isOwnComment,
                 user: widget.user,
@@ -526,8 +512,9 @@ class _CommentBubbleWidgetState extends State<CommentBubbleWidget>
             padding: EdgeInsets.only(left: widget.isOwnComment ? 0 : 24),
             child: Transform.scale(
               scale: bubbleScale,
-              alignment:
-                  widget.isOwnComment ? Alignment.topRight : Alignment.topLeft,
+              alignment: widget.isOwnComment
+                  ? Alignment.topRight
+                  : Alignment.topLeft,
               child: Column(
                 crossAxisAlignment: widget.isOwnComment
                     ? CrossAxisAlignment.end
@@ -622,7 +609,7 @@ class _InlineParentQuote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = context.strings;
     final textTheme = getEnteTextTheme(context);
 
     if (isLoading) {
@@ -636,10 +623,12 @@ class _InlineParentQuote extends StatelessWidget {
     }
 
     final isParentDeleted = parentComment == null;
-    final parentText =
-        isParentDeleted ? l10n.deletedComment : parentComment!.data;
-    final parentUser =
-        parentComment != null ? userResolver(parentComment!) : null;
+    final parentText = isParentDeleted
+        ? l10n.deletedComment
+        : parentComment!.data;
+    final parentUser = parentComment != null
+        ? userResolver(parentComment!)
+        : null;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     final lineColor = isOwnComment
@@ -649,14 +638,14 @@ class _InlineParentQuote extends StatelessWidget {
     final parentAuthorTextColor = isOwnComment
         ? textBaseDark
         : isDarkMode
-            ? const Color(0xCCFFFFFF)
-            : const Color(0xCC000000);
+        ? const Color(0xCCFFFFFF)
+        : const Color(0xCC000000);
 
     final parentTextColor = isOwnComment
         ? const Color(0xCCFFFFFF)
         : isDarkMode
-            ? const Color(0xB3FFFFFF)
-            : const Color(0xB3000000);
+        ? const Color(0xB3FFFFFF)
+        : const Color(0xB3000000);
 
     final content = Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -709,8 +698,9 @@ class _InlineParentQuote extends StatelessWidget {
                       height: 17 / 10,
                       letterSpacing: -0.3,
                       color: parentTextColor,
-                      fontStyle:
-                          isParentDeleted ? FontStyle.italic : FontStyle.normal,
+                      fontStyle: isParentDeleted
+                          ? FontStyle.italic
+                          : FontStyle.normal,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -763,8 +753,8 @@ class _CommentBubble extends StatelessWidget {
     final bubbleColor = isOwnComment
         ? (isDarkMode ? const Color(0xFF056C1F) : const Color(0xFF0DAF35))
         : isDarkMode
-            ? const Color(0xFF212121)
-            : const Color(0xFFF0F0F0);
+        ? const Color(0xFF212121)
+        : const Color(0xFFF0F0F0);
 
     final bubbleBorderRadius = BorderRadius.only(
       topLeft: Radius.circular(isOwnComment ? 20 : 6),
@@ -826,7 +816,9 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = getEnteColorScheme(context);
     final textTheme = getEnteTextTheme(context);
-    final timestamp = formatRelativeTime(createdAt);
+    final timestamp = formatCompactRelativeTime(
+      DateTime.fromMicrosecondsSinceEpoch(createdAt),
+    );
 
     if (isOwnComment) {
       return Align(
@@ -889,30 +881,19 @@ class _Header extends StatelessWidget {
     );
 
     final row = Row(
-      mainAxisAlignment:
-          isOwnComment ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment: isOwnComment
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
       mainAxisSize: MainAxisSize.max,
       children: [
         if (!isOwnComment) ...[
-          UserAvatarWidget(
-            user,
-            currentUserID: currentUserID,
-            type: AvatarType.lg,
-            thumbnailView: true,
-            addStroke: false,
-          ),
+          UserAvatarWidget(user, type: AvatarType.regular),
           const SizedBox(width: 10),
           Flexible(child: headerText),
         ] else ...[
           Flexible(child: headerText),
           const SizedBox(width: 10),
-          UserAvatarWidget(
-            user,
-            currentUserID: currentUserID,
-            type: AvatarType.lg,
-            thumbnailView: true,
-            addStroke: false,
-          ),
+          UserAvatarWidget(user, type: AvatarType.regular),
         ],
       ],
     );

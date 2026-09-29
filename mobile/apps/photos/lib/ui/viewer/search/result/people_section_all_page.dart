@@ -1,14 +1,16 @@
 import "dart:async";
 
+import "package:ente_components/ente_components.dart";
 import "package:ente_pure_utils/ente_pure_utils.dart";
-import 'package:flutter/cupertino.dart';
+import "package:ente_strings/ente_strings.dart";
+import "package:ente_ui/components/loading_widget.dart";
 import 'package:flutter/material.dart';
+import "package:hugeicons/hugeicons.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/event.dart";
 import "package:photos/events/people_changed_event.dart";
 import "package:photos/events/people_sort_order_change_event.dart";
-import "package:photos/generated/intl/app_localizations.dart";
 import "package:photos/models/search/generic_search_result.dart";
 import "package:photos/models/search/recent_searches.dart";
 import "package:photos/models/search/search_constants.dart";
@@ -18,23 +20,19 @@ import "package:photos/models/selected_people.dart";
 import "package:photos/service_locator.dart";
 import "package:photos/services/machine_learning/face_ml/face_filtering/face_filtering_constants.dart";
 import "package:photos/services/search_service.dart";
-import "package:photos/theme/colors.dart";
+import "package:photos/settings/local_settings.dart";
 import "package:photos/theme/ente_theme.dart";
-import "package:photos/theme/text_style.dart";
-import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/components/banners/save_faces_banner.dart";
 import "package:photos/ui/components/bottom_action_bar/people_bottom_action_bar_widget.dart";
-import "package:photos/ui/components/buttons/icon_button_widget.dart";
-import "package:photos/ui/components/searchable_appbar.dart";
+import "package:photos/ui/components/collection_share_badge.dart";
+import "package:photos/ui/viewer/actions/select_all_status_icon.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/people/face_thumbnail_squircle.dart";
 import "package:photos/ui/viewer/people/person_face_widget.dart";
 import "package:photos/ui/viewer/people/person_gallery_suggestion.dart";
-import "package:photos/ui/viewer/people/pinned_person_badge.dart";
 import "package:photos/ui/viewer/search/result/search_result_page.dart";
 import "package:photos/ui/viewer/search_tab/people_section.dart";
-import "package:photos/utils/local_settings.dart";
 import "package:photos/utils/people_sort_util.dart";
 
 class PeopleSectionAllPage extends StatefulWidget {
@@ -61,6 +59,7 @@ class _PeopleSectionAllPageState extends State<PeopleSectionAllPage> {
             selectedPeople: _selectedPeople,
             showSearchBar: true,
             startInSearchMode: widget.startInSearchMode,
+            includeEmptyPersons: true,
           ),
           bottomNavigationBar: hasSelection
               ? PeopleBottomActionBarWidget(
@@ -80,12 +79,14 @@ class PeopleSectionAllSelectionWrapper extends StatefulWidget {
   final SelectedPeople selectedPeople;
   final bool showSearchBar;
   final bool startInSearchMode;
+  final bool includeEmptyPersons;
 
   const PeopleSectionAllSelectionWrapper({
     super.key,
     required this.selectedPeople,
     this.showSearchBar = false,
     this.startInSearchMode = false,
+    this.includeEmptyPersons = false,
   });
 
   @override
@@ -101,6 +102,7 @@ class _PeopleSectionAllSelectionWrapperState
       selectedPeople: widget.selectedPeople,
       showSearchBar: widget.showSearchBar,
       startInSearchMode: widget.startInSearchMode,
+      includeEmptyPersons: widget.includeEmptyPersons,
     );
   }
 }
@@ -142,8 +144,9 @@ class SelectablePersonSearchExample extends StatelessWidget {
     final personId = searchResult.params[kPersonParamID] as String?;
     final clusterId = searchResult.params[kClusterParamId] as String?;
 
-    final idToUse =
-        (personId != null && personId.isNotEmpty) ? personId : clusterId;
+    final idToUse = (personId != null && personId.isNotEmpty)
+        ? personId
+        : clusterId;
 
     if (idToUse != null && idToUse.isNotEmpty) {
       selectedPeople.toggleSelection(idToUse);
@@ -161,7 +164,8 @@ class SelectablePersonSearchExample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isCluster = searchResult.type() == ResultType.faces &&
+    final bool isCluster =
+        searchResult.type() == ResultType.faces &&
         searchResult.params.containsKey(kClusterParamId);
     final bool isPinnedPerson =
         !isCluster && (searchResult.params[kPersonPinned] as bool? ?? false);
@@ -171,8 +175,9 @@ class SelectablePersonSearchExample extends StatelessWidget {
       builder: (context, _) {
         final personId = searchResult.params[kPersonParamID] as String?;
         final clusterId = searchResult.params[kClusterParamId] as String?;
-        final idToCheck =
-            (personId != null && personId.isNotEmpty) ? personId : clusterId;
+        final idToCheck = (personId != null && personId.isNotEmpty)
+            ? personId
+            : clusterId;
         final bool isSelected = idToCheck != null
             ? selectedPeople.isPersonSelected(idToCheck)
             : false;
@@ -244,19 +249,20 @@ class SelectablePersonSearchExample extends StatelessWidget {
                       switchInCurve: Curves.easeOut,
                       switchOutCurve: Curves.easeIn,
                       child: isSelected
-                          ? const Icon(
-                              Icons.check_circle_rounded,
-                              color: Colors.white,
-                              size: 22,
+                          ? const SelectAllStatusIcon(
+                              isSelected: true,
+                              size: 18,
+                              selectedFillColor: Colors.white,
+                              selectedTickCutsOut: true,
                             )
                           : null,
                     ),
                   ),
                   if (isPinnedPerson)
                     const Positioned(
-                      left: -6,
-                      top: -6,
-                      child: PinnedPersonBadge(),
+                      left: 8,
+                      bottom: 8,
+                      child: PinnedBadge(size: 16),
                     ),
                 ],
               ),
@@ -314,18 +320,26 @@ class PeopleSectionAllWidget extends StatefulWidget {
     this.namedOnly = false,
     this.showSearchBar = false,
     this.startInSearchMode = false,
+    this.includeEmptyPersons = false,
   });
 
   final SelectedPeople? selectedPeople;
   final bool namedOnly;
   final bool showSearchBar;
   final bool startInSearchMode;
+  final bool includeEmptyPersons;
 
   @override
   State<PeopleSectionAllWidget> createState() => _PeopleSectionAllWidgetState();
 }
 
+typedef _PeopleMenuSelection = ({PeopleSortKey? sortKey});
+
 class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
+  static const _titleActionSize = 36.0;
+  static const _searchTitleHeight = 52.0;
+  static const _searchTransitionDuration = Duration(milliseconds: 240);
+
   late Future<List<GenericSearchResult>> sectionData;
   List<GenericSearchResult> normalFaces = [];
   List<GenericSearchResult> extraFaces = [];
@@ -336,6 +350,9 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
   bool _isInitialLoad = true;
   bool userDismissedPersonGallerySuggestion = false;
   String _searchQuery = "";
+  late bool _isSearchBarVisible;
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   int _suggestionReloadToken = 0;
   final Debouncer _peopleReloadDebouncer = Debouncer(
     const Duration(milliseconds: 400),
@@ -344,9 +361,6 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
   bool _nameSortAscending = true;
   bool _updatedSortAscending = false;
   bool _photosSortAscending = false;
-
-  static const double _sortMenuItemHeight = 52;
-  static const double _sortMenuCornerRadius = 12;
 
   bool get _isSearching => _searchQuery.trim().isNotEmpty;
 
@@ -379,14 +393,6 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
     });
   }
 
-  void _clearSearchQuery() {
-    if (_searchQuery.isNotEmpty) {
-      setState(() {
-        _searchQuery = "";
-      });
-    }
-  }
-
   void _toggleIgnoredPeopleView() {
     setState(() {
       _showingIgnoredPeople = !_showingIgnoredPeople;
@@ -398,6 +404,10 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
   @override
   void initState() {
     super.initState();
+    _isSearchBarVisible = widget.showSearchBar && widget.startInSearchMode;
+    if (_isSearchBarVisible) {
+      _focusSearchField();
+    }
     final settings = localSettings;
     _sortKey = settings.peopleSortKey();
     _nameSortAscending = settings.peopleNameSortAscending;
@@ -452,11 +462,36 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
     }
   }
 
+  void _focusSearchField() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _activateSearch() {
+    setState(() {
+      _isSearchBarVisible = true;
+    });
+    _focusSearchField();
+  }
+
+  void _closeSearch() {
+    _searchFocusNode.unfocus();
+    _searchController.clear();
+    setState(() {
+      _isSearchBarVisible = false;
+      _searchQuery = "";
+    });
+  }
+
   Future<List<GenericSearchResult>> getResults({bool init = false}) async {
     final allFaces = await SearchService.instance.getAllFace(
       null,
       minClusterSize: kMinimumClusterSizeAllFaces,
       showIgnoredOnly: _showingIgnoredPeople,
+      includeEmptyPersons: widget.includeEmptyPersons,
     );
     normalFaces.clear();
     extraFaces.clear();
@@ -484,20 +519,22 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
       _prioritizeNamedIgnoredPeople(normalFaces);
     }
     final showAllFaces = _showingAllFaces || _showingIgnoredPeople;
-    final results =
-        showAllFaces ? [...normalFaces, ...extraFaces] : normalFaces;
+    final results = showAllFaces
+        ? [...normalFaces, ...extraFaces]
+        : normalFaces;
 
     if (widget.namedOnly) {
       results.removeWhere((element) => element.params[kPersonParamID] == null);
 
       if (init) {
-        // sort widget.selectedPeople first
         results.sort((a, b) {
-          final aIndex = widget.selectedPeople?.personIds.contains(
+          final aIndex =
+              widget.selectedPeople?.personIds.contains(
                 a.params[kPersonParamID],
               ) ??
               false;
-          final bIndex = widget.selectedPeople?.personIds.contains(
+          final bIndex =
+              widget.selectedPeople?.personIds.contains(
                 b.params[kPersonParamID],
               ) ??
               false;
@@ -601,44 +638,25 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
     for (var subscriptions in streamSubscriptions) {
       subscriptions.cancel();
     }
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = getEnteTextTheme(context);
-    final colorScheme = getEnteColorScheme(context);
     final smallFontSize = textTheme.small.fontSize!;
     final textScaleFactor =
         MediaQuery.textScalerOf(context).scale(smallFontSize) / smallFontSize;
     const horizontalEdgePadding = 20.0;
     const gridPadding = 16.0;
+    const labelHeight = 28.0;
 
     return FutureBuilder<List<GenericSearchResult>>(
       future: sectionData,
       builder: (context, snapshot) {
-        final slivers = <Widget>[
-          if (widget.showSearchBar)
-            SearchableAppBar(
-              title: Text(SectionType.face.sectionTitle(context)),
-              autoActivateSearch: widget.startInSearchMode,
-              onSearch: _updateSearchQuery,
-              onSearchClosed: _clearSearchQuery,
-              centerTitle: false,
-              searchIconPadding: const EdgeInsets.fromLTRB(
-                12,
-                12,
-                horizontalEdgePadding,
-                12,
-              ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: horizontalEdgePadding),
-                  child: _buildSortMenu(context, textTheme, colorScheme),
-                ),
-              ],
-            ),
-        ];
+        final slivers = <Widget>[];
         if (!_isLoaded &&
             snapshot.connectionState == ConnectionState.waiting &&
             _isInitialLoad) {
@@ -647,40 +665,40 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
               child: Center(child: EnteLoadingWidget()),
             ),
           );
-          return CustomScrollView(slivers: slivers);
+          return _buildScrollBody(slivers);
         } else if (snapshot.hasError) {
           slivers.add(
             const SliverFillRemaining(
               child: Center(child: Icon(Icons.error_outline_rounded)),
             ),
           );
-          return CustomScrollView(slivers: slivers);
+          return _buildScrollBody(slivers);
         } else {
           final filteredNormalFaces = _filterFaces(normalFaces);
           final filteredExtraFaces = _filterFaces(extraFaces);
           final hasResults = _isSearching
               ? filteredNormalFaces.isNotEmpty || filteredExtraFaces.isNotEmpty
               : filteredNormalFaces.isNotEmpty ||
-                  (!widget.namedOnly && filteredExtraFaces.isNotEmpty);
+                    (!widget.namedOnly && filteredExtraFaces.isNotEmpty);
           if (_isLoaded && !hasResults) {
             slivers.add(
               SliverFillRemaining(
                 child: Center(
-                  child: Text(
-                    AppLocalizations.of(context).noResultsFound + '.',
-                  ),
+                  child: Text(context.strings.noResultsFound + '.'),
                 ),
               ),
             );
-            return CustomScrollView(slivers: slivers);
+            return _buildScrollBody(slivers);
           }
           final screenWidth = MediaQuery.of(context).size.width;
           final crossAxisCount = (screenWidth / 100).floor();
 
-          final itemSize = (screenWidth -
+          final itemSize =
+              (screenWidth -
                   ((horizontalEdgePadding * 2) +
                       ((crossAxisCount - 1) * gridPadding))) /
               crossAxisCount;
+          final gridItemHeight = itemSize + (labelHeight * textScaleFactor);
 
           if (_isSearching) {
             final searchResults = [
@@ -701,8 +719,7 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
                     mainAxisSpacing: gridPadding,
                     crossAxisSpacing: gridPadding,
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio:
-                        itemSize / (itemSize + (24 * textScaleFactor)),
+                    childAspectRatio: itemSize / gridItemHeight,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     childCount: searchResults.length,
@@ -772,8 +789,7 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
                     mainAxisSpacing: gridPadding,
                     crossAxisSpacing: gridPadding,
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio:
-                        itemSize / (itemSize + (24 * textScaleFactor)),
+                    childAspectRatio: itemSize / gridItemHeight,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     childCount: filteredNormalFaces.length,
@@ -810,8 +826,7 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
                       mainAxisSpacing: gridPadding,
                       crossAxisSpacing: gridPadding,
                       crossAxisCount: crossAxisCount,
-                      childAspectRatio:
-                          itemSize / (itemSize + (24 * textScaleFactor)),
+                      childAspectRatio: itemSize / gridItemHeight,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       childCount: filteredExtraFaces.length,
@@ -836,95 +851,175 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
             ]);
           }
-          return CustomScrollView(slivers: slivers);
+          return _buildScrollBody(slivers);
         }
       },
     );
   }
 
-  Widget _buildSortMenu(
-    BuildContext context,
-    EnteTextTheme textTheme,
-    EnteColorScheme colorScheme,
-  ) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        highlightColor: Colors.transparent,
-        splashColor: Colors.transparent,
+  Widget _buildScrollBody(List<Widget> slivers) {
+    if (!widget.showSearchBar) {
+      return CustomScrollView(slivers: slivers);
+    }
+
+    return AppBarComponent(
+      title: SectionType.face.sectionTitle(context),
+      physics: const BouncingScrollPhysics(),
+      titleBuilder: _buildTitle,
+      titleBuilderHeight: _searchTitleHeight,
+      slivers: slivers,
+    );
+  }
+
+  Widget _buildTitle(BuildContext context, HeaderAppBarTitleState state) {
+    return AnimatedSwitcher(
+      duration: _searchTransitionDuration,
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        alignment: Alignment.centerLeft,
+        clipBehavior: Clip.none,
+        children: [...previousChildren, ?currentChild],
       ),
-      child: GestureDetector(
-        onTapDown: (TapDownDetails details) async {
-          final l10n = AppLocalizations.of(context);
-          const sortKeys = PeopleSortKey.values;
-          final PeopleSortKey? selectedKey = await showMenu<PeopleSortKey>(
-            color: colorScheme.backgroundElevated,
-            context: context,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              side: BorderSide(width: 0.5, color: colorScheme.strokeFaint),
-              borderRadius: BorderRadius.circular(_sortMenuCornerRadius),
+      transitionBuilder: (child, animation) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        final beginOffset = child.key == const ValueKey("people_search_field")
+            ? const Offset(0.035, 0)
+            : const Offset(-0.035, 0);
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: beginOffset,
+              end: Offset.zero,
+            ).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+      child: _isSearchBarVisible
+          ? KeyedSubtree(
+              key: const ValueKey("people_search_field"),
+              child: _buildSearchField(context),
+            )
+          : KeyedSubtree(
+              key: const ValueKey("people_title_row"),
+              child: _buildTitleRow(state),
             ),
-            position: RelativeRect.fromLTRB(
-              details.globalPosition.dx,
-              details.globalPosition.dy,
-              details.globalPosition.dx,
-              details.globalPosition.dy + 50,
+    );
+  }
+
+  Widget _buildTitleRow(HeaderAppBarTitleState state) {
+    return SizedBox(
+      height: state.height,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              state.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: state.textStyle,
             ),
-            items: [
-              ...List.generate(sortKeys.length, (index) {
-                final key = sortKeys[index];
-                return _buildSortMenuItem(
-                  key,
-                  index == sortKeys.length - 1,
-                  textTheme,
-                  colorScheme,
-                  l10n,
-                );
-              }),
-              _buildIgnoredPeopleMenuItem(
-                context,
-                textTheme,
-                colorScheme,
-                l10n,
-              ),
-            ],
-          );
-          if (!mounted || selectedKey == null) {
-            return;
-          }
-          if (selectedKey == _sortKey &&
-              !_canToggleSortDirection(selectedKey)) {
-            return;
-          }
-          setState(() {
-            if (selectedKey == _sortKey) {
-              _toggleSortDirection(selectedKey);
-            } else {
-              _sortKey = selectedKey;
-            }
-            _sortFaces(normalFaces);
-            _sortFaces(extraFaces);
-            if (_showingIgnoredPeople) {
-              _prioritizeNamedIgnoredPeople(normalFaces);
-            }
-          });
-          unawaited(_persistSortPreferences());
-        },
-        child: IconButtonWidget(
-          icon: Icons.sort_rounded,
-          iconButtonType: IconButtonType.secondary,
-          iconColor: colorScheme.textMuted,
-        ),
+          ),
+          const SizedBox(width: Spacing.md),
+          SizedBox.square(
+            dimension: _titleActionSize,
+            child: _buildSearchAction(),
+          ),
+          const SizedBox(width: Spacing.sm),
+          SizedBox.square(dimension: _titleActionSize, child: _buildSortMenu()),
+        ],
       ),
     );
   }
 
-  PopupMenuItem<PeopleSortKey> _buildSortMenuItem(
+  Widget _buildSearchAction() {
+    return IconButtonComponent(
+      variant: IconButtonComponentVariant.primary,
+      shouldSurfaceExecutionStates: false,
+      icon: const HugeIcon(icon: HugeIcons.strokeRoundedSearch01),
+      onTap: _activateSearch,
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context) {
+    final colors = context.componentColors;
+    return TextInputComponent(
+      controller: _searchController,
+      focusNode: _searchFocusNode,
+      hintText: context.strings.search,
+      autofocus: true,
+      shouldUnfocusOnClearOrSubmit: true,
+      prefix: HugeIcon(
+        icon: HugeIcons.strokeRoundedSearch01,
+        size: 18,
+        color: colors.textLight,
+      ),
+      suffix: HugeIcon(
+        icon: HugeIcons.strokeRoundedCancel01,
+        size: 18,
+        color: colors.textLight,
+      ),
+      onSuffixTap: _closeSearch,
+      onChanged: _updateSearchQuery,
+    );
+  }
+
+  Widget _buildSortMenu() {
+    return Builder(
+      builder: (buttonContext) => IconButtonComponent(
+        variant: IconButtonComponentVariant.primary,
+        shouldSurfaceExecutionStates: false,
+        icon: const HugeIcon(icon: HugeIcons.strokeRoundedFilterHorizontal),
+        onTap: () => unawaited(_showSortMenu(buttonContext)),
+      ),
+    );
+  }
+
+  Future<void> _showSortMenu(BuildContext buttonContext) async {
+    final l10n = context.strings;
+    final selection = await showEntePopupMenu<_PeopleMenuSelection>(
+      context: buttonContext,
+      options: [
+        for (final key in PeopleSortKey.values) _buildSortMenuItem(key, l10n),
+        _buildIgnoredPeopleMenuItem(l10n),
+      ],
+    );
+    if (!mounted || selection == null) {
+      return;
+    }
+    final selectedKey = selection.sortKey;
+    if (selectedKey == null) {
+      _toggleIgnoredPeopleView();
+      return;
+    }
+    if (selectedKey == _sortKey && !_canToggleSortDirection(selectedKey)) {
+      return;
+    }
+    setState(() {
+      if (selectedKey == _sortKey) {
+        _toggleSortDirection(selectedKey);
+      } else {
+        _sortKey = selectedKey;
+      }
+      _sortFaces(normalFaces);
+      _sortFaces(extraFaces);
+      if (_showingIgnoredPeople) {
+        _prioritizeNamedIgnoredPeople(normalFaces);
+      }
+    });
+    unawaited(_persistSortPreferences());
+  }
+
+  EntePopupMenuOption<_PeopleMenuSelection> _buildSortMenuItem(
     PeopleSortKey key,
-    bool isLast,
-    EnteTextTheme textTheme,
-    EnteColorScheme colorScheme,
-    AppLocalizations l10n,
+    StringsLocalizations l10n,
   ) {
     String label;
     switch (key) {
@@ -948,94 +1043,47 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
         detail = _isSortAscending(key) ? l10n.sortAToZ : l10n.sortZToA;
         break;
       case PeopleSortKey.lastUpdated:
-        detail =
-            _isSortAscending(key) ? l10n.sortOldestFirst : l10n.sortNewestFirst;
+        detail = _isSortAscending(key)
+            ? l10n.sortOldestFirst
+            : l10n.sortNewestFirst;
         break;
     }
 
     final bool isSelected = _sortKey == key;
     final bool isAscending = _isSortAscending(key);
-    final IconData directionIcon = key == PeopleSortKey.name
-        ? (isAscending ? Icons.arrow_downward : Icons.arrow_upward)
-        : (isAscending ? Icons.arrow_upward : Icons.arrow_downward);
-
-    return PopupMenuItem<PeopleSortKey>(
-      value: key,
-      padding: EdgeInsets.zero,
-      height: _sortMenuItemHeight,
-      child: Container(
-        width: double.infinity,
-        height: _sortMenuItemHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          border: isLast
-              ? null
-              : Border(
-                  bottom: BorderSide(
-                    width: 0.5,
-                    color: colorScheme.strokeFaint,
-                  ),
-                ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(label, style: textTheme.mini),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.textMuted.withValues(alpha: 0.6),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(detail, style: textTheme.miniMuted),
-              const SizedBox(width: 4),
-              Icon(directionIcon, size: 16, color: colorScheme.textMuted),
-            ],
-          ],
-        ),
+    final directionIcon = key == PeopleSortKey.name
+        ? (isAscending
+              ? HugeIcons.strokeRoundedArrowDown02
+              : HugeIcons.strokeRoundedArrowUp02)
+        : (isAscending
+              ? HugeIcons.strokeRoundedArrowUp02
+              : HugeIcons.strokeRoundedArrowDown02);
+    return EntePopupMenuOption(
+      value: (sortKey: key),
+      label: label,
+      secondaryLabel: isSelected ? detail : null,
+      isActive: isSelected,
+      activeTrailingWidget: HugeIcon(
+        icon: directionIcon,
+        size: 12,
+        strokeWidth: 3,
       ),
     );
   }
 
-  PopupMenuItem<PeopleSortKey> _buildIgnoredPeopleMenuItem(
-    BuildContext context,
-    EnteTextTheme textTheme,
-    EnteColorScheme colorScheme,
-    AppLocalizations l10n,
+  EntePopupMenuOption<_PeopleMenuSelection> _buildIgnoredPeopleMenuItem(
+    StringsLocalizations l10n,
   ) {
-    return PopupMenuItem<PeopleSortKey>(
-      value: null,
-      onTap: _toggleIgnoredPeopleView,
-      padding: EdgeInsets.zero,
-      height: _sortMenuItemHeight,
-      child: Container(
-        width: double.infinity,
-        height: _sortMenuItemHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(width: 0.5, color: colorScheme.strokeFaint),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(l10n.showIgnored, style: textTheme.miniMuted),
-            IgnorePointer(
-              child: CupertinoSwitch(
-                value: _showingIgnoredPeople,
-                onChanged: (_) {},
-                activeTrackColor: colorScheme.primary500,
-              ),
-            ),
-          ],
+    return EntePopupMenuOption(
+      value: (sortKey: null),
+      label: l10n.showIgnored,
+      trailingWidget: IgnorePointer(
+        child: ToggleSwitchComponent(
+          selected: _showingIgnoredPeople,
+          onChanged: (_) {},
         ),
       ),
+      showDivider: false,
     );
   }
 
@@ -1073,8 +1121,8 @@ class _PeopleSectionAllWidgetState extends State<PeopleSectionAllWidget> {
             children: [
               Text(
                 _showingAllFaces
-                    ? AppLocalizations.of(context).showLessFaces
-                    : AppLocalizations.of(context).showMoreFaces,
+                    ? context.strings.showLessFaces
+                    : context.strings.showMoreFaces,
                 style: getEnteTextTheme(
                   context,
                 ).small.copyWith(color: Theme.of(context).colorScheme.primary),

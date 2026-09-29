@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ente-io/museum/pkg/utils/time"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/pkg/utils/time"
+	"github.com/ente/stacktrace"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -23,7 +23,6 @@ const (
 	LinkDeviceTokenRefreshBefore = 30 * 24 * time.MicroSecondsInOneHour
 )
 
-// LinkDeviceClaim represents a signed browser admission token for public links.
 type LinkDeviceClaim struct {
 	Typ             string `json:"typ"`
 	Scope           string `json:"scope"`

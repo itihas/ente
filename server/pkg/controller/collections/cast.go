@@ -1,9 +1,9 @@
 package collections
 
 import (
-	"github.com/ente-io/museum/ente"
-	"github.com/ente-io/museum/pkg/utils/auth"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	"github.com/ente/museum/pkg/utils/auth"
+	"github.com/ente/stacktrace"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -21,7 +21,6 @@ func (c *CollectionController) GetCastCollection(ctx *gin.Context) (*ente.Collec
 	return &collection, nil
 }
 
-// GetCastDiff returns the changes in the collections since a timestamp, along with hasMore bool flag.
 func (c *CollectionController) GetCastDiff(ctx *gin.Context, sinceTime int64) ([]ente.File, bool, error) {
 	castCtx := auth.GetCastCtx(ctx)
 	collectionID := castCtx.CollectionID
@@ -34,7 +33,7 @@ func (c *CollectionController) GetCastDiff(ctx *gin.Context, sinceTime int64) ([
 	if err != nil {
 		return nil, false, stacktrace.Propagate(err, "")
 	}
-	// hide private metadata before returning files info in diff
+	// Don't expose private metadata in a cast diff.
 	for idx := range diff {
 		if diff[idx].MagicMetadata != nil {
 			diff[idx].MagicMetadata = nil
@@ -48,7 +47,7 @@ func (c *CollectionController) GetCastDiff(ctx *gin.Context, sinceTime int64) ([
 		diff[idx].Action = nil
 		diff[idx].ActionUserID = nil
 		if diff[idx].Metadata.EncryptedData == "-" && !diff[idx].IsDeleted {
-			// This indicates that the file is deleted, but we still have a stale entry in the collection
+			// "-" marks a deleted file whose collection entry is stale.
 			reqContextLogger.WithFields(log.Fields{
 				"file_id":    diff[idx].ID,
 				"updated_at": diff[idx].UpdationTime,
@@ -56,5 +55,6 @@ func (c *CollectionController) GetCastDiff(ctx *gin.Context, sinceTime int64) ([
 			diff[idx].IsDeleted = true
 		}
 	}
+	scrubDeletedFiles(diff)
 	return diff, hasMore, nil
 }

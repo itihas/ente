@@ -3,14 +3,14 @@ package discountcoupon
 import (
 	"context"
 	"fmt"
-	"github.com/ente-io/museum/ente"
-	"github.com/ente-io/museum/pkg/controller"
-	"github.com/ente-io/museum/pkg/controller/discord"
-	"github.com/ente-io/museum/pkg/controller/email"
-	"github.com/ente-io/museum/pkg/repo"
-	"github.com/ente-io/museum/pkg/repo/discountcoupon"
-	emailUtil "github.com/ente-io/museum/pkg/utils/email"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	"github.com/ente/museum/pkg/controller"
+	"github.com/ente/museum/pkg/controller/discord"
+	"github.com/ente/museum/pkg/controller/email"
+	"github.com/ente/museum/pkg/repo"
+	"github.com/ente/museum/pkg/repo/discountcoupon"
+	emailUtil "github.com/ente/museum/pkg/utils/email"
+	"github.com/ente/stacktrace"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -19,14 +19,15 @@ import (
 
 const MaxSendCount = 10
 
-// AllowedProviders is a set of valid provider names for discount coupons.
 // While adding new providers, consider adding customized templates in email package.
 var AllowedProviders = map[string]bool{
-	"Kagi":       true,
-	"Tuta":       true,
-	"Notesnook":  true,
-	"Windscribe": true,
-	"Test":       true,
+	"Kagi":         true,
+	"Tuta":         true,
+	"Notesnook":    true,
+	"Windscribe":   true,
+	"LeaveMeAlone": true,
+	"Obscura":      true,
+	"Test":         true,
 }
 
 type Controller struct {
@@ -62,7 +63,7 @@ func (c *Controller) processClaimRequest(ctx *gin.Context, req ClaimCouponReques
 			WithField("email", sanitizedEmail).
 			WithField("req_id", requestid.Get(ctx))
 
-	userID, err := c.UserRepo.GetUserIDWithEmail(sanitizedEmail)
+	userID, err := c.UserRepo.GetUserIDWithEmailUnrestricted(sanitizedEmail)
 	if err != nil {
 		logger.WithError(err).Info("User not found for discount coupon claim")
 		return
@@ -156,6 +157,12 @@ func (c *Controller) sendCouponEmail(ctx context.Context, user ente.User, coupon
 	case "Windscribe":
 		subject = "Ente Friends - Windscribe discount code"
 		templateName = "discount_coupon_windscribe.html"
+	case "LeaveMeAlone":
+		subject = "Ente Friends - Leave Me Alone voucher code"
+		templateName = "discount_coupon_leave_me_alone.html"
+	case "Obscura":
+		subject = "Ente Friends - Obscura discount code"
+		templateName = "discount_coupon_obscura.html"
 	case "Test":
 		subject = "Ente Friends - Test trial code"
 		templateName = "discount_coupon_test.html"
@@ -179,7 +186,6 @@ func (c *Controller) AddCoupons(ctx *gin.Context, req AddCouponsRequest) error {
 		return ente.NewBadRequestWithMessage("No coupon codes provided")
 	}
 
-	// Filter out empty codes and validate
 	validCodes := make([]string, 0, len(req.Codes))
 	for _, code := range req.Codes {
 		trimmed := strings.TrimSpace(code)

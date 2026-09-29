@@ -38,6 +38,10 @@ Learn more about [adding descriptions to photos](/photos/faq/metadata-and-editin
 
 Search for albums by name or search within specific albums to narrow down results.
 
+### Photos without location data
+
+On web and desktop, select **No location** from the search suggestions to find photos and videos you own that do not have GPS coordinates in their metadata. This can help identify items that need a [location added manually](/photos/faq/metadata-and-editing#add-location).
+
 ### Settings search
 
 Find settings by searching for their names or related terms.
@@ -119,6 +123,12 @@ After enabling, the app will download and index your photos locally. This is fas
 
 Ente automatically creates collections of photos from past years on the same date, helping you rediscover memories.
 
+To share items from a memory on mobile:
+
+1. Open the memory and tap the share action.
+2. Select the photos and videos you want to include. You can use **Select all**, or tap the selected count to clear the selection.
+3. Tap **Share memory** to create a link containing only the selected items. To send the selected original files instead, tap **Share items**.
+
 ### Memory Lane
 
 Memory Lane creates a timeline for a person using photos of them from different years. When a person's timeline is ready, Ente shows a **Memory lane** banner on their page so you can open it and, on supported platforms, share it as a public link.
@@ -165,7 +175,9 @@ Learn more in [Albums and Organization FAQ](/photos/faq/albums-and-organization#
 - **Mobile apps**: All search features including ML (face recognition and magic search)
 - **Desktop apps**: All search features including ML (face recognition and magic search)
 
-> **Note**: Machine learning features (face recognition and magic search) only work on mobile and desktop apps, not on photos.ente.com.
+> [!NOTE]
+>
+> Machine learning features (face recognition and magic search) only work on mobile and desktop apps, not on photos.ente.com.
 
 ## Privacy and Security
 

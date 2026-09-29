@@ -1,9 +1,3 @@
-/**
- * Proxy file uploads.
- *
- * See: https://ente.com/blog/tech/making-uploads-faster/
- */
-
 export default {
     async fetch(request: Request) {
         switch (request.method) {
@@ -20,19 +14,15 @@ export default {
     },
 } satisfies ExportedHandler;
 
-// Strict allowlist of upload destinations. Expand as needed.
 const ALLOWED_UPLOAD_HOSTS = new Set<string>([
-    // Example: Backblaze B2 S3-compatible bucket endpoint
     "ente-prod-eu.s3.eu-central-003.backblazeb2.com",
 ]);
 
 const isAllowedUploadURL = (uploadURL: string) => {
     try {
         const url = new URL(uploadURL);
-        // Enforce HTTPS, no credentials, and an allowlisted host.
         if (url.protocol !== "https:") return false;
         if (url.username || url.password) return false;
-        // Only default HTTPS port; signed URLs should not need a custom port.
         if (url.port && url.port !== "443") return false;
         if (!ALLOWED_UPLOAD_HOSTS.has(url.hostname)) return false;
         return true;

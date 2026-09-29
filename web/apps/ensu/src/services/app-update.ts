@@ -1,6 +1,7 @@
+import { isTauriRuntime } from "@/services/tauri-runtime";
 import type { MiniDialogAttributes } from "ente-base/components/MiniDialog";
+import { buildEnvIsProductionBuild } from "ente-base/env";
 import log from "ente-base/log";
-import { isTauriAppRuntime } from "services/secure-storage";
 
 const oneDay = 24 * 60 * 60 * 1000;
 
@@ -16,20 +17,25 @@ type AppUpdateCheckResult =
     | { kind: "available"; version: string }
     | { kind: "error" };
 
-export const checkForAppUpdates = async (): Promise<AppUpdateCheckResult> => {
-    if (!isTauriAppRuntime()) return { kind: "not-supported" };
+const checkForAppUpdates = async (): Promise<AppUpdateCheckResult> => {
+    if (!isTauriRuntime()) return { kind: "not-supported" };
     if (inFlightUpdateCheck) return inFlightUpdateCheck;
 
     const run = async (): Promise<AppUpdateCheckResult> => {
         try {
-            const { checkUpdate } = await import("@tauri-apps/api/updater");
-            const update = await checkUpdate();
-            if (!update.shouldUpdate) {
+            const { check } = await import("@tauri-apps/plugin-updater");
+            const update = await check();
+            if (!update) {
                 log.debug(() => "Ensu is already on the latest version");
                 return { kind: "up-to-date" };
             }
 
-            const version = update.manifest?.version ?? "unknown";
+            const { version } = update;
+            try {
+                await update.close();
+            } catch (e) {
+                log.warn("Failed to close Ensu update check", e);
+            }
             return { kind: "available", version };
         } catch (e) {
             log.error("Failed to auto-update Ensu", e);
@@ -45,15 +51,24 @@ export const checkForAppUpdates = async (): Promise<AppUpdateCheckResult> => {
 };
 
 const installAppUpdate = async (version: string) => {
-    const [{ installUpdate }, { relaunch }] = await Promise.all([
-        import("@tauri-apps/api/updater"),
-        import("@tauri-apps/api/process"),
-    ]);
+    try {
+        const [{ check }, { relaunch }] = await Promise.all([
+            import("@tauri-apps/plugin-updater"),
+            import("@tauri-apps/plugin-process"),
+        ]);
 
-    log.info(`Installing Ensu update ${version}`);
-    await installUpdate();
-    log.info(`Installed Ensu update ${version}, relaunching`);
-    await relaunch();
+        log.info(`Installing Ensu update ${version}`);
+        const update = await check();
+        if (!update) {
+            throw new Error(`Ensu update ${version} is no longer available`);
+        }
+        await update.downloadAndInstall();
+        log.info(`Installed Ensu update ${version}, relaunching`);
+        await relaunch();
+    } catch (e) {
+        log.error(`Failed to install Ensu update ${version}`, e);
+        throw e;
+    }
 };
 
 const showUpdatePrompt = (showMiniDialog: ShowMiniDialog, version: string) => {
@@ -74,7 +89,7 @@ const showUpdatePrompt = (showMiniDialog: ShowMiniDialog, version: string) => {
 
 const checkAndPromptForAppUpdates = async (showMiniDialog: ShowMiniDialog) => {
     const result = await checkForAppUpdates();
-    if (result?.kind !== "available") return result;
+    if (result.kind !== "available") return result;
     if (promptedVersion === result.version) return result;
     promptedVersion = result.version;
     showUpdatePrompt(showMiniDialog, result.version);
@@ -85,7 +100,7 @@ export const handleManualAppUpdateCheck = async (
     showMiniDialog: ShowMiniDialog,
 ) => {
     const result = await checkForAppUpdates();
-    if (!result || result.kind === "not-supported") return;
+    if (result.kind === "not-supported") return;
 
     if (result.kind === "up-to-date") {
         showMiniDialog({
@@ -109,12 +124,8 @@ export const handleManualAppUpdateCheck = async (
 };
 
 export const setupAutoAppUpdates = (showMiniDialog: ShowMiniDialog) => {
-    if (
-        !isTauriAppRuntime() ||
-        process.env.NODE_ENV !== "production" ||
-        intervalId
-    ) {
-        return () => {};
+    if (!isTauriRuntime() || !buildEnvIsProductionBuild || intervalId) {
+        return () => undefined;
     }
 
     void checkAndPromptForAppUpdates(showMiniDialog);

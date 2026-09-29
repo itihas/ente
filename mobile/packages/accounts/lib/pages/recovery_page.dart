@@ -1,16 +1,16 @@
 import 'package:ente_accounts/ente_accounts.dart';
+import 'package:ente_accounts/widgets/account_app_bar_logo.dart';
+import 'package:ente_components/ente_components.dart';
 import 'package:ente_configuration/base_configuration.dart';
 import 'package:ente_strings/ente_strings.dart';
 import "package:ente_ui/components/alert_bottom_sheet.dart";
 import 'package:ente_ui/components/buttons/dynamic_fab.dart';
-import "package:ente_ui/components/buttons/gradient_button.dart";
 import 'package:ente_ui/pages/base_home_page.dart';
 import 'package:ente_ui/theme/ente_theme.dart';
 import 'package:ente_ui/utils/dialog_util.dart';
 import 'package:ente_ui/utils/toast_util.dart';
 import "package:ente_utils/email_util.dart";
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class RecoveryPage extends StatefulWidget {
   final BaseConfiguration config;
@@ -32,6 +32,9 @@ class _RecoveryPageState extends State<RecoveryPage> {
     try {
       await widget.config.recover(_recoveryKey.text.trim());
       await dialog.hide();
+      if (!mounted) {
+        return;
+      }
       showToast(context, "Recovery successful!");
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -53,12 +56,14 @@ class _RecoveryPageState extends State<RecoveryPage> {
       if (e is AssertionError) {
         errMessage = '$errMessage : ${e.message}';
       }
-      await showAlertBottomSheet(
-        context,
-        title: context.strings.incorrectRecoveryKey,
-        message: errMessage,
-        assetPath: 'assets/warning-grey.png',
-      );
+      if (mounted) {
+        await showAlertBottomSheet(
+          context,
+          title: context.strings.incorrectRecoveryKey,
+          message: errMessage,
+          assetPath: 'assets/warning-grey.png',
+        );
+      }
     }
   }
 
@@ -84,16 +89,10 @@ class _RecoveryPageState extends State<RecoveryPage> {
         scrolledUnderElevation: 0,
         backgroundColor: colorScheme.backgroundBase,
         centerTitle: true,
-        title: SvgPicture.asset(
-          'assets/svg/app-logo.svg',
-          colorFilter: ColorFilter.mode(
-            colorScheme.primary700,
-            BlendMode.srcIn,
-          ),
-        ),
+        title: const AccountAppBarLogo(),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          color: colorScheme.primary700,
+          color: getAccountAppBarColor(context),
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -171,14 +170,15 @@ class _RecoveryPageState extends State<RecoveryPage> {
                                   context.strings.noRecoveryKeyNoDecryption,
                               assetPath: 'assets/warning-grey.png',
                               buttons: [
-                                GradientButton(
-                                  text: context.strings.contactSupport,
+                                ButtonComponent(
+                                  label: context.strings.contactSupport,
                                   onTap: () async {
                                     await sendEmail(
                                       context,
                                       to: "support@ente.com",
                                     );
                                   },
+                                  shouldSurfaceExecutionStates: false,
                                 ),
                               ],
                             );

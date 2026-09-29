@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ente-io/cli/pkg/mapper"
-	"github.com/ente-io/cli/pkg/model"
-	"github.com/ente-io/cli/pkg/model/export"
-	"github.com/ente-io/cli/utils"
+	"github.com/ente/cli/pkg/mapper"
+	"github.com/ente/cli/pkg/model"
+	"github.com/ente/cli/pkg/model/export"
+	"github.com/ente/cli/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,7 +20,7 @@ import (
 func (c *ClICtrl) syncFiles(ctx context.Context, account model.Account) error {
 	log.Printf("Starting file download")
 	exportRoot := account.ExportDir
-	_, albumIDToMetaMap, err := readFolderMetadata(exportRoot)
+	albumIDToMetaMap, err := readFolderMetadata(exportRoot)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func (c *ClICtrl) syncFiles(ctx context.Context, account model.Account) error {
 		return readAlbumErr
 	}
 	for _, album := range remoteAlbums {
-		if !album.IsDeleted && filter.SkipAlbum(album, false) {
+		if album.IsDeleted || filter.SkipAlbum(album, false) {
 			albumsToSkip[album.ID] = true
 		}
 	}
@@ -69,7 +69,7 @@ func (c *ClICtrl) syncFiles(ctx context.Context, account model.Account) error {
 				return err
 			}
 		}
-		fileBytes, err := c.GetValue(ctx, model.RemoteFiles, []byte(fmt.Sprintf("%d", albumFileEntry.FileID)))
+		fileBytes, err := c.GetValue(ctx, model.RemoteFiles, fmt.Appendf(nil, "%d", albumFileEntry.FileID))
 		if err != nil {
 			return err
 		}
@@ -84,8 +84,8 @@ func (c *ClICtrl) syncFiles(ctx context.Context, account model.Account) error {
 			if err != nil {
 				if errors.Is(err, model.ErrDecryption) {
 					continue
-				} else if existingEntry.IsLivePhoto() && errors.Is(err, zip.ErrFormat) {
-					log.Printf(fmt.Sprintf("err processing live photo %s (%d), %s", existingEntry.GetTitle(), existingEntry.ID, err.Error()))
+				} else if existingEntry.IsLivePhoto() && (errors.Is(err, zip.ErrFormat) || errors.Is(err, zip.ErrInsecurePath)) {
+					log.Printf("err processing live photo %s (%d), %s", existingEntry.GetTitle(), existingEntry.ID, err.Error())
 					continue
 				} else if existingEntry.IsLivePhoto() && errors.Is(err, model.ErrLiveZip) {
 					continue
@@ -98,7 +98,6 @@ func (c *ClICtrl) syncFiles(ctx context.Context, account model.Account) error {
 				}
 			}
 		} else {
-			// file metadata is missing in the localDB
 			if albumFileEntry.IsDeleted {
 				delErr := c.DeleteAlbumEntry(ctx, albumFileEntry)
 				if delErr != nil {
@@ -146,7 +145,6 @@ func (c *ClICtrl) downloadEntry(ctx context.Context,
 			return err
 		}
 		fileDiskMetadata := mapper.MapRemoteFileToDiskMetadata(file)
-		// Get the extension
 		extension := filepath.Ext(fileDiskMetadata.Title)
 		baseFileName := strings.TrimSuffix(filepath.Clean(filepath.Base(fileDiskMetadata.Title)), extension)
 		diskMetaFileName := diskInfo.GenerateUniqueMetaFileName(baseFileName, extension)
@@ -173,7 +171,6 @@ func (c *ClICtrl) downloadEntry(ctx context.Context,
 				videoExtn := filepath.Ext(videoPath)
 				videoFileName := diskInfo.GenerateUniqueFileName(baseFileName, videoExtn)
 				videoFilePath := filepath.Join(diskInfo.ExportRoot, diskInfo.AlbumMeta.FolderName, videoFileName)
-				// move the decrypt file to filePath
 				moveErr := Move(videoPath, videoFilePath)
 				if moveErr != nil {
 					return moveErr
@@ -183,7 +180,6 @@ func (c *ClICtrl) downloadEntry(ctx context.Context,
 		} else {
 			fileName := diskInfo.GenerateUniqueFileName(baseFileName, extension)
 			filePath := filepath.Join(diskInfo.ExportRoot, diskInfo.AlbumMeta.FolderName, fileName)
-			// move the decrypt file to filePath
 			err = Move(*decrypt, filePath)
 			if err != nil {
 				return err
@@ -211,7 +207,6 @@ func (c *ClICtrl) downloadEntry(ctx context.Context,
 }
 
 func removeDiskFile(diskFileMeta *export.DiskFileMetadata, diskInfo *albumDiskInfo) error {
-	// remove the file from disk
 	log.Printf("Removing file %s from disk", diskFileMeta.MetaFileName)
 	err := os.Remove(filepath.Join(diskInfo.ExportRoot, diskInfo.AlbumMeta.FolderName, ".meta", diskFileMeta.MetaFileName))
 	if err != nil && !os.IsNotExist(err) {
@@ -226,13 +221,9 @@ func removeDiskFile(diskFileMeta *export.DiskFileMetadata, diskInfo *albumDiskIn
 	return diskInfo.RemoveEntry(diskFileMeta)
 }
 
-// readFolderMetadata reads the metadata of the files in the given path
-// For disk export, a particular albums files are stored in a folder named after the album.
-// Inside the folder, the files are stored at top level and its metadata is stored in a .meta folder
 func readFilesMetadata(home string, albumMeta *export.AlbumMetadata) (*albumDiskInfo, error) {
 	albumMetadataFolder := filepath.Join(home, albumMeta.FolderName, albumMetaFolder)
 	albumPath := filepath.Join(home, albumMeta.FolderName)
-	// verify the both the album folder and the .meta folder exist
 	if _, err := os.Stat(albumMetadataFolder); err != nil {
 		return nil, err
 	}
@@ -240,10 +231,8 @@ func readFilesMetadata(home string, albumMeta *export.AlbumMetadata) (*albumDisk
 		return nil, err
 	}
 	result := make(map[string]*export.DiskFileMetadata)
-	//fileNameToFileName := make(map[string]*export.DiskFileMetadata)
 	fileIdToMetadata := make(map[int64]*export.DiskFileMetadata)
 	claimedFileName := make(map[string]bool)
-	// Read the top-level directories in the given path
 	albumFileEntries, err := os.ReadDir(albumPath)
 	if err != nil {
 		return nil, err
@@ -270,7 +259,6 @@ func readFilesMetadata(home string, albumMeta *export.AlbumMetadata) (*albumDisk
 			fileMetadataPath := filepath.Join(albumMetadataFolder, fileName)
 			// Initialize as nil, will remain nil if JSON file is not found or not readable
 			result[strings.ToLower(fileName)] = nil
-			// Read the JSON file if it exists
 			var metaData export.DiskFileMetadata
 			metaDataBytes, err := os.ReadFile(fileMetadataPath)
 			if err != nil {

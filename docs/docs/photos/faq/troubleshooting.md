@@ -240,25 +240,48 @@ The app will detect and skip already uploaded items, so you can safely drag and 
 
 > Technical note: The underlying issue is Electron's [4GB RAM usage limit](https://www.electronjs.org/blog/v8-memory-cage). We stream large videos to avoid reading them all at once, but in some cases even streaming exceeds the limit.
 
+### Why is my desktop app stuck on a black screen? {#desktop-black-screen}
+
+A black, never-loading window usually means the app can't access its local database. A clean reinstall fixes it in most cases.
+
+**On macOS:**
+
+1. Open Finder > Applications, right-click Ente Photos and select "Move to Bin".
+2. Open Finder > Home, then press `Cmd + Shift + Period` to reveal hidden folders.
+3. Go to `Library > Application Support` and delete the `ente` folder.
+4. Download a fresh copy from [our website](https://ente.com/download/desktop) and install.
+
+**On Windows:**
+
+1. Uninstall Ente Photos from Settings > Apps.
+2. Delete `%APPDATA%\ente\`.
+3. Reinstall from [our website](https://ente.com/download/desktop).
+
+**On Linux:**
+
+1. Remove the app (or AppImage).
+2. Delete `~/.config/ente/`.
+3. Reinstall from [our website](https://ente.com/download/desktop).
+
+Your photos are safe in the cloud; uninstalling and clearing local app data only removes the local cache and the app's database. If the issue persists after a clean reinstall, share your logs with [support@ente.com](mailto:support@ente.com) (see [How do I share debug logs?](#sharing-logs)).
+
 ### Why are my photo thumbnails missing or incorrect? {#thumbnails}
 
 When photos are uploaded on the web app, the most common cause of thumbnails not generating properly is browser security settings blocking canvas access.
 
 **Firefox users:** If you have "block canvas fingerprinting" enabled (`privacy.resistFingerprinting` set to true in `about:config`), Firefox will prevent the app from generating thumbnails.
 
-**Brave users:** Brave Shields can block canvas access and prevent the app from generating thumbnails.
+**Brave users:** Brave Shields can block canvas access and prevent the app from generating thumbnails. To fix this, disable canvas fingerprinting for Ente's domain, or turn off Brave Shields for Ente's domain, or whitelist Ente in any browser extension that blocks canvas access.
 
-**Solution:**
+**Tor Browser users:** When the upload error appears, click the photo icon on the left side of the address bar and choose **Allow** so Ente can generate thumbnails.
 
-- Disable canvas fingerprinting for Ente's domain, OR
-- Turn off Brave Shields for Ente's domain, OR
-- Check if you're using browser extensions that block canvas access and whitelist Ente
-
-**Important:** Once thumbnails are incorrectly generated or missing, they cannot be regenerated. You'll need to:
-
-1. Delete the affected files from Ente
-2. Fix the browser settings
-3. Re-upload the files
+> [!IMPORTANT]
+>
+> Once thumbnails are incorrectly generated or missing, they cannot be regenerated. You'll need to:
+>
+> 1. Delete the affected files from Ente
+> 2. Fix the browser settings
+> 3. Re-upload the files
 
 Ente will automatically skip files that have already been uploaded, so you can drag and drop the original folder again after removing the files without thumbnails.
 
@@ -266,8 +289,7 @@ If the browser settings cannot be changed, we recommend uploading files through 
 
 ### Why does desktop ML show "Indexing: Error" on Windows? {#windows-ml-indexing-error-13}
 
-If the desktop app shows `Indexing: Error` in `Settings > Preferences > Machine learning`, this is usually caused by Windows roaming profiles preventing access to the ML model files in
-`%APPDATA%\ente\models\`.
+If the desktop app shows `Indexing: Error` in `Settings > Preferences > Machine learning`, this is usually caused by Windows roaming profiles preventing access to the ML model files in `%APPDATA%\ente\models\`.
 
 If you check the logs, you might also see `system error number 13` during ML indexing.
 
@@ -393,7 +415,21 @@ Open device `Settings > Apps > Ente > Storage` and tap "Clear cache" (NOT "Clear
 3. Log back in
 4. Your backed-up photos are safe in the cloud
 
-**Note**: This is a known issue being investigated by our team. If none of these solutions work, please contact [support@ente.com](mailto:support@ente.com) with your device model and Android version.
+> [!NOTE]
+>
+> This is a known issue being investigated by our team. If none of these solutions work, please contact [support@ente.com](mailto:support@ente.com) with your device model and Android version.
+
+### Why does Android ask me to confirm every photo when I delete from Ente? {#android-media-management-delete}
+
+When Ente deletes a photo or video that also exists in your device gallery, Android shows a system confirmation dialog for each item. This is an Android security measure for third-party apps. It is especially noticeable when using **Free up space**, where you may have to confirm a large number of files one by one.
+
+To stop these repeated prompts, grant Ente the **media management** special access:
+
+**On Android:**
+
+Open device `Settings > Apps > Special app access > Media management apps > Ente Photos` and enable "Allow app to manage media".
+
+Once granted, Ente can delete media that it manages without asking for confirmation each time.
 
 ### Why is the Linux desktop app still showing the old icon after updating? {#linux-icon-update}
 
@@ -436,8 +472,7 @@ This creates `libz.so` as an alias for `libz.so.1`. The exact path might differ 
 
 ### Why does AppImage say it requires FUSE? {#appimage-fuse}
 
-**Solution:**
-Install libfuse2. For example, on Ubuntu:
+**Solution:** Install libfuse2. For example, on Ubuntu:
 
 ```sh
 sudo apt install libfuse2
@@ -451,8 +486,7 @@ If you run the AppImage from the command line and see:
 
 > The SUID sandbox helper binary was found, but is not configured correctly.
 
-**Solution:**
-Either:
+**Solution:** Either:
 
 1. Double-click the AppImage in your file browser instead of running from CLI, OR
 2. Run it with the `--no-sandbox` flag:
@@ -464,8 +498,7 @@ Either:
 
 If you see "A JavaScript error occurred in the main process - The specified module could not be found" when starting the app on Windows, you need to install the Microsoft VC++ runtime.
 
-**Solution:**
-Install the [Microsoft VC++ redistributable runtime](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
+**Solution:** Install the [Microsoft VC++ redistributable runtime](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
 
 ### Why can't I log in to photos.ente.com on my mobile browser? {#web-login-mobile}
 
@@ -502,17 +535,18 @@ You can also try opening photos.ente.com in an incognito or private window to ru
 
 ### How do I identify which files failed to upload? {#identify-failed-uploads}
 
-**On desktop:**
-Check the sections within the upload progress bar for:
+**On desktop:** Expand the upload progress card and open one of these sections:
 
-- "Failed Uploads"
-- "Ignored Uploads"
-- "Unsuccessful Uploads"
+- **In progress**: Files currently being prepared or uploaded.
+- **Completed**: Files uploaded successfully.
+- **Skipped**: Files not uploaded. While the upload is active, you can filter them by reasons such as **Already on Ente** and **Hidden file**.
+- **Failed**: Files whose upload attempt failed.
 
-Click on each section to see the specific files and error messages.
+After the upload finishes, click **Review items**, open **Failed**, and review the filenames and error status. Click **Retry failed uploads** to try those files again. Skipped items are not retryable failures; review the reason shown beside each filename to understand why it was skipped.
 
-**On mobile:**
-Open `Settings > Backup` to see the backup status and any errors.
+![Failed upload details with the retry button](../migration/from-local-hard-disk/failed-upload-review.webp)
+
+**On mobile:** Open `Settings > Backup` to see the backup status and any errors.
 
 ### Why aren't videos playing on web? {#content-blocker-videos}
 
@@ -523,6 +557,16 @@ If videos aren't playing on photos.ente.com, browser content blockers or ad bloc
 Disable your content blocker or add `photos.ente.com` to your allowlist. Wait 15-20 seconds for changes to take effect before trying again.
 
 **Known issue with AdGuard:** AdGuard's basic filter blocks videos in Ente when using AdGuard Mini on Safari. This has been [reported to AdGuard filter developers](https://github.com/AdguardTeam/AdguardFilters/issues/216424).
+
+### Why do some of my videos stutter or freeze when I play them on iOS? {#ios-video-stutter-playback}
+
+This is an iOS-specific issue: for some videos, Apple Photos rejects the file and doesn't store it on your device, even though Ente backed it up successfully. Since the video isn't fully available locally, playback in the Ente app can stutter or freeze. The video itself is still safely stored in Ente - nothing is lost.
+
+Because this happens at the iOS level, there isn't much the app can do to prevent it directly. The workaround is to enable video streaming on desktop.
+
+As videos are processed, your iPhone automatically uses the streamable version for smooth playback, while your original file stays untouched.
+
+Learn more about [Video streaming](/photos/features/utilities/video-streaming).
 
 ## Performance Issues
 
@@ -562,22 +606,47 @@ Machine learning features (face recognition and magic search) require downloadin
 
 Learn more in [Search and Discovery FAQ](/photos/faq/search-and-discovery#ml-offline).
 
+### Why does my phone overheat while using the app? {#phone-overheating}
+
+Overheating usually happens when Ente works through a large historical backup at the same time as local ML indexing, which together can keep the CPU busy for a sustained stretch. Once the backup queue clears and indexing catches up, the app falls back to normal incremental syncs and the heating should stop.
+
+**Steps to take:**
+
+1. Plug in your iPhone, remove the case if you use one, and connect to WiFi.
+2. Open [Backup mode](/photos/features/backup-and-sync/#backup-mode-ios) under `Settings > Backup > Backup settings`, tap **Start backup mode**, and leave Ente open on screen.
+3. Close all other apps before starting.
+4. If the phone still overheats, turn off ML and video streaming: `Settings > Machine learning` and `Settings > Video streaming`.
+5. Let it run overnight, then re-enable ML and video streaming once the upload completes.
+
+> [!NOTE]
+>
+> iOS can still throttle, suspend, or close apps under heat pressure while Backup mode is running. This can slow uploads considerably.
+>
+> If iCloud Photos "Optimize iPhone Storage" is enabled, originals may need to download from iCloud first, which can also slow or stall uploads.
+>
+> If overheating continues, [send us your logs](#sharing-logs) so we can take a closer look.
+
+### What are the minimum device requirements for Ente apps? {#minimum-requirements}
+
+Ente needs at least **2 GB of RAM** to run reliably. On devices below that, including most Android Go phones, basic operations like backup, export, and indexing may crash or stall.
+
+If you're running into repeated crashes on a low-RAM device:
+
+- Disable Machine learning under `Settings > Machine learning`.
+- Disable Video streaming if enabled.
+- Use the desktop or web app for heavier tasks like initial backup or export.
+
 ### How can I clear the cache from the Ente app? {#clear-cache}
 
-If you notice storage usage growing or temporary files not clearing automatically, you can safely remove the cache:
+If Ente uses more storage during backup, see [why backups need temporary space](/photos/faq/backup-and-sync#backup-device-storage).
 
 **Clear the cache manually:**
 
 1. Open Ente Photos.
-2. Go to `Settings → Backup → Free up space → Manage device cache`.
-3. Tap **Clear cache**.
+2. Go to `Settings > Free up space > Manage device cache`.
+3. Tap **Clear caches**.
 
-This deletes temporary files such as thumbnails and preloaded images that can be regenerated when needed.
-
-**Automatic cache cleanup:**
-
-- Ente clears upload-related temporary files and pending syncs every 6 hours.
-- If the cache or sync state still hasn't cleared after 6 hours, force-close (kill) and reopen Ente Photos to trigger the manual cleanup.
+This removes thumbnails and previews that Ente can recreate. It does not remove files shown under **Pending sync** because Ente still needs them to finish your backup. Ente removes this data after the upload finishes. Old upload data is removed after it is no longer needed for another attempt.
 
 ## Getting Help
 
@@ -585,7 +654,9 @@ This deletes temporary files such as thumbnails and preloaded images that can be
 
 If you need to contact support, debug logs help us diagnose issues faster.
 
-> **Note**: Debug logs contain potentially sensitive information like file names. Feel free to not share them if you have privacy concerns. We'll try to diagnose without logs, though they make the process faster.
+> [!NOTE]
+>
+> Debug logs contain potentially sensitive information like file names. Feel free to not share them if you have privacy concerns. We'll try to diagnose without logs, though they make the process faster.
 
 **On mobile:**
 
@@ -605,8 +676,7 @@ Open `Settings > Support > Help` to view logs location, then go back to `Setting
 
 Open `Settings > Support > Help` to download logs, then email the downloaded logs to [support@ente.com](mailto:support@ente.com).
 
-**Email manually:**
-If the automatic email doesn't work, send logs directly to [support@ente.com](mailto:support@ente.com) with:
+**Email manually:** If the automatic email doesn't work, send logs directly to [support@ente.com](mailto:support@ente.com) with:
 
 - Your platform (iOS, Android, Desktop, Web)
 - Description of the issue
@@ -618,6 +688,6 @@ If the automatic email doesn't work, send logs directly to [support@ente.com](ma
 1. **Check the FAQ sections** for answers to common questions
 2. **Join our [Discord community](https://ente.com/discord)** for community support
 3. **Email us at [support@ente.com](mailto:support@ente.com)** with details about your issue
-4. **Report bugs on [GitHub](https://github.com/ente-io/ente/issues)** if you've found a technical issue
+4. **Report bugs on [GitHub](https://github.com/ente/ente/issues)** if you've found a technical issue
 
 For security vulnerabilities, please email [security@ente.com](mailto:security@ente.com) directly.

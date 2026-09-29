@@ -1,39 +1,32 @@
 import "dart:async";
 import "dart:io";
 
-import "package:battery_info/battery_info_plugin.dart";
-import "package:battery_info/model/android_battery_info.dart";
-import "package:battery_info/model/iso_battery_info.dart";
-import "package:flutter/foundation.dart";
+import "package:ente_photos_platform/ente_photos_platform.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/compute_control_event.dart";
 import "package:photos/events/device_health_changed_event.dart";
 import "package:photos/main.dart";
-import "package:photos/utils/local_settings.dart";
-import "package:thermal/thermal.dart";
+import "package:photos/services/machine_learning/device_health_policy.dart";
+import "package:photos/settings/local_settings.dart";
 
-enum ComputeRunState {
-  idle,
-  runningML,
-  generatingStream,
-}
+enum ComputeRunState { idle, runningML, generatingStream }
 
 class ComputeController {
   final _logger = Logger("ComputeController");
 
-  static const kMaximumTemperatureAndroid = 42; // 42 degree celsius
-  static const kMinimumBatteryLevel = 20; // 20%
+  static const _healthRequestTimeout = Duration(seconds: 5);
   final kDefaultInteractionTimeout = Duration(seconds: Platform.isIOS ? 5 : 15);
-  static const kUnhealthyStates = ["over_heat", "over_voltage", "dead"];
   final LocalSettings _localSettings;
+  final DeviceHealthSource _deviceHealthSource;
+  final DeviceHealthPolicy _deviceHealthPolicy;
+  // Process-lifetime subscription owned by this singleton.
+  // ignore: cancel_subscriptions
+  StreamSubscription<DeviceHealthSnapshot>? _deviceHealthSubscription;
+  Timer? _deviceHealthRefreshTimer;
+  int _deviceHealthGeneration = 0;
 
-  static final _thermal = Thermal();
-  IosBatteryInfo? _iosLastBatteryInfo;
-  AndroidBatteryInfo? _androidLastBatteryInfo;
-  ThermalStatus? _lastThermalStatus;
-
-  bool _isDeviceHealthy = true;
+  bool _isDeviceHealthy = false;
   bool _isUserInteracting = true;
   bool _canRunCompute = false;
   bool _hasCompletedInitialHealthChecks = false;
@@ -41,11 +34,9 @@ class ComputeController {
   bool _debugInteractionOverride = false;
   Future<void>? _initFuture;
 
-  /// If true, user interaction is ignored and compute tasks can run regardless of user activity.
   bool get interactionOverride =>
       _temporaryInteractionOverride || _debugInteractionOverride;
 
-  /// If true, compute tasks are paused regardless of device health or user activity.
   bool get computeBlocked => _computeBlocks.isNotEmpty;
   final Set<String> _computeBlocks = {};
 
@@ -68,13 +59,17 @@ class ComputeController {
     Bus.instance.fire(DeviceHealthChangedEvent(healthy));
   }
 
-  ComputeController(this._localSettings) {
+  ComputeController(
+    this._localSettings, {
+    DeviceHealthSource? deviceHealthSource,
+    DeviceHealthPolicy deviceHealthPolicy = const DeviceHealthPolicy(),
+  }) : _deviceHealthSource = deviceHealthSource ?? DeviceHealthClient.instance,
+       _deviceHealthPolicy = deviceHealthPolicy {
     _logger.info('ComputeController constructor');
     unawaited(init());
     _logger.info('init done ');
   }
 
-  // Directly assign the values + Attach listener for compute controller
   Future<void> init() {
     return _initFuture ??= _initInternal();
   }
@@ -93,38 +88,15 @@ class ComputeController {
       _isUserInteracting = false;
     }
 
-    // Thermal related
-    _onThermalStateUpdate(await _thermal.thermalStatus);
-    _thermal.onThermalStatusChanged.listen((ThermalStatus thermalState) {
-      _onThermalStateUpdate(thermalState);
-    });
-
-    // Battery State
-    if (Platform.isIOS) {
-      if (kDebugMode) {
-        _logger.fine(
-          "iOS battery info stream is not available in simulator, disabling in debug mode",
-        );
-      } else {
-        // Update Battery state for iOS
-        _oniOSBatteryStateUpdate(await BatteryInfoPlugin().iosBatteryInfo);
-        BatteryInfoPlugin()
-            .iosBatteryInfoStream
-            .listen((IosBatteryInfo? batteryInfo) {
-          _oniOSBatteryStateUpdate(batteryInfo);
-        });
-      }
-    } else if (Platform.isAndroid) {
-      // Update Battery state for Android
-      _onAndroidBatteryStateUpdate(
-        await BatteryInfoPlugin().androidBatteryInfo,
-      );
-      BatteryInfoPlugin()
-          .androidBatteryInfoStream
-          .listen((AndroidBatteryInfo? batteryInfo) {
-        _onAndroidBatteryStateUpdate(batteryInfo);
-      });
-    }
+    _deviceHealthSubscription ??= _deviceHealthSource.updates.listen(
+      _onDeviceHealthUpdate,
+      onError: _onDeviceHealthError,
+    );
+    await _refreshDeviceHealth();
+    _deviceHealthRefreshTimer ??= Timer.periodic(
+      DeviceHealthPolicy.refreshInterval,
+      (_) => unawaited(_refreshDeviceHealth()),
+    );
 
     _hasCompletedInitialHealthChecks = true;
     _fireControlEvent();
@@ -213,8 +185,8 @@ class ComputeController {
     if (ml) {
       if (_currentRunState == ComputeRunState.runningML) {
         _currentRunState = ComputeRunState.idle;
+        _waitingToRunML = false;
       }
-      _waitingToRunML = false;
     } else if (stream) {
       if (_currentRunState == ComputeRunState.generatingStream) {
         _currentRunState = ComputeRunState.idle;
@@ -298,76 +270,41 @@ class ComputeController {
     _startInteractionTimer(kDefaultInteractionTimeout);
   }
 
-  void _onAndroidBatteryStateUpdate(AndroidBatteryInfo? batteryInfo) {
-    _androidLastBatteryInfo = batteryInfo;
-    _setDeviceHealth(_computeIsAndroidDeviceHealthy());
-    _fireControlEvent();
-  }
-
-  void _oniOSBatteryStateUpdate(IosBatteryInfo? batteryInfo) {
-    _iosLastBatteryInfo = batteryInfo;
-    _setDeviceHealth(_computeIsiOSDeviceHealthy());
-    _fireControlEvent();
-  }
-
-  void _onThermalStateUpdate(ThermalStatus? thermalStatus) {
-    final changed = _lastThermalStatus != thermalStatus;
-    _lastThermalStatus = thermalStatus;
-    if (changed) {
-      _logger.info("Thermal status changed, status: $thermalStatus");
+  Future<void> _refreshDeviceHealth() async {
+    final generation = _deviceHealthGeneration;
+    try {
+      final snapshot = await _deviceHealthSource.getSnapshot().timeout(
+        _healthRequestTimeout,
+      );
+      if (generation == _deviceHealthGeneration) {
+        _onDeviceHealthUpdate(snapshot);
+      }
+    } catch (error, stackTrace) {
+      if (generation == _deviceHealthGeneration) {
+        _onDeviceHealthError(error, stackTrace);
+      }
     }
-    _setDeviceHealth(
-      Platform.isAndroid
-          ? _computeIsAndroidDeviceHealthy()
-          : _computeIsiOSDeviceHealthy(),
+  }
+
+  void _onDeviceHealthUpdate(DeviceHealthSnapshot snapshot) {
+    _deviceHealthGeneration++;
+    final evaluation = _deviceHealthPolicy.evaluate(
+      snapshot,
+      now: DateTime.now(),
     );
+    if (!evaluation.isHealthy) {
+      _logger.warning(
+        'Device health is unacceptable: ${evaluation.issues.map((e) => e.name).join(', ')}',
+      );
+    }
+    _setDeviceHealth(evaluation.isHealthy);
     _fireControlEvent();
   }
 
-  bool _computeIsAndroidDeviceHealthy() {
-    return _hasSufficientBattery(
-          _androidLastBatteryInfo?.batteryLevel ?? kMinimumBatteryLevel,
-        ) &&
-        _isAcceptableTemperatureAndroid() &&
-        _isBatteryHealthyAndroid() &&
-        _isAcceptableThermalState();
-  }
-
-  bool _computeIsiOSDeviceHealthy() {
-    return _hasSufficientBattery(
-          _iosLastBatteryInfo?.batteryLevel ?? kMinimumBatteryLevel,
-        ) &&
-        _isAcceptableThermalState();
-  }
-
-  bool _isAcceptableThermalState() {
-    switch (_lastThermalStatus) {
-      case null:
-        return true;
-      case ThermalStatus.none:
-      case ThermalStatus.light:
-      case ThermalStatus.moderate:
-        return true;
-      case ThermalStatus.severe:
-      case ThermalStatus.critical:
-      case ThermalStatus.emergency:
-      case ThermalStatus.shutdown:
-        _logger.warning("Thermal status is unacceptable: $_lastThermalStatus");
-        return false;
-    }
-  }
-
-  bool _hasSufficientBattery(int batteryLevel) {
-    return batteryLevel >= kMinimumBatteryLevel;
-  }
-
-  bool _isAcceptableTemperatureAndroid() {
-    return (_androidLastBatteryInfo?.temperature ??
-            kMaximumTemperatureAndroid) <=
-        kMaximumTemperatureAndroid;
-  }
-
-  bool _isBatteryHealthyAndroid() {
-    return !kUnhealthyStates.contains(_androidLastBatteryInfo?.health ?? "");
+  void _onDeviceHealthError(Object error, [StackTrace? stackTrace]) {
+    _deviceHealthGeneration++;
+    _logger.warning('Failed to observe device health', error, stackTrace);
+    _setDeviceHealth(false);
+    _fireControlEvent();
   }
 }

@@ -1,6 +1,4 @@
-// TODO: Audit this file
 // TODO: Too many null assertions in this file. The types need reworking.
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useAlbumsAppContext } from "@/app/context/albums-app-context";
 import {
     savedPublicCollectionUploaderName,
@@ -25,23 +23,7 @@ import type {
     UploadItemWithCollection,
 } from "@/public-album/upload/services/upload-manager";
 import { uploadManager } from "@/public-album/upload/services/upload-manager";
-import { hasReliableCanvasReadback } from "@/public-album/upload/utils/canvas-integrity";
-import { useFileInput } from "@/shared/hooks/useFileInput";
-import { Album02Icon, Folder01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import {
-    Box,
-    CircularProgress,
-    Dialog,
-    DialogTitle,
-    styled,
-    Typography,
-    type DialogProps,
-} from "@mui/material";
-import { SpacedRow } from "ente-base/components/containers";
-import { DialogCloseIconButton } from "ente-base/components/mui/DialogCloseIconButton";
-import { RowButton } from "ente-base/components/RowButton";
+import { Dialog, type DialogProps } from "@mui/material";
 import { useIsTouchscreen } from "ente-base/components/utils/hooks";
 import {
     useModalVisibility,
@@ -51,20 +33,23 @@ import { useBaseContext } from "ente-base/context";
 import { basename } from "ente-base/file-name";
 import type { PublicAlbumsCredentials } from "ente-base/http";
 import log from "ente-base/log";
-import { type Collection } from "ente-media/collection";
+import {
+    uploadSheetPaperSx,
+    useIsUploadSheet,
+} from "ente-gallery/components/upload-progress/bottom-sheet";
+import { UploadProgress } from "ente-gallery/components/upload-progress/UploadProgress";
+import { CanvasReadbackBlockedDialog } from "ente-gallery/components/upload/CanvasReadbackBlockedDialog";
+import { DefaultOptions } from "ente-gallery/components/upload/DefaultOptions";
+import { useFileInput } from "ente-gallery/components/utils/use-file-input";
+import { hasReliableCanvasReadback } from "ente-gallery/utils/upload/canvas-integrity";
+import type { Collection } from "ente-media/collection";
 import type { EnteFile } from "ente-media/file";
+import { SlideUpTransition } from "ente-new/photos/components/mui/SlideUpTransition";
 import { firstNonEmpty } from "ente-utils/array";
 import { t } from "i18next";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { CanvasReadbackBlockedDialog } from "./CanvasReadbackBlockedDialog";
-import { UploadProgress } from "./UploadProgress";
 
 interface RemotePullOpts {
-    /**
-     * Perform the pull without showing a global loading bar.
-     *
-     * Default: `false`.
-     */
     silent?: boolean;
 }
 
@@ -85,13 +70,6 @@ export interface UploadProps {
 type UploadType = "files" | "folders";
 type WebUploadItemAndPath = [File, string];
 
-/**
- * Public album uploader.
- *
- * This is a trimmed copy of the photos app uploader that only keeps the web
- * flow needed by the public albums app: select or drop files/folders, ask for
- * the uploader's name, and upload into the current public collection.
- */
 export const Upload: React.FC<UploadProps> = ({
     publicAlbumsCredentials,
     dragAndDropFiles,
@@ -126,6 +104,7 @@ export const Upload: React.FC<UploadProps> = ({
     const [percentComplete, setPercentComplete] = useState(0);
     const [hasLivePhotos, setHasLivePhotos] = useState(false);
     const [uploaderName, setUploaderName] = useState("");
+    const [pendingUploadFileCount, setPendingUploadFileCount] = useState(0);
     const {
         show: showUploaderNameInput,
         props: uploaderNameInputVisibilityProps,
@@ -136,10 +115,6 @@ export const Upload: React.FC<UploadProps> = ({
     const selectedUploadType = useRef<UploadType | undefined>(undefined);
     const currentUploadPromise = useRef<Promise<void> | undefined>(undefined);
 
-    /**
-     * `true` if we've activated one hidden input and are waiting for the
-     * browser to hand the file selection back to us.
-     */
     const [isInputPending, setIsInputPending] = useState(false);
     const [selectedInputFiles, setSelectedInputFiles] = useState<File[]>([]);
 
@@ -192,9 +167,7 @@ export const Upload: React.FC<UploadProps> = ({
                 setInProgressUploads,
                 setFinishedUploads,
                 setUploadPhase,
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                setUploadFilenames: setUploadFileNames,
+                setUploadFileNames,
                 setHasLivePhotos,
             },
             onUploadFile,
@@ -262,6 +235,7 @@ export const Upload: React.FC<UploadProps> = ({
             ([, path]) => !basename(path).startsWith("."),
         );
         uploadItemsAndPaths.current = prunedItemAndPaths;
+        setPendingUploadFileCount(prunedItemAndPaths.length);
         selectedUploadType.current = undefined;
         props.setLoading(false);
 
@@ -292,6 +266,7 @@ export const Upload: React.FC<UploadProps> = ({
                 onGenericError(e);
             }
         })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [publicAlbumsCredentials, uploadCollection, webFiles]);
 
     const uploadFilesToExistingCollection = async (
@@ -454,15 +429,17 @@ export const Upload: React.FC<UploadProps> = ({
             <Inputs
                 {...{ getFileSelectorInputProps, getFolderSelectorInputProps }}
             />
-            <UploadTypeSelector
-                open={props.uploadTypeSelectorView}
-                onClose={props.closeUploadTypeSelector}
-                publicAlbumsCredentials={publicAlbumsCredentials}
-                pendingUploadType={
-                    isInputPending ? selectedUploadType.current : undefined
-                }
-                onSelect={handleUploadTypeSelect}
-            />
+            {props.uploadTypeSelectorView ? (
+                <UploadTypeSelector
+                    open
+                    onClose={props.closeUploadTypeSelector}
+                    publicAlbumsCredentials={publicAlbumsCredentials}
+                    pendingUploadType={
+                        isInputPending ? selectedUploadType.current : undefined
+                    }
+                    onSelect={handleUploadTypeSelect}
+                />
+            ) : null}
             <UploadProgress
                 open={uploadProgressView}
                 onClose={closeUploadProgress}
@@ -484,7 +461,7 @@ export const Upload: React.FC<UploadProps> = ({
                 open={uploaderNameInputVisibilityProps.open}
                 onClose={handleUploaderNameInputClose}
                 uploaderName={uploaderName}
-                uploadFileCount={uploadItemsAndPaths.current.length}
+                uploadFileCount={pendingUploadFileCount}
                 onSubmit={handlePublicUpload}
             />
         </>
@@ -508,22 +485,6 @@ const Inputs: React.FC<InputsProps> = ({
     </>
 );
 
-/**
- * Return the relative path or name of a File object selected or
- * drag-and-dropped on the web.
- *
- * There are three cases here:
- *
- * 1. If the user selects individual file(s), then the returned File objects
- *    will only have a `name`.
- *
- * 2. If the user selects directory(ies), then the returned File objects will
- *    have a `webkitRelativePath`. For more details, see [Note:
- *    webkitRelativePath]. In particular, these will POSIX separators.
- *
- * 3. If the user drags-and-drops, then react-dropzone internally converts
- *    `webkitRelativePath` to `path`, but otherwise behaves the same as case 2.
- */
 const pathLikeForWebFile = (file: File): string =>
     firstNonEmpty([
         "path" in file && typeof file.path == "string" ? file.path : undefined,
@@ -563,22 +524,31 @@ const UploadTypeSelector: React.FC<UploadTypeSelectorProps> = ({
         onClose();
     };
 
+    const isSheet = useIsUploadSheet();
+
     return (
         <Dialog
             open={open}
             onClose={handleClose}
             fullWidth
+            slots={isSheet ? { transition: SlideUpTransition } : undefined}
             slotProps={{
                 paper: {
-                    sx: (theme) => ({
-                        maxWidth: "375px",
-                        p: 1,
-                        borderRadius: "28px",
-                        boxShadow: "none",
-                        border: "1px solid",
-                        borderColor: "stroke.faint",
-                        [theme.breakpoints.down(360)]: { p: 0 },
-                    }),
+                    sx: [
+                        (theme) => ({
+                            maxWidth: "440px",
+                            p: 0,
+                            borderRadius: "20px",
+                            boxShadow: "none",
+                            border: "1px solid",
+                            borderColor: "stroke.faint",
+                            backgroundColor: "secondary.main",
+                            ...theme.applyStyles("dark", {
+                                backgroundColor: "background.paper",
+                            }),
+                        }),
+                        uploadSheetPaperSx,
+                    ],
                 },
             }}
             sx={{
@@ -587,76 +557,14 @@ const UploadTypeSelector: React.FC<UploadTypeSelectorProps> = ({
                 },
             }}
         >
-            <UploadOptions {...{ pendingUploadType, onSelect, onClose }} />
+            <DefaultOptions
+                intent="collect"
+                isFileSelectionPending={pendingUploadType == "files"}
+                isFolderSelectionPending={pendingUploadType == "folders"}
+                onSelectFiles={() => onSelect("files")}
+                onSelectFolder={() => onSelect("folders")}
+                onClose={onClose}
+            />
         </Dialog>
     );
 };
-
-type UploadOptionsProps = Pick<
-    UploadTypeSelectorProps,
-    "onClose" | "pendingUploadType" | "onSelect"
->;
-
-const UploadOptions: React.FC<UploadOptionsProps> = ({
-    pendingUploadType,
-    onSelect,
-    onClose,
-}) => (
-    <>
-        <SpacedRow>
-            <DialogTitle variant="h5">{t("select_photos")}</DialogTitle>
-            <DialogCloseIconButton {...{ onClose }} />
-        </SpacedRow>
-        <Box sx={{ p: "12px", pt: "16px" }}>
-            <RoundedButtonStack>
-                <RowButton
-                    startIcon={<HugeiconsIcon icon={Album02Icon} size={20} />}
-                    endIcon={
-                        pendingUploadType == "files" ? (
-                            <PendingIndicator />
-                        ) : (
-                            <ChevronRightIcon />
-                        )
-                    }
-                    label={t("files")}
-                    onClick={() => onSelect("files")}
-                />
-                <RowButton
-                    startIcon={<HugeiconsIcon icon={Folder01Icon} size={20} />}
-                    endIcon={
-                        pendingUploadType == "folders" ? (
-                            <PendingIndicator />
-                        ) : (
-                            <ChevronRightIcon />
-                        )
-                    }
-                    label={t("folder")}
-                    onClick={() => onSelect("folders")}
-                />
-            </RoundedButtonStack>
-            <Typography
-                sx={{
-                    color: "text.muted",
-                    p: "12px",
-                    pt: "24px",
-                    textAlign: "center",
-                }}
-            >
-                {t("drag_and_drop_hint")}
-            </Typography>
-        </Box>
-    </>
-);
-
-const PendingIndicator = () => (
-    <CircularProgress size={18} sx={{ color: "stroke.muted" }} />
-);
-
-const RoundedButtonStack = styled("div")`
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    & > button {
-        border-radius: 16px;
-    }
-`;

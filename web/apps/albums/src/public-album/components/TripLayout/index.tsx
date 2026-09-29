@@ -1,21 +1,20 @@
-import { useJoinAlbum } from "@/public-album/access/hooks/useJoinAlbum";
+import { useJoinAlbum } from "@/public-album/access/hooks/use-join-album";
 import { ActiveDownloadStatusNotifications } from "@/public-album/download/components/ActiveDownloadStatusNotifications";
-import { type FileViewerInitialSidebar } from "@/public-album/viewer/components/FileViewer";
-import { type PublicFeedItemClickInfo } from "@/public-album/viewer/components/PublicFeedSidebar";
+import type { FileViewerInitialSidebar } from "@/public-album/viewer/components/FileViewer";
+import type { PublicFeedItemClickInfo } from "@/public-album/viewer/components/PublicFeedSidebar";
 import {
     LazyFileViewer,
     LazyPublicFeedSidebar,
     scheduleFileViewerPreload,
 } from "@/public-album/viewer/lib/lazy";
-import { useSaveGroupsActions } from "@/shared/state/save-groups";
 import { Box, styled, useMediaQuery, useTheme } from "@mui/material";
 import { useModalVisibility } from "ente-base/components/utils/modal";
 import type { PublicAlbumsCredentials } from "ente-base/http";
-import { type Collection } from "ente-media/collection";
-import { type EnteFile } from "ente-media/file";
+import { useSaveGroupsActions } from "ente-gallery/components/utils/save-groups";
+import type { Collection } from "ente-media/collection";
+import type { EnteFile } from "ente-media/file";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Import extracted components
 import { MobileCover } from "./MobileCover";
 import { MobileNavBar } from "./MobileNavBar";
 import { MobileTimelineLocation } from "./MobileTimelineLocation";
@@ -26,16 +25,14 @@ import { TimelineProgressLine } from "./TimelineProgressLine";
 import { TopNavButtons } from "./TopNavButtons";
 import { TripCover } from "./TripCover";
 
-// Import hooks
-import { useDataProcessing } from "./hooks/useDataProcessing";
-import { useFileViewer } from "./hooks/useFileViewer";
-import { useLocationFetching } from "./hooks/useLocationFetching";
-import { useScrollHandling } from "./hooks/useScrollHandling";
-import { useThumbnailGeneration } from "./hooks/useThumbnailGeneration";
+import { useDataProcessing } from "./hooks/use-data-processing";
+import { useFileViewer } from "./hooks/use-file-viewer";
+import { useLocationFetching } from "./hooks/use-location-fetching";
+import { useScrollHandling } from "./hooks/use-scroll-handling";
+import { useThumbnailGeneration } from "./hooks/use-thumbnail-generation";
 
-// Import types and utils
 import type { JourneyPoint } from "./types";
-import type { PositionInfo } from "./utils/scrollUtils";
+import type { PositionInfo } from "./utils/scroll-utils";
 
 export interface TripLayoutProps {
     files: EnteFile[];
@@ -43,20 +40,11 @@ export interface TripLayoutProps {
     albumTitle?: string;
     enableDownload?: boolean;
     onSetOpenFileViewer?: (open: boolean) => void;
-    onAddPhotos?: () => void; // Callback for add photos button
-    // Join album props
+    onAddPhotos?: () => void;
     accessToken?: string;
     collectionKey?: string;
     credentials?: React.RefObject<PublicAlbumsCredentials | undefined>;
-    /**
-     * `true` if comments/reactions are enabled on the public link.
-     * When `false`, the feed button will be hidden.
-     */
     enableComment?: boolean;
-    /**
-     * `true` if the "Join album" option is enabled for this public link.
-     * When `false`, the "Join album and like/comment" buttons will be hidden.
-     */
     enableJoin?: boolean;
 }
 
@@ -73,14 +61,12 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
     enableComment = true,
     enableJoin = false,
 }) => {
-    // Extract collection info if available
     const collectionTitle = collection?.name || albumTitle || "Trip";
+    const albumDescription = collection?.pubMagicMetadata?.data.caption?.trim();
 
-    // Use media query for mobile/tablet detection (up to 960px)
     const theme = useTheme();
-    const isMobileOrTablet = useMediaQuery(theme.breakpoints.down("md")); // 960px breakpoint for mobile and tablet
+    const isMobileOrTablet = useMediaQuery(theme.breakpoints.down("md"));
 
-    // Save groups hook for download progress tracking
     const { onAddSaveGroup } = useSaveGroupsActions();
     const { show: showPublicFeed, props: publicFeedVisibilityProps } =
         useModalVisibility();
@@ -88,7 +74,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         useState(false);
     const publicFeedSidebarOpenRef = useRef(publicFeedVisibilityProps.open);
 
-    // Navigation state for feed item clicks
     const [initialSidebar, setInitialSidebar] = useState<
         FileViewerInitialSidebar | undefined
     >(undefined);
@@ -99,7 +84,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         Map<string, string> | undefined
     >(undefined);
 
-    // File viewer hook
     const {
         openFileViewer,
         currentFileIndex,
@@ -108,7 +92,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         handleCloseFileViewer,
     } = useFileViewer({ files, onSetOpenFileViewer });
 
-    // Join album hook for file viewer's public like modal
     const { handleJoinAlbum } = useJoinAlbum({
         publicCollection: collection,
         accessToken,
@@ -129,32 +112,24 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         }
     }, []);
 
-    /**
-     * Handle clicks on feed items to navigate to the file and open sidebar.
-     */
     const handleFeedItemClick = (info: PublicFeedItemClickInfo) => {
-        // Find the file in the journey data to get its cluster
         const journeyPoint = journeyData.find(
             (point) => point.fileId === info.fileID,
         );
         if (!journeyPoint) return;
 
-        // Find the cluster that contains this file
         const cluster = photoClusters.find((c) =>
             c.some((p) => p.fileId === info.fileID),
         );
         if (!cluster) return;
 
-        // Close the feed sidebar
         publicFeedVisibilityProps.onClose();
 
-        // Determine which sidebar to open
         const sidebar: FileViewerInitialSidebar =
             info.type === "liked_photo" || info.type === "liked_video"
                 ? "likes"
                 : "comments";
 
-        // Set navigation state and open file viewer
         setInitialSidebar(sidebar);
         setHighlightCommentID(info.commentID);
         setInitialAnonUserNames(
@@ -163,17 +138,13 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         handleOpenFileViewer(cluster, info.fileID);
     };
 
-    /**
-     * Handle file viewer close to clear navigation state.
-     */
-    const handleCloseFileViewerWithCleanup = () => {
+    const handleCloseFileViewerWithCleanup = useCallback(() => {
         setInitialSidebar(undefined);
         setHighlightCommentID(undefined);
         setInitialAnonUserNames(undefined);
         handleCloseFileViewer();
-    };
+    }, [handleCloseFileViewer]);
 
-    // Download all files functionality
     const downloadAllFiles = () => {
         if (!collection) return;
         void import("@/public-album/download/services/save").then(
@@ -193,26 +164,26 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
     const [isClient, setIsClient] = useState(false);
     const [isLoadingLocations, setIsLoadingLocations] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
-    const [currentZoom, setCurrentZoom] = useState(7); // Default zoom, will be updated by MapEvents and optimalZoom
+    const [currentZoom, setCurrentZoom] = useState(7);
     const [mapRef, setMapRef] = useState<import("leaflet").Map | null>(null);
-    const [, setTargetZoom] = useState<number | null>(null); // Only setter is used by child components
-    const [scrollProgress, setScrollProgress] = useState(0); // 0 to 1 representing scroll progress
-    const [hasUserScrolled, setHasUserScrolled] = useState(false); // Track if user has actually scrolled
-    const [showMobileCover, setShowMobileCover] = useState(true); // Track mobile cover state
+    const [, setTargetZoom] = useState<number | null>(null);
+    const [scrollProgress, setScrollProgress] = useState(0);
+    const [hasUserScrolled, setHasUserScrolled] = useState(false);
+    const [showMobileCover, setShowMobileCover] = useState(true);
     const [locationPositions, setLocationPositions] = useState<PositionInfo[]>(
         [],
     );
     const timelineRef = useRef<HTMLDivElement>(null);
     const locationRefs = useRef<(HTMLDivElement | null)[]>([]);
     const tripStartedRef = useRef<HTMLDivElement | null>(null);
-    const isClusterClickScrollingRef = useRef(false); // Use ref for immediate updates
-    const clusterClickTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout for cluster clicks
-    const thumbnailsGeneratedRef = useRef(false); // Track if thumbnails have been generated
+    const isClusterClickScrollingRef = useRef(false);
+    const clusterClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const thumbnailsGeneratedRef = useRef(false);
     const locationDataRef = useRef<
         Map<number, { name: string; country: string }>
-    >(new Map()); // Track location data to prevent resets
-    const filesCountRef = useRef<number>(0); // Track files count to detect real changes
-    const previousActiveLocationRef = useRef<number>(-1); // Track previous active location for discrete panning
+    >(new Map());
+    const filesCountRef = useRef<number>(0);
+    const previousActiveLocationRef = useRef<number>(-1);
 
     const [photoClusters, setPhotoClusters] = useState<JourneyPoint[][]>([]);
     const [optimalZoom, setOptimalZoom] = useState(7);
@@ -233,21 +204,18 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
             ) => void;
         }> | null>(null);
 
-    // Load client-side components and calculations
+    // Leaflet and its helpers must load only in the browser.
     useEffect(() => {
         if (isClient) {
-            // Load TripMap component
             void import("./TripMap").then(({ TripMap }) => {
                 setTripMapComponent(() => TripMap);
             });
 
-            // Load mapHelpers and calculate clusters if we have data
             if (journeyData.length > 0) {
-                void import("./mapHelpers").then(
+                void import("./map-helpers").then(
                     ({ clusterPhotosByProximity, calculateOptimalZoom }) => {
                         const clusters = clusterPhotosByProximity(journeyData);
 
-                        // Sort clusters by their earliest timestamp to maintain chronological order
                         const sortedClusters = clusters.sort((a, b) => {
                             const earliestA = Math.min(
                                 ...a.map((p) => p.timestamp),
@@ -268,14 +236,12 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         }
     }, [isClient, journeyData, isMobileOrTablet]);
 
-    // Update currentZoom when optimalZoom changes and there's no mapRef yet
     useEffect(() => {
         if (!mapRef && optimalZoom !== currentZoom) {
             setCurrentZoom(optimalZoom);
         }
     }, [optimalZoom, mapRef, currentZoom]);
 
-    // Set client-side rendering flag
     useEffect(() => {
         setIsClient(true);
     }, []);
@@ -285,7 +251,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         return scheduleFileViewerPreload();
     }, [files.length]);
 
-    // Use extracted data processing hooks
     useDataProcessing({
         files,
         collection,
@@ -315,7 +280,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         setJourneyData,
     });
 
-    // Use extracted scroll handling hooks
     const { markerClickHandler } = useScrollHandling({
         timelineRef,
         photoClusters,
@@ -340,7 +304,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                     tripStartedElement.getBoundingClientRect();
                 const timelineRect = timelineContainer.getBoundingClientRect();
 
-                // Show/hide cover based on trip started position
                 const threshold = timelineRect.top + timelineRect.height * 0.3;
                 if (tripStartedRect.bottom < threshold) {
                     setShowMobileCover(false);
@@ -353,13 +316,10 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
         setTargetZoom,
     });
 
-    // Only wait for client-side rendering (needed for maps), but show layout immediately
-    // Let individual components handle their own loading states
     if (!isClient) {
-        return null; // SSR compatibility
+        return null;
     }
 
-    // Show black background if no photo data yet
     const hasPhotoData = journeyData.length > 0;
 
     return (
@@ -385,10 +345,8 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                         onJoinAlbum={handleJoinAlbum}
                     />
                 ))}
-            {/* Mobile Layout */}
             {isMobileOrTablet ? (
                 <MobileContainer>
-                    {/* Map takes 60% of height */}
                     <MobileMapContainer>
                         {TripMapComponent && (
                             <TripMapComponent
@@ -403,19 +361,18 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                                 onMarkerClick={markerClickHandler}
                             />
                         )}
-                        {/* Cover overlay */}
                         {!isInitialLoad && journeyData.length > 0 && (
                             <MobileCoverOverlay show={showMobileCover}>
                                 <MobileCover
                                     journeyData={journeyData}
                                     albumTitle={collectionTitle}
+                                    albumDescription={albumDescription}
                                     coverImageUrl={coverImageUrl}
                                 />
                             </MobileCoverOverlay>
                         )}
                     </MobileMapContainer>
 
-                    {/* Timeline takes 40% of height */}
                     <MobileTimelineContainer ref={timelineRef}>
                         <MobileTimelineContent>
                             {isInitialLoad ? (
@@ -478,7 +435,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                 </MobileContainer>
             ) : (
                 <>
-                    {/* Desktop Layout - Left Sidebar - Floating Timeline */}
                     <TimelineSidebar ref={timelineRef}>
                         <TimelineContent>
                             {isInitialLoad ? (
@@ -511,6 +467,7 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                                     <TripCover
                                         journeyData={journeyData}
                                         albumTitle={collectionTitle}
+                                        albumDescription={albumDescription}
                                         coverImageUrl={coverImageUrl}
                                     />
 
@@ -580,7 +537,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                         </TimelineContent>
                     </TimelineSidebar>
 
-                    {/* Desktop Map Container */}
                     {TripMapComponent && (
                         <TripMapComponent
                             journeyData={journeyData}
@@ -597,7 +553,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                 </>
             )}
 
-            {/* FileViewer for photo gallery */}
             {openFileViewer && (
                 <LazyFileViewer
                     open={openFileViewer}
@@ -616,10 +571,8 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
                 />
             )}
 
-            {/* Download progress notifications */}
             <ActiveDownloadStatusNotifications fullWidthOnMobile />
 
-            {/* Public feed sidebar */}
             {(publicFeedVisibilityProps.open || keepPublicFeedSidebarMounted) &&
                 collection &&
                 credentials?.current &&
@@ -637,7 +590,6 @@ export const TripLayout: React.FC<TripLayoutProps> = ({
     );
 };
 
-// Styled components
 const TripLayoutContainer = styled(Box)({
     position: "relative",
     width: "100%",
@@ -760,7 +712,6 @@ const NoPhotosContainer = styled(Box)(({ theme }) => ({
     fontSize: "16px",
 }));
 
-// Mobile specific styled components
 const MobileContainer = styled(Box)({
     display: "flex",
     flexDirection: "column",

@@ -1,11 +1,12 @@
 import "dart:convert";
 import "dart:typed_data";
 
+import "package:ente_strings/ente_strings.dart";
+import "package:ente_ui/components/loading_widget.dart";
 import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/db/ml/db.dart";
 import "package:photos/db/offline_files_db.dart";
-import "package:photos/generated/intl/app_localizations.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/ml/face/box.dart";
 import "package:photos/models/ml/face/detection.dart";
@@ -13,7 +14,6 @@ import "package:photos/models/ml/face/face.dart";
 import "package:photos/service_locator.dart" show isLocalGalleryMode;
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/theme/text_style.dart";
-import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/components/buttons/icon_button_widget.dart";
 import "package:photos/ui/viewer/people/face_thumbnail_squircle.dart";
 import "package:photos/ui/viewer/people/file_face_widget.dart";
@@ -58,22 +58,23 @@ class _PetsItemWidgetState extends State<PetsItemWidget> {
         }
       }
 
-      final mlDataDB =
-          isLocalGallery ? MLDataDB.localGalleryInstance : MLDataDB.instance;
+      final mlDataDB = isLocalGallery
+          ? MLDataDB.localGalleryInstance
+          : MLDataDB.instance;
       final dbPetFaces = await mlDataDB.getPetFacesForFileID(fileKey);
       if (dbPetFaces == null || dbPetFaces.isEmpty) {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // Convert DBPetFace to Face objects for crop generation.
-      // The detection JSON stores box as [xMin, yMin, xMax, yMax] (xyxy),
-      // so we parse it into FaceBox(x, y, width, height) manually.
+      // Stored pet boxes are [xMin, yMin, xMax, yMax], while FaceBox takes
+      // [x, y, width, height].
       final faces = <Face>[];
       for (final dbPetFace in dbPetFaces) {
         final json = jsonDecode(dbPetFace.detection) as Map<String, dynamic>;
-        final boxList =
-            (json['box'] as List).map((e) => (e as num).toDouble()).toList();
+        final boxList = (json['box'] as List)
+            .map((e) => (e as num).toDouble())
+            .toList();
         final detection = Detection(
           box: FaceBox(
             x: boxList[0],
@@ -176,10 +177,7 @@ class _PetsItemWidgetState extends State<PetsItemWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context).discover_pets,
-            style: textTheme.small,
-          ),
+          Text(context.strings.discover_pets, style: textTheme.small),
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
@@ -204,7 +202,7 @@ class _PetsItemWidgetState extends State<PetsItemWidget> {
     double thumbnailWidth,
     EnteTextTheme textTheme,
   ) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = context.strings;
     final speciesLabel = info.species == 0 ? l10n.dog : l10n.cat;
 
     return SizedBox(

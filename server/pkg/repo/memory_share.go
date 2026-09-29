@@ -5,20 +5,18 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/ente-io/museum/ente"
-	"github.com/ente-io/museum/pkg/utils/time"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	"github.com/ente/museum/pkg/utils/time"
+	"github.com/ente/stacktrace"
 	"github.com/lib/pq"
 	"github.com/spf13/viper"
 )
 
-// MemoryShareRepository persists memory share rows and their files.
 type MemoryShareRepository struct {
 	DB         *sql.DB
 	memoryHost string
 }
 
-// NewMemoryShareRepository builds a repository using the configured public memories host.
 func NewMemoryShareRepository(db *sql.DB) *MemoryShareRepository {
 	memoryHost := viper.GetString("apps.public-memories")
 	if memoryHost == "" {
@@ -30,12 +28,10 @@ func NewMemoryShareRepository(db *sql.DB) *MemoryShareRepository {
 	}
 }
 
-// GetMemoryShareURL constructs the public URL for a share token.
 func (r *MemoryShareRepository) GetMemoryShareURL(accessToken string) string {
 	return fmt.Sprintf("%s/%s", r.memoryHost, accessToken)
 }
 
-// Create inserts a memory share and returns the saved row.
 func (r *MemoryShareRepository) Create(ctx context.Context, share ente.MemoryShare) (ente.MemoryShare, error) {
 	now := time.Microseconds()
 	err := r.DB.QueryRowContext(ctx, `
@@ -106,7 +102,6 @@ func (r *MemoryShareRepository) CreateWithFiles(ctx context.Context, share ente.
 	return share, nil
 }
 
-// AddFiles appends files to an existing memory share.
 func (r *MemoryShareRepository) AddFiles(ctx context.Context, shareID int64, files []ente.MemoryShareFile) error {
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -132,7 +127,6 @@ func (r *MemoryShareRepository) AddFiles(ctx context.Context, shareID int64, fil
 	return nil
 }
 
-// GetByID fetches a memory share by primary key.
 func (r *MemoryShareRepository) GetByID(ctx context.Context, id int64) (*ente.MemoryShare, error) {
 	share := &ente.MemoryShare{}
 	err := r.DB.QueryRowContext(ctx, `
@@ -152,7 +146,6 @@ func (r *MemoryShareRepository) GetByID(ctx context.Context, id int64) (*ente.Me
 	return share, nil
 }
 
-// GetByAccessToken fetches a memory share using its public token.
 func (r *MemoryShareRepository) GetByAccessToken(ctx context.Context, token string) (*ente.MemoryShare, error) {
 	share := &ente.MemoryShare{}
 	err := r.DB.QueryRowContext(ctx, `
@@ -172,7 +165,6 @@ func (r *MemoryShareRepository) GetByAccessToken(ctx context.Context, token stri
 	return share, nil
 }
 
-// GetFiles returns all file rows for a memory share.
 func (r *MemoryShareRepository) GetFiles(ctx context.Context, shareID int64) ([]ente.MemoryShareFile, error) {
 	rows, err := r.DB.QueryContext(ctx, `
 		SELECT id, memory_share_id, file_id, file_owner_id, position, file_enc_key, file_key_decryption_nonce, created_at
@@ -196,7 +188,6 @@ func (r *MemoryShareRepository) GetFiles(ctx context.Context, shareID int64) ([]
 	return files, nil
 }
 
-// GetFileIDs returns just the file IDs for a memory share.
 func (r *MemoryShareRepository) GetFileIDs(ctx context.Context, shareID int64) ([]int64, error) {
 	rows, err := r.DB.QueryContext(ctx, `
 		SELECT file_id
@@ -219,7 +210,6 @@ func (r *MemoryShareRepository) GetFileIDs(ctx context.Context, shareID int64) (
 	return fileIDs, nil
 }
 
-// GetByUserID returns all non-deleted shares created by a user.
 func (r *MemoryShareRepository) GetByUserID(ctx context.Context, userID int64) ([]ente.MemoryShare, error) {
 	activeCreatedAfter := ente.ActiveMemoryShareCreatedAfter()
 	rows, err := r.DB.QueryContext(ctx, `
@@ -247,7 +237,6 @@ func (r *MemoryShareRepository) GetByUserID(ctx context.Context, userID int64) (
 	return shares, nil
 }
 
-// Delete soft-deletes a memory share owned by the given user.
 func (r *MemoryShareRepository) Delete(ctx context.Context, shareID int64, userID int64) error {
 	result, err := r.DB.ExecContext(ctx, `
 		UPDATE memory_shares SET is_deleted = true, updated_at = $1
@@ -266,7 +255,6 @@ func (r *MemoryShareRepository) Delete(ctx context.Context, shareID int64, userI
 	return nil
 }
 
-// GetFileOwnerMap returns a fileID->ownerID map for a share.
 func (r *MemoryShareRepository) GetFileOwnerMap(ctx context.Context, shareID int64) (map[int64]int64, error) {
 	rows, err := r.DB.QueryContext(ctx, `
 		SELECT file_id, file_owner_id FROM memory_share_files WHERE memory_share_id = $1`, shareID)
@@ -286,7 +274,6 @@ func (r *MemoryShareRepository) GetFileOwnerMap(ctx context.Context, shareID int
 	return ownerMap, nil
 }
 
-// GetFileByID fetches a specific file entry for a share.
 func (r *MemoryShareRepository) GetFileByID(ctx context.Context, shareID int64, fileID int64) (*ente.MemoryShareFile, error) {
 	file := &ente.MemoryShareFile{}
 	err := r.DB.QueryRowContext(ctx, `
@@ -306,7 +293,6 @@ func (r *MemoryShareRepository) GetFileByID(ctx context.Context, shareID int64, 
 	return file, nil
 }
 
-// FileExistsInShare reports whether a file belongs to a share and returns the ownerID.
 func (r *MemoryShareRepository) FileExistsInShare(ctx context.Context, shareID int64, fileID int64) (bool, int64, error) {
 	var ownerID int64
 	err := r.DB.QueryRowContext(ctx, `
@@ -321,7 +307,6 @@ func (r *MemoryShareRepository) FileExistsInShare(ctx context.Context, shareID i
 	return true, ownerID, nil
 }
 
-// GetFilesWithKeys returns file entries and re-encrypted keys for the requested file IDs.
 func (r *MemoryShareRepository) GetFilesWithKeys(ctx context.Context, shareID int64, fileIDs []int64) ([]ente.MemoryShareFile, error) {
 	rows, err := r.DB.QueryContext(ctx, `
 		SELECT id, memory_share_id, file_id, file_owner_id, position, file_enc_key, file_key_decryption_nonce, created_at

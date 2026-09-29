@@ -2,25 +2,20 @@ import "dart:math" as math;
 
 import "package:flutter/widgets.dart";
 
-// Flutter's `RSuperellipse` clamps radii so they don't overlap, which means
-// radii > (side / 2) become circles. Historically we used an oversized radius
-// with `ContinuousRectangleBorder` to approximate the iOS squircle.
-//
-// This factor produces a similarly "squircled" look without collapsing into a
-// circle for the common square thumbnail sizes used across the app.
+// RSuperellipse radii above half the side collapse into a circle. This factor
+// preserves the previous iOS-style squircle shape.
 const double _kFaceThumbnailSquircleRadiusFactor = 0.30;
 const double _kFaceThumbnailSquircleMinStraightEdge = 8.0;
 
 BorderRadius faceThumbnailSquircleBorderRadius(double side) {
   final normalizedSide = side.isFinite ? side : 0.0;
   final clampedSide = normalizedSide > 0 ? normalizedSide : 0.0;
-  final maxRadius =
-      math.max(0.0, (clampedSide - _kFaceThumbnailSquircleMinStraightEdge) / 2);
+  final maxRadius = math.max(
+    0.0,
+    (clampedSide - _kFaceThumbnailSquircleMinStraightEdge) / 2,
+  );
   return BorderRadius.circular(
-    math.min(
-      clampedSide * _kFaceThumbnailSquircleRadiusFactor,
-      maxRadius,
-    ),
+    math.min(clampedSide * _kFaceThumbnailSquircleRadiusFactor, maxRadius),
   );
 }
 
@@ -53,10 +48,7 @@ class FaceThumbnailSquircleClip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (borderRadius != null) {
-      return ClipRSuperellipse(
-        borderRadius: borderRadius!,
-        child: child,
-      );
+      return ClipRSuperellipse(borderRadius: borderRadius!, child: child);
     }
 
     return ClipRSuperellipse(

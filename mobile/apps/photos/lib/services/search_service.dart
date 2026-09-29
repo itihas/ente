@@ -2,12 +2,12 @@ import "dart:async";
 import "dart:math";
 
 import 'package:ente_pure_utils/ente_pure_utils.dart';
-import "package:flutter/cupertino.dart";
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/material.dart";
+import "package:hugeicons/hugeicons.dart";
 import 'package:logging/logging.dart';
 import "package:path_provider/path_provider.dart";
 import "package:photos/core/configuration.dart";
-import "package:photos/core/constants.dart";
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/data/holidays.dart';
 import 'package:photos/data/months.dart';
@@ -18,7 +18,6 @@ import "package:photos/db/ml/db.dart";
 import "package:photos/db/offline_files_db.dart";
 import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/extensions/user_extension.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/models/api/collection/user.dart";
 import 'package:photos/models/collection/collection.dart';
 import 'package:photos/models/collection/collection_items.dart';
@@ -27,7 +26,6 @@ import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/file/file_type.dart';
 import "package:photos/models/local_entity_data.dart";
-import "package:photos/models/location/location.dart";
 import "package:photos/models/location_tag/location_tag.dart";
 import "package:photos/models/memories/memories_cache.dart";
 import "package:photos/models/memories/memory.dart";
@@ -51,6 +49,7 @@ import "package:photos/service_locator.dart";
 import "package:photos/services/account/user_service.dart";
 import 'package:photos/services/collections_service.dart';
 import "package:photos/services/contacts/contact_identity_resolver.dart";
+import "package:photos/services/contacts/direct_contact_users.dart";
 import "package:photos/services/date_parse_service.dart";
 import "package:photos/services/filter/db_filters.dart";
 import "package:photos/services/location_service.dart";
@@ -59,13 +58,11 @@ import 'package:photos/services/machine_learning/semantic_search/semantic_search
 import "package:photos/services/memories_cache_service.dart";
 import "package:photos/services/photos_contacts_service.dart";
 import "package:photos/states/location_screen_state.dart";
-import "package:photos/ui/viewer/location/add_location_sheet.dart";
 import "package:photos/ui/viewer/location/location_screen.dart";
 import "package:photos/ui/viewer/people/cluster_page.dart";
 import "package:photos/ui/viewer/people/people_page.dart";
 import "package:photos/ui/viewer/search/result/magic_result_screen.dart";
 import "package:photos/utils/cache_util.dart";
-import "package:photos/utils/file_util.dart";
 import "package:photos/utils/people_sort_util.dart";
 
 class SearchService {
@@ -75,6 +72,7 @@ class SearchService {
   Future<List<EnteFile>>? _cachedFilesForGenericGallery;
   Future<List<EnteFile>>? _cachedFilesForOfflineGallery;
   Future<List<EnteFile>>? _cachedHiddenFilesFuture;
+  Future<Map<int, EnteFile>>? _cachedFilesByUploadedID;
   final _logger = Logger((SearchService).toString());
   final _collectionService = CollectionsService.instance;
   static const _maximumResultsLimit = 20;
@@ -87,16 +85,22 @@ class SearchService {
 
   void init() {
     _localPhotosUpdatedSubscription?.cancel();
-    _localPhotosUpdatedSubscription =
-        Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
-      // only invalidate, let the load happen on demand
-      _cachedFilesFuture = null;
-      _cachedFilesForSearch = null;
-      _cachedFilesForHierarchicalSearch = null;
-      _cachedFilesForGenericGallery = null;
-      _cachedFilesForOfflineGallery = null;
-      _cachedHiddenFilesFuture = null;
-    });
+    _localPhotosUpdatedSubscription = Bus.instance
+        .on<LocalPhotosUpdatedEvent>()
+        .listen((event) {
+          // Invalidate only; reload on demand.
+          _invalidateFileCaches();
+        });
+  }
+
+  void _invalidateFileCaches() {
+    _cachedFilesFuture = null;
+    _cachedFilesForSearch = null;
+    _cachedFilesForHierarchicalSearch = null;
+    _cachedFilesForGenericGallery = null;
+    _cachedFilesForOfflineGallery = null;
+    _cachedHiddenFilesFuture = null;
+    _cachedFilesByUploadedID = null;
   }
 
   Set<int> ignoreCollections() {
@@ -107,9 +111,17 @@ class SearchService {
     User user,
     List<Collection> collections,
   ) {
+    final contactUserId = user.id;
+    if (contactUserId <= 0) {
+      throw ArgumentError.value(
+        contactUserId,
+        "user.id",
+        "Contact search results require a positive user ID",
+      );
+    }
     final params = <String, dynamic>{
       kPersonParamID: user.linkedPersonID,
-      kContactUserId: user.id,
+      kContactUserId: contactUserId,
       kContactEmail: resolveKnownEmail(user) ?? user.email,
       kContactCollections: collections,
     };
@@ -124,18 +136,106 @@ class SearchService {
       await PhotosContactsService.instance.ensureReady();
     } catch (e, s) {
       _logger.warning(
-        "Failed to preload contacts cache; falling back to person/email results",
+        "Failed to preload contacts cache; continuing without saved contacts",
         e,
         s,
       );
     }
   }
 
+  Map<User, List<EnteFile>> _directContactsWithSharedFiles(
+    List<EnteFile> allFiles, {
+    String? lowerCaseQuery,
+  }) {
+    final ownerUserId = Configuration.instance.getUserID()!;
+    final userDetails = UserService.instance.getCachedUserDetails();
+    final directContacts =
+        buildDirectContactUsers(
+          ownerUserId: ownerUserId,
+          ownerEmail: Configuration.instance.getEmail()!,
+          collections: _collectionService.getActiveCollections(),
+          familyMembers: userDetails?.familyData?.members ?? const [],
+          savedContacts: PhotosContactsService.instance.getCachedContacts(),
+        ).where(
+          (user) =>
+              lowerCaseQuery == null ||
+              matchesResolvedContactQuery(user, lowerCaseQuery),
+        );
+
+    final contactsToFiles = <User, List<EnteFile>>{};
+    final contactsByUserId = <int, User>{};
+    for (final contact in directContacts) {
+      contactsToFiles[contact] = [];
+      contactsByUserId[contact.id] = contact;
+    }
+
+    for (final file in allFiles) {
+      if (file.isOwner) {
+        continue;
+      }
+      final contact = contactsByUserId[file.ownerID];
+      if (contact != null) {
+        contactsToFiles[contact]!.add(file);
+      }
+    }
+
+    return contactsToFiles;
+  }
+
+  Map<int, List<Collection>> _incomingContactCollectionsByUserId(
+    int ownerID, {
+    required bool excludeArchived,
+  }) {
+    final collectionsByUserId = <int, List<Collection>>{};
+    final collections = _collectionService.getCollectionsForUI(
+      includedShared: true,
+      includeCollab: true,
+    );
+    for (final collection in collections) {
+      if (collection.isHidden() ||
+          (excludeArchived && collection.isArchived()) ||
+          collection.isOwner(ownerID)) {
+        continue;
+      }
+      final contactUserId = collection.owner.id;
+      if (contactUserId > 0) {
+        collectionsByUserId
+            .putIfAbsent(contactUserId, () => [])
+            .add(collection);
+      }
+    }
+    return collectionsByUserId;
+  }
+
+  List<GenericSearchResult> _toContactSearchResults(
+    Iterable<MapEntry<User, List<EnteFile>>> entries,
+    Map<int, List<Collection>> collectionsByUserId,
+  ) {
+    return entries.map((entry) {
+      final user = entry.key;
+      final files = entry.value;
+      return GenericSearchResult(
+        ResultType.shared,
+        resolveDisplayName(user),
+        files,
+        hierarchicalSearchFilter: ContactsFilter(
+          user: user,
+          occurrence: kMostRelevantFilter,
+          matchedUploadedIDs: filesToUploadedFileIDs(files),
+        ),
+        params: _contactSearchParams(
+          user,
+          collectionsByUserId[user.id] ?? const [],
+        ),
+      );
+    }).toList();
+  }
+
   Future<GenericSearchResult?> buildContactSearchResultForUser(
     User user,
   ) async {
     final userId = user.id;
-    if (userId == null || userId <= 0) {
+    if (userId <= 0) {
       return null;
     }
 
@@ -172,7 +272,7 @@ class SearchService {
   bool _isSameContactUser(User source, User target) {
     final sourceId = source.id;
     final targetId = target.id;
-    if (sourceId != null && targetId != null && sourceId > 0 && targetId > 0) {
+    if (sourceId > 0 && targetId > 0) {
       return sourceId == targetId;
     }
     return source.email == target.email;
@@ -196,6 +296,131 @@ class SearchService {
     });
 
     return _cachedFilesForSearch!;
+  }
+
+  Future<List<EnteFile>> _getFilesCreatedWithinDurations(
+    List<List<int>> durations,
+  ) async {
+    if (durations.isEmpty) {
+      return [];
+    }
+
+    final files = await getAllFilesForSearch();
+    final matchedFiles = <EnteFile>[];
+    for (final duration in durations.reversed) {
+      final firstIndex = _firstFileCreatedBefore(files, duration[1]);
+      final endIndex = _firstFileCreatedBefore(files, duration[0]);
+      matchedFiles.addAll(files.getRange(firstIndex, endIndex));
+    }
+    return matchedFiles;
+  }
+
+  int _firstFileCreatedBefore(List<EnteFile> files, int timestamp) {
+    var low = 0;
+    var high = files.length;
+    while (low < high) {
+      final middle = low + ((high - low) >> 1);
+      if (files[middle].creationTime! >= timestamp) {
+        low = middle + 1;
+      } else {
+        high = middle;
+      }
+    }
+    return low;
+  }
+
+  Future<bool> hasAnyFilesForSearch() async {
+    if (_cachedFilesFuture != null && _cachedFilesForSearch != null) {
+      return (await _cachedFilesForSearch!).isNotEmpty;
+    }
+
+    return FilesDB.instance.hasAnyFile();
+  }
+
+  Future<Map<int, EnteFile>> _getFilesByUploadedID() {
+    return _cachedFilesByUploadedID ??= getAllFilesForSearch().then((files) {
+      final filesByUploadedID = <int, EnteFile>{};
+      for (final file in files) {
+        final uploadedID = file.uploadedFileID;
+        if (uploadedID != null && !filesByUploadedID.containsKey(uploadedID)) {
+          filesByUploadedID[uploadedID] = file;
+        }
+      }
+      return filesByUploadedID;
+    });
+  }
+
+  Future<List<GenericSearchResult>> getUploadedFileIDsSearchResults(
+    String query,
+    Set<int> uploadedFileIDs,
+  ) async {
+    if (uploadedFileIDs.isEmpty) {
+      return [];
+    }
+
+    try {
+      final files = await FilesDB.instance.getFilesFromIDs(
+        uploadedFileIDs.toList(),
+        dedupeByUploadId: true,
+        collectionsToIgnore: ignoreCollections(),
+      );
+      if (files.isEmpty) {
+        return [];
+      }
+
+      final matchedUploadedFileIDs = filesToUploadedFileIDs(files);
+      return [
+        GenericSearchResult(
+          ResultType.file,
+          query.trim(),
+          files,
+          hierarchicalSearchFilter: TopLevelGenericFilter(
+            filterName: query.trim(),
+            occurrence: kMostRelevantFilter,
+            filterResultType: ResultType.file,
+            matchedUploadedIDs: matchedUploadedFileIDs,
+          ),
+        ),
+      ];
+    } catch (e, s) {
+      _logger.severe("Failed to search by uploaded file IDs", e, s);
+      return [];
+    }
+  }
+
+  Future<List<GenericSearchResult>> getLocalFileIDsSearchResults(
+    String query,
+    Set<String> localFileIDs,
+  ) async {
+    if (!isLocalGalleryMode || localFileIDs.isEmpty) {
+      return [];
+    }
+
+    try {
+      final files = (await getAllFilesForSearch())
+          .where((file) => localFileIDs.contains(file.localID))
+          .toList();
+      if (files.isEmpty) {
+        return [];
+      }
+
+      return [
+        GenericSearchResult(
+          ResultType.file,
+          query.trim(),
+          files,
+          hierarchicalSearchFilter: TopLevelGenericFilter(
+            filterName: query.trim(),
+            occurrence: kMostRelevantFilter,
+            filterResultType: ResultType.file,
+            matchedUploadedIDs: filesToUploadedFileIDs(files),
+          ),
+        ),
+      ];
+    } catch (e, s) {
+      _logger.severe("Failed to search by local file IDs", e, s);
+      return [];
+    }
   }
 
   Future<List<EnteFile>> getAllFilesForHierarchicalSearch() async {
@@ -280,8 +505,8 @@ class SearchService {
       return _cachedHiddenFilesFuture!;
     }
     _logger.info("Reading hidden files from db");
-    final hiddenCollections =
-        CollectionsService.instance.getHiddenCollectionIds();
+    final hiddenCollections = CollectionsService.instance
+        .getHiddenCollectionIds();
     _cachedHiddenFilesFuture = FilesDB.instance.getAllFilesFromCollections(
       hiddenCollections,
     );
@@ -289,17 +514,10 @@ class SearchService {
   }
 
   void clearCache() {
-    _cachedFilesFuture = null;
-    _cachedFilesForSearch = null;
-    _cachedFilesForHierarchicalSearch = null;
-    _cachedFilesForGenericGallery = null;
-    _cachedFilesForOfflineGallery = null;
-    _cachedHiddenFilesFuture = null;
+    _invalidateFileCaches();
     unawaited(memoriesCacheService.clearMemoriesCache());
   }
 
-  // getFilteredCollectionsWithThumbnail removes deleted or archived or
-  // collections which don't have a file from search result
   Future<List<AlbumSearchResult>> getCollectionSearchResults(
     String query,
   ) async {
@@ -337,8 +555,8 @@ class SearchService {
       if (isLocalGalleryMode) {
         return <AlbumSearchResult>[];
       }
-      final List<Collection> collections =
-          _collectionService.getCollectionsForUI(includedShared: true);
+      final List<Collection> collections = _collectionService
+          .getCollectionsForUI(includedShared: true);
 
       final List<AlbumSearchResult> collectionSearchResults = [];
 
@@ -394,9 +612,9 @@ class SearchService {
     final List<GenericSearchResult> searchResults = [];
     for (var yearData in YearsData.instance.yearsData) {
       if (yearData.year.startsWith(yearFromQuery)) {
-        final List<EnteFile> filesInYear = await _getFilesInYear(
+        final filesInYear = await _getFilesCreatedWithinDurations([
           yearData.duration,
-        );
+        ]);
         if (filesInYear.isNotEmpty) {
           searchResults.add(
             GenericSearchResult(
@@ -408,7 +626,7 @@ class SearchService {
                 occurrence: kMostRelevantFilter,
                 filterResultType: ResultType.year,
                 matchedUploadedIDs: filesToUploadedFileIDs(filesInYear),
-                filterIcon: Icons.calendar_month_outlined,
+                filterIcon: HugeIcons.strokeRoundedCalendar03,
               ),
             ),
           );
@@ -419,10 +637,16 @@ class SearchService {
   }
 
   Future<List<GenericSearchResult>> getMagicSectionResults(
-    BuildContext context,
-  ) async {
+    BuildContext context, {
+    int? limit,
+  }) async {
     if (hasGrantedMLConsent) {
-      return magicCacheService.getMagicGenericSearchResult(context);
+      final results = await magicCacheService.getMagicGenericSearchResult(
+        context,
+      );
+      return limit == null
+          ? results
+          : results.take(limit).toList(growable: false);
     } else {
       return <GenericSearchResult>[];
     }
@@ -433,12 +657,10 @@ class SearchService {
     String query,
   ) async {
     final List<GenericSearchResult> searchResults = [];
-    for (var month in _getMatchingMonths(context, query)) {
-      final matchedFiles =
-          await FilesDB.instance.getFilesCreatedWithinDurations(
+    final matchingMonths = _getMatchingMonths(context, query).toList();
+    for (final month in matchingMonths) {
+      final matchedFiles = await _getFilesCreatedWithinDurations(
         _getDurationsOfMonthInEveryYear(month.monthNumber),
-        ignoreCollections(),
-        order: 'DESC',
       );
       if (matchedFiles.isNotEmpty) {
         searchResults.add(
@@ -451,7 +673,7 @@ class SearchService {
               occurrence: kMostRelevantFilter,
               filterResultType: ResultType.month,
               matchedUploadedIDs: filesToUploadedFileIDs(matchedFiles),
-              filterIcon: Icons.calendar_month_outlined,
+              filterIcon: HugeIcons.strokeRoundedCalendar03,
             ),
           ),
         );
@@ -472,14 +694,8 @@ class SearchService {
 
     for (var holiday in holidays) {
       if (holiday.name.toLowerCase().contains(query.toLowerCase())) {
-        final matchedFiles =
-            await FilesDB.instance.getFilesCreatedWithinDurations(
-          _getDurationsForCalendarDateInEveryYear(
-            holiday.day,
-            holiday.month,
-          ),
-          ignoreCollections(),
-          order: 'DESC',
+        final matchedFiles = await _getFilesCreatedWithinDurations(
+          _getDurationsForCalendarDateInEveryYear(holiday.day, holiday.month),
         );
         if (matchedFiles.isNotEmpty) {
           searchResults.add(
@@ -492,7 +708,7 @@ class SearchService {
                 occurrence: kMostRelevantFilter,
                 filterResultType: ResultType.event,
                 matchedUploadedIDs: filesToUploadedFileIDs(matchedFiles),
-                filterIcon: Icons.event_outlined,
+                filterIcon: HugeIcons.strokeRoundedCalendar03,
               ),
             ),
           );
@@ -502,6 +718,76 @@ class SearchService {
     return searchResults;
   }
 
+  GenericSearchResult _buildFileTypeSearchResult(
+    FileType fileType,
+    String typeName,
+    List<EnteFile> files,
+  ) {
+    return GenericSearchResult(
+      ResultType.fileType,
+      typeName,
+      files,
+      hierarchicalSearchFilter: FileTypeFilter(
+        fileType: fileType,
+        typeName: typeName,
+        occurrence: kMostRelevantFilter,
+        matchedUploadedIDs: filesToUploadedFileIDs(files),
+      ),
+    );
+  }
+
+  GenericSearchResult _buildFileExtensionSearchResult(
+    String extensionName,
+    List<EnteFile> files,
+  ) {
+    return GenericSearchResult(
+      ResultType.fileExtension,
+      extensionName,
+      files,
+      hierarchicalSearchFilter: TopLevelGenericFilter(
+        filterName: extensionName,
+        occurrence: kMostRelevantFilter,
+        filterResultType: ResultType.fileExtension,
+        matchedUploadedIDs: filesToUploadedFileIDs(files),
+        filterIcon: HugeIcons.strokeRoundedFile01,
+      ),
+    );
+  }
+
+  String _fileExtension(String fileName) {
+    final extensionSeparatorIndex = fileName.lastIndexOf(".");
+    if (extensionSeparatorIndex < 0 ||
+        extensionSeparatorIndex == fileName.length - 1) {
+      return "";
+    }
+    return fileName.substring(extensionSeparatorIndex + 1).toUpperCase();
+  }
+
+  Future<GenericSearchResult> getFileTypeResult({
+    required FileType fileType,
+    required String typeName,
+  }) async {
+    final allFiles = await getAllFilesForSearch();
+    final matchedFiles = allFiles.where((e) => e.fileType == fileType).toList();
+    return _buildFileTypeSearchResult(fileType, typeName, matchedFiles);
+  }
+
+  Future<GenericSearchResult> getFileExtensionResult({
+    required String extension,
+    required String extensionName,
+  }) async {
+    final normalizedExtension = extension.startsWith(".")
+        ? extension.substring(1).toUpperCase()
+        : extension.toUpperCase();
+    final allFiles = await getAllFilesForSearch();
+    final matchedFiles = allFiles
+        .where(
+          (file) => _fileExtension(file.displayName) == normalizedExtension,
+        )
+        .toList();
+    return _buildFileExtensionSearchResult(extensionName, matchedFiles);
+  }
+
   Future<List<GenericSearchResult>> getFileTypeResults(
     BuildContext context,
     String query,
@@ -509,23 +795,15 @@ class SearchService {
     final List<GenericSearchResult> searchResults = [];
     final List<EnteFile> allFiles = await getAllFilesForSearch();
     for (var fileType in FileType.values) {
+      if (!context.mounted) return const [];
       final String fileTypeString = getHumanReadableString(context, fileType);
       if (fileTypeString.toLowerCase().startsWith(query.toLowerCase())) {
-        final matchedFiles =
-            allFiles.where((e) => e.fileType == fileType).toList();
+        final matchedFiles = allFiles
+            .where((e) => e.fileType == fileType)
+            .toList();
         if (matchedFiles.isNotEmpty) {
           searchResults.add(
-            GenericSearchResult(
-              ResultType.fileType,
-              fileTypeString,
-              matchedFiles,
-              hierarchicalSearchFilter: FileTypeFilter(
-                fileType: fileType,
-                typeName: fileTypeString,
-                occurrence: kMostRelevantFilter,
-                matchedUploadedIDs: filesToUploadedFileIDs(matchedFiles),
-              ),
-            ),
+            _buildFileTypeSearchResult(fileType, fileTypeString, matchedFiles),
           );
         }
       }
@@ -548,12 +826,7 @@ class SearchService {
         }
         fileTypesAndMatchingFiles[file.fileType]!.add(file);
 
-        final String fileName = file.displayName;
-        late final String ext;
-        //Noticed that some old edited files do not have extensions and a '.'
-        ext = fileName.contains(".")
-            ? fileName.split(".").last.toUpperCase()
-            : "";
+        final ext = _fileExtension(file.displayName);
 
         if (ext != "") {
           if (!extensionsAndMatchingFiles.containsKey(ext)) {
@@ -565,36 +838,11 @@ class SearchService {
 
       fileTypesAndMatchingFiles.forEach((key, value) {
         final name = getHumanReadableString(context, key);
-        searchResults.add(
-          GenericSearchResult(
-            ResultType.fileType,
-            name,
-            value,
-            hierarchicalSearchFilter: FileTypeFilter(
-              fileType: key,
-              typeName: name,
-              occurrence: kMostRelevantFilter,
-              matchedUploadedIDs: filesToUploadedFileIDs(value),
-            ),
-          ),
-        );
+        searchResults.add(_buildFileTypeSearchResult(key, name, value));
       });
 
       extensionsAndMatchingFiles.forEach((key, value) {
-        searchResults.add(
-          GenericSearchResult(
-            ResultType.fileExtension,
-            key + "s",
-            value,
-            hierarchicalSearchFilter: TopLevelGenericFilter(
-              filterName: key + "s",
-              occurrence: kMostRelevantFilter,
-              filterResultType: ResultType.fileExtension,
-              matchedUploadedIDs: filesToUploadedFileIDs(value),
-              filterIcon: CupertinoIcons.doc_text,
-            ),
-          ),
-        );
+        searchResults.add(_buildFileExtensionSearchResult(key + "s", value));
       });
 
       if (limit != null) {
@@ -656,7 +904,7 @@ class SearchService {
             occurrence: kMostRelevantFilter,
             filterResultType: ResultType.fileCaption,
             matchedUploadedIDs: filesToUploadedFileIDs(captionMatch),
-            filterIcon: Icons.description_outlined,
+            filterIcon: HugeIcons.strokeRoundedText,
           ),
         ),
       );
@@ -704,7 +952,7 @@ class SearchService {
               occurrence: kMostRelevantFilter,
               filterResultType: ResultType.cameraMake,
               matchedUploadedIDs: filesToUploadedFileIDs(entry.value),
-              filterIcon: Icons.photo_camera_outlined,
+              filterIcon: HugeIcons.strokeRoundedCamera01,
             ),
           ),
         );
@@ -743,7 +991,10 @@ class SearchService {
     for (EnteFile eachFile in allFiles) {
       final String fileName = eachFile.displayName;
       if (fileName.contains(query)) {
-        final String exnType = fileName.split(".").last.toUpperCase();
+        final String exnType = _fileExtension(fileName);
+        if (exnType.isEmpty) {
+          continue;
+        }
         if (!resultMap.containsKey(exnType)) {
           resultMap[exnType] = <EnteFile>[];
         }
@@ -752,25 +1003,16 @@ class SearchService {
     }
     for (MapEntry<String, List<EnteFile>> entry in resultMap.entries) {
       searchResults.add(
-        GenericSearchResult(
-          ResultType.fileExtension,
-          entry.key.toUpperCase(),
-          entry.value,
-          hierarchicalSearchFilter: TopLevelGenericFilter(
-            filterName: entry.key.toUpperCase(),
-            occurrence: kMostRelevantFilter,
-            filterResultType: ResultType.fileExtension,
-            matchedUploadedIDs: filesToUploadedFileIDs(entry.value),
-            filterIcon: CupertinoIcons.doc_text,
-          ),
-        ),
+        _buildFileExtensionSearchResult(entry.key.toUpperCase(), entry.value),
       );
     }
     return searchResults;
   }
 
   Future<List<String>> getTopTwoFaces() async {
-    final searchFilter = await SectionType.face.getData(null).then(
+    final searchFilter = await SectionType.face
+        .getData(null)
+        .then(
           (value) => (value as List<GenericSearchResult>).where(
             (element) => (element.params[kPersonParamID] as String?) != null,
           ),
@@ -789,8 +1031,11 @@ class SearchService {
     final locationTagEntities = (await locationService.getLocationTags());
     final Map<LocalEntity<LocationTag>, List<EnteFile>> result = {};
     final normalizedQuery = query.toLowerCase();
-    final noLocationName = AppLocalizations.of(context).noLocation;
-    final noLocationTagName = AppLocalizations.of(context).noLocationTag;
+    if (!context.mounted) return const [];
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final noLocationName = context.strings.noLocation;
+    if (!context.mounted) return const [];
+    final noLocationTagName = context.strings.noLocationTag;
     final normalizedNoLocationName = noLocationName.toLowerCase();
     final normalizedNoLocationTagName = noLocationTagName.toLowerCase();
     final disambiguationPrefixLength = min(
@@ -803,11 +1048,12 @@ class SearchService {
             normalizedNoLocationTagName.codeUnitAt(sharedPrefixLength)) {
       sharedPrefixLength++;
     }
-    final bool showNoLocation = normalizedQuery.length > 2 &&
+    final bool showNoLocation =
+        normalizedQuery.length > 2 &&
         normalizedNoLocationName.startsWith(normalizedQuery);
     final bool showNoLocationTag =
         normalizedQuery.length > sharedPrefixLength &&
-            normalizedNoLocationTagName.startsWith(normalizedQuery);
+        normalizedNoLocationTagName.startsWith(normalizedQuery);
 
     final List<GenericSearchResult> searchResults = [];
 
@@ -817,8 +1063,10 @@ class SearchService {
       }
     }
     final allFiles = await getAllFilesForSearch();
+    final filesWithLocation = <EnteFile>[];
     for (EnteFile file in allFiles) {
       if (file.hasLocation) {
+        filesWithLocation.add(file);
         for (LocalEntity<LocationTag> tag in result.keys) {
           if (isFileInsideLocationTag(
             tag.item.centerPoint,
@@ -845,7 +1093,7 @@ class SearchService {
               occurrence: kMostRelevantFilter,
               filterResultType: ResultType.fileType,
               matchedUploadedIDs: filesToUploadedFileIDs(noLocationFiles),
-              filterIcon: Icons.not_listed_location_outlined,
+              filterIcon: HugeIcons.strokeRoundedLocationOffline01,
             ),
           ),
         );
@@ -853,12 +1101,7 @@ class SearchService {
     }
     if (showNoLocationTag) {
       _logger.info("finding photos with no location tag");
-      // find files that have location but the file's location is not inside
-      // any location tag
-      final noLocationTagFiles = allFiles.where((file) {
-        if (!file.hasLocation) {
-          return false;
-        }
+      final noLocationTagFiles = filesWithLocation.where((file) {
         for (LocalEntity<LocationTag> tag in locationTagEntities) {
           if (isFileInsideLocationTag(
             tag.item.centerPoint,
@@ -881,7 +1124,7 @@ class SearchService {
               occurrence: kMostRelevantFilter,
               filterResultType: ResultType.fileType,
               matchedUploadedIDs: filesToUploadedFileIDs(noLocationTagFiles),
-              filterIcon: Icons.not_listed_location_outlined,
+              filterIcon: HugeIcons.strokeRoundedLocationOffline01,
             ),
           ),
         );
@@ -913,35 +1156,60 @@ class SearchService {
         );
       }
     }
-    //todo: remove this later, this hack is for interval+external evaluation
-    // for suggestions
+    // TODO: Remove the __city override used by interval and external
+    // suggestion evaluation.
     final allCitiesSearch = query == '__city';
     if (allCitiesSearch) {
       query = '';
     }
-    final results = await locationService.getFilesInCity(allFiles, query);
+    if (!allCitiesSearch) {
+      Map<String, List<EnteFile>> countries;
+      try {
+        countries = await locationService.getFilesInCountry(
+          filesWithLocation,
+          query,
+          locale,
+        );
+      } catch (e, s) {
+        _logger.warning("Failed to search countries", e, s);
+        countries = {};
+      }
+      final sortedCountries = countries.keys.toList()
+        ..sort((a, b) => countries[b]!.length.compareTo(countries[a]!.length));
+      for (final country in sortedCountries) {
+        if (!locationTagNames.add(country)) continue;
+        searchResults.add(
+          GenericSearchResult(
+            ResultType.location,
+            country,
+            countries[country]!,
+            hierarchicalSearchFilter: TopLevelGenericFilter(
+              filterName: country,
+              occurrence: kMostRelevantFilter,
+              filterResultType: ResultType.location,
+              matchedUploadedIDs: filesToUploadedFileIDs(countries[country]!),
+            ),
+          ),
+        );
+      }
+    }
+    final results = await locationService.getFilesInCity(
+      filesWithLocation,
+      query,
+    );
     final List<City> sortedByResultCount = results.keys.toList()
       ..sort((a, b) => results[b]!.length.compareTo(results[a]!.length));
     for (final city in sortedByResultCount) {
-      // If the location tag already exists for a city, don't add it again
       if (!locationTagNames.contains(city.city)) {
-        final a =
-            (defaultCityRadius * scaleFactor(city.lat)) / kilometersPerDegree;
-        const b = defaultCityRadius / kilometersPerDegree;
         searchResults.add(
           GenericSearchResult(
             ResultType.location,
             city.city,
             results[city]!,
-            hierarchicalSearchFilter: LocationFilter(
-              locationTag: LocationTag(
-                name: city.city,
-                radius: defaultCityRadius,
-                centerPoint: Location(latitude: city.lat, longitude: city.lng),
-                aSquare: a * a,
-                bSquare: b * b,
-              ),
+            hierarchicalSearchFilter: TopLevelGenericFilter(
+              filterName: city.city,
               occurrence: kMostRelevantFilter,
+              filterResultType: ResultType.location,
               matchedUploadedIDs: filesToUploadedFileIDs(results[city]!),
             ),
           ),
@@ -955,8 +1223,8 @@ class SearchService {
     String personID,
   ) async {
     _logger.info('getClusterFilesForPersonID $personID');
-    final Map<int, Set<String>> fileIdToClusterID =
-        await mlDataDB.getFileIdToClusterIDSet(personID);
+    final Map<int, Set<String>> fileIdToClusterID = await mlDataDB
+        .getFileIdToClusterIDSet(personID);
     _logger.info('faceDbDone getClusterFilesForPersonID $personID');
     final Map<String, List<EnteFile>> clusterIDToFiles = {};
     final allFiles = await getAllFilesForSearch();
@@ -982,16 +1250,9 @@ class SearchService {
     bool includeManualAssigned = true,
     bool sortOnTime = true,
   }) async {
-    final allFiles = await getAllFilesForSearch();
-    final uploadedIdToFile = <int, EnteFile>{};
-    for (final file in allFiles) {
-      final uploadedID = file.uploadedFileID;
-      if (uploadedID != null && !uploadedIdToFile.containsKey(uploadedID)) {
-        uploadedIdToFile[uploadedID] = file;
-      }
-    }
-    final Map<int, Set<String>> fileIdToClusterID =
-        await mlDataDB.getFileIdToClusterIDSet(personID);
+    final uploadedIdToFile = await _getFilesByUploadedID();
+    final Map<int, Set<String>> fileIdToClusterID = await mlDataDB
+        .getFileIdToClusterIDSet(personID);
     final files = <EnteFile>[];
     final addedFileIDs = <int>{};
 
@@ -1033,7 +1294,9 @@ class SearchService {
   Future<List<GenericSearchResult>> getAllFace(
     int? limit, {
     required int minClusterSize,
+    int? fallbackMinClusterSize,
     bool showIgnoredOnly = false,
+    bool includeEmptyPersons = false,
   }) async {
     try {
       if (isLocalGalleryMode) {
@@ -1043,8 +1306,8 @@ class SearchService {
         }
         debugPrint("getting faces (localGallery)");
         final localGalleryMlDb = MLDataDB.localGalleryInstance;
-        final Map<int, Set<String>> fileIdToClusterID =
-            await localGalleryMlDb.getFileIdToClusterIds();
+        final Map<int, Set<String>> fileIdToClusterID = await localGalleryMlDb
+            .getFileIdToClusterIds();
         if (fileIdToClusterID.isEmpty) {
           return [];
         }
@@ -1074,8 +1337,8 @@ class SearchService {
         final sortedClusterIds = clusterIdToFiles.keys.toList()
           ..sort(
             (a, b) => clusterIdToFiles[b]!.length.compareTo(
-                  clusterIdToFiles[a]!.length,
-                ),
+              clusterIdToFiles[a]!.length,
+            ),
           );
         for (final clusterId in sortedClusterIds) {
           final files = clusterIdToFiles[clusterId]!;
@@ -1124,24 +1387,18 @@ class SearchService {
         return facesResult;
       }
       debugPrint("getting faces");
-      final Map<int, Set<String>> fileIdToClusterID =
-          await mlDataDB.getFileIdToClusterIds();
-      final Map<String, PersonEntity> personIdToPerson =
-          await PersonService.instance.getPersonsMap();
+      final Map<int, Set<String>> fileIdToClusterID = await mlDataDB
+          .getFileIdToClusterIds();
+      final Map<String, PersonEntity> personIdToPerson = await PersonService
+          .instance
+          .getPersonsMap();
       final clusterIDToPersonID = await mlDataDB.getClusterIDToPersonID();
 
       final List<GenericSearchResult> facesResult = [];
       final Map<String, List<EnteFile>> clusterIdToFiles = {};
       final Map<String, List<EnteFile>> personIdToFiles = {};
       final Map<String, Set<int>> personIdToFileIds = {};
-      final allFiles = await getAllFilesForSearch();
-      final Map<int, EnteFile> uploadedIdToFile = {};
-      for (final file in allFiles) {
-        final uploadedID = file.uploadedFileID;
-        if (uploadedID != null && !uploadedIdToFile.containsKey(uploadedID)) {
-          uploadedIdToFile[uploadedID] = file;
-        }
-      }
+      final uploadedIdToFile = await _getFilesByUploadedID();
 
       for (final entry in fileIdToClusterID.entries) {
         final file = uploadedIdToFile[entry.key];
@@ -1196,7 +1453,13 @@ class SearchService {
         }
       }
 
-      // get sorted personId by files count
+      if (includeEmptyPersons) {
+        for (final personID in personIdToPerson.keys) {
+          personIdToFiles.putIfAbsent(personID, () => <EnteFile>[]);
+          personIdToFileIds.putIfAbsent(personID, () => <int>{});
+        }
+      }
+
       final sortedPersonIds = personIdToFiles.keys.toList()
         ..sort(
           (a, b) =>
@@ -1218,18 +1481,21 @@ class SearchService {
         final PersonEntity p = personIdToPerson[personID]!;
         final bool isIgnored = p.data.isIgnored;
         if (showIgnoredOnly != isIgnored) continue;
-        if (files.isEmpty) continue;
+        if (!includeEmptyPersons && files.isEmpty) continue;
+        final matchedUploadedIDs = personIdToFileIds[personID]!;
+        final previewFile = files.isEmpty ? null : files.first;
+        final params = {
+          kPersonWidgetKey: p.data.avatarFaceID ?? p.hashCode.toString(),
+          kPersonParamID: personID,
+          if (previewFile != null) kFileID: previewFile.uploadedFileID,
+          kPersonPinned: p.data.isPinned,
+        };
         facesResult.add(
           GenericSearchResult(
             ResultType.faces,
             p.data.name,
             files,
-            params: {
-              kPersonWidgetKey: p.data.avatarFaceID ?? p.hashCode.toString(),
-              kPersonParamID: personID,
-              kFileID: files.first.uploadedFileID,
-              kPersonPinned: p.data.isPinned,
-            },
+            params: params,
             onResultTap: (ctx) {
               routeToPage(
                 ctx,
@@ -1240,20 +1506,14 @@ class SearchService {
                     ResultType.faces,
                     p.data.name,
                     files,
-                    params: {
-                      kPersonWidgetKey:
-                          p.data.avatarFaceID ?? p.hashCode.toString(),
-                      kPersonParamID: personID,
-                      kPersonPinned: p.data.isPinned,
-                      kFileID: files.first.uploadedFileID,
-                    },
+                    params: params,
                     hierarchicalSearchFilter: FaceFilter(
                       personId: p.remoteID,
                       clusterId: null,
                       faceName: p.data.name,
-                      faceFile: files.first,
+                      faceFile: previewFile,
                       occurrence: kMostRelevantFilter,
-                      matchedUploadedIDs: filesToUploadedFileIDs(files),
+                      matchedUploadedIDs: matchedUploadedIDs,
                     ),
                   ),
                 ),
@@ -1263,9 +1523,9 @@ class SearchService {
               personId: p.remoteID,
               clusterId: null,
               faceName: p.data.name,
-              faceFile: files.first,
+              faceFile: previewFile,
               occurrence: kMostRelevantFilter,
-              matchedUploadedIDs: filesToUploadedFileIDs(files),
+              matchedUploadedIDs: matchedUploadedIDs,
             ),
           ),
         );
@@ -1273,8 +1533,8 @@ class SearchService {
       final sortedClusterIds = clusterIdToFiles.keys.toList()
         ..sort(
           (a, b) => clusterIdToFiles[b]!.length.compareTo(
-                clusterIdToFiles[a]!.length,
-              ),
+            clusterIdToFiles[a]!.length,
+          ),
         );
 
       if (!showIgnoredOnly) {
@@ -1286,7 +1546,6 @@ class SearchService {
             final String personID = clusterIDToPersonID[clusterId]!;
             final PersonEntity? p = personIdToPerson[personID];
             if (p != null) {
-              // This should not be possible since it should be handled in the above loop, logging just in case
               _logger.severe(
                 "`getAllFace`: Something unexpected happened, Cluster $clusterId should not have person id $personID",
                 Exception(
@@ -1294,8 +1553,6 @@ class SearchService {
                 ),
               );
             } else {
-              // This should not happen, means a clusterID is still assigned to a personID of a person that no longer exists
-              // Logging the error and deleting the clusterID to personID mapping
               _logger.severe(
                 "`getAllFace`: Cluster $clusterId should not have person id ${clusterIDToPersonID[clusterId]}, deleting the mapping",
                 Exception(
@@ -1340,7 +1597,19 @@ class SearchService {
           );
         }
       }
-      if (facesResult.isEmpty) return [];
+      if (facesResult.isEmpty) {
+        if (fallbackMinClusterSize != null &&
+            fallbackMinClusterSize < minClusterSize) {
+          return await getAllFace(
+            limit,
+            minClusterSize: fallbackMinClusterSize,
+            showIgnoredOnly: showIgnoredOnly,
+            includeEmptyPersons: includeEmptyPersons,
+          );
+        } else {
+          return [];
+        }
+      }
       sortPeopleFaces(
         facesResult,
         PeopleSortConfig(
@@ -1387,8 +1656,6 @@ class SearchService {
               tagToItemsMap[tag]!.add(file);
             }
           }
-          // If the location tag already exists for a city, do not consider
-          // it for the city suggestions
           if (!hasLocationTag) {
             filesWithNoLocTag.add(file);
           }
@@ -1409,7 +1676,6 @@ class SearchService {
                   LocationScreenStateProvider(
                     entry.key,
                     LocationScreen(
-                      //this is SearchResult.heroTag()
                       tagPrefix:
                           "${ResultType.location.toString()}_${entry.key.item.name}",
                     ),
@@ -1425,41 +1691,7 @@ class SearchService {
           );
         }
       }
-      // Add the found base locations from the location/memories service
       // TODO: lau: Add base location names
-      // if (limit == null || tagSearchResults.length < limit) {
-      //   for (final BaseLocation base in locationService.baseLocations) {
-      //     final a = (baseRadius * scaleFactor(base.location.latitude!)) /
-      //         kilometersPerDegree;
-      //     const b = baseRadius / kilometersPerDegree;
-      //     tagSearchResults.add(
-      //       GenericSearchResult(
-      //         ResultType.location,
-      //         "Base",
-      //         base.files,
-      //         onResultTap: (ctx) {
-      //           showAddLocationSheet(
-      //             ctx,
-      //             base.location,
-      //             name: "Base",
-      //             radius: baseRadius,
-      //           );
-      //         },
-      //         hierarchicalSearchFilter: LocationFilter(
-      //           locationTag: LocationTag(
-      //             name: "Base",
-      //             radius: baseRadius,
-      //             centerPoint: base.location,
-      //             aSquare: a * a,
-      //             bSquare: b * b,
-      //           ),
-      //           occurrence: kMostRelevantFilter,
-      //           matchedUploadedIDs: filesToUploadedFileIDs(base.files),
-      //         ),
-      //       ),
-      //     );
-      //   }
-      // }
 
       if (limit == null || tagSearchResults.length < limit) {
         final results = await locationService.getFilesInCity(
@@ -1470,34 +1702,15 @@ class SearchService {
           ..sort((a, b) => results[b]!.length.compareTo(results[a]!.length));
         for (final city in sortedByResultCount) {
           if (results[city]!.length <= 1) continue;
-          final a =
-              (defaultCityRadius * scaleFactor(city.lat)) / kilometersPerDegree;
-          const b = defaultCityRadius / kilometersPerDegree;
           tagSearchResults.add(
             GenericSearchResult(
               ResultType.locationSuggestion,
               city.city,
               results[city]!,
-              onResultTap: (ctx) {
-                showAddLocationSheet(
-                  ctx,
-                  Location(latitude: city.lat, longitude: city.lng),
-                  name: city.city,
-                  radius: defaultCityRadius,
-                );
-              },
-              hierarchicalSearchFilter: LocationFilter(
-                locationTag: LocationTag(
-                  name: city.city,
-                  radius: defaultCityRadius,
-                  centerPoint: Location(
-                    latitude: city.lat,
-                    longitude: city.lng,
-                  ),
-                  aSquare: a * a,
-                  bSquare: b * b,
-                ),
+              hierarchicalSearchFilter: TopLevelGenericFilter(
+                filterName: city.city,
                 occurrence: kMostRelevantFilter,
+                filterResultType: ResultType.locationSuggestion,
                 matchedUploadedIDs: filesToUploadedFileIDs(results[city]!),
               ),
             ),
@@ -1522,18 +1735,14 @@ class SearchService {
     if (parsedDate.isEmpty) {
       return searchResults;
     }
-    // Handle month-year queries
     if (parsedDate.day == null &&
         parsedDate.month != null &&
         parsedDate.year != null) {
       final month = parsedDate.month!;
       final year = parsedDate.year!;
-      final monthYearFiles =
-          await FilesDB.instance.getFilesCreatedWithinDurations(
-        [_getDurationForMonthInYear(month, year)],
-        ignoreCollections(),
-        order: 'DESC',
-      );
+      final monthYearFiles = await _getFilesCreatedWithinDurations([
+        _getDurationForMonthInYear(month, year),
+      ]);
       if (monthYearFiles.isNotEmpty) {
         final monthName = DateParseService.instance.getMonthName(month);
         final name = '$monthName $year';
@@ -1547,23 +1756,18 @@ class SearchService {
               occurrence: kMostRelevantFilter,
               filterResultType: ResultType.month,
               matchedUploadedIDs: filesToUploadedFileIDs(monthYearFiles),
-              filterIcon: Icons.calendar_month_outlined,
+              filterIcon: HugeIcons.strokeRoundedCalendar03,
             ),
           ),
         );
       }
-    }
-    // Handle day-month queries (with or without year)
-    else if (parsedDate.day != null && parsedDate.month != null) {
+    } else if (parsedDate.day != null && parsedDate.month != null) {
       final int day = parsedDate.day!;
       final int month = parsedDate.month!;
       final int? year = parsedDate.year; // nullable for generic dates
 
-      final matchedFiles =
-          await FilesDB.instance.getFilesCreatedWithinDurations(
+      final matchedFiles = await _getFilesCreatedWithinDurations(
         _getDurationsForCalendarDateInEveryYear(day, month, year: year),
-        ignoreCollections(),
-        order: 'DESC',
       );
 
       if (matchedFiles.isNotEmpty) {
@@ -1579,7 +1783,7 @@ class SearchService {
               occurrence: kMostRelevantFilter,
               filterResultType: ResultType.event,
               matchedUploadedIDs: filesToUploadedFileIDs(matchedFiles),
-              filterIcon: Icons.event_outlined,
+              filterIcon: HugeIcons.strokeRoundedCalendar03,
             ),
           ),
         );
@@ -1596,8 +1800,8 @@ class SearchService {
     late List<EnteFile> files;
     late String resultForQuery;
     try {
-      (resultForQuery, files) =
-          await SemanticSearchService.instance.searchScreenQuery(query);
+      (resultForQuery, files) = await SemanticSearchService.instance
+          .searchScreenQuery(query);
     } catch (e, s) {
       _logger.severe("Error occurred during magic search", e, s);
       return searchResults;
@@ -1644,7 +1848,7 @@ class SearchService {
     return searchResults;
   }
 
-  /// For debug purposes only, don't use this in production!
+  // Debug only; do not use in production.
   Future<List<GenericSearchResult>> smartMemories(
     BuildContext context,
     int? limit,
@@ -1654,8 +1858,8 @@ class SearchService {
     if (limit != null) {
       memories = await memoriesCacheService.getMemories();
     } else {
-      // await two seconds to let new page load first
       await Future.delayed(const Duration(seconds: 1));
+      if (!context.mounted) return const [];
       final DateTime? pickedTime = await showDatePicker(
         context: context,
         initialDate: DateTime.now(),
@@ -1679,8 +1883,8 @@ class SearchService {
         );
       }
       cache.baseLocations.addAll(memoriesResult.baseLocations);
-      // memories = memoriesResult.memories;
-      final tempCachePath = (await getTemporaryDirectory()).path +
+      final tempCachePath =
+          (await getTemporaryDirectory()).path +
           "/cache/test/memories_cache_test";
       await writeToJsonFile(
         tempCachePath,
@@ -1709,7 +1913,7 @@ class SearchService {
             occurrence: kMostRelevantFilter,
             filterResultType: ResultType.event,
             matchedUploadedIDs: filesToUploadedFileIDs(files),
-            filterIcon: Icons.event_outlined,
+            filterIcon: HugeIcons.strokeRoundedCalendar03,
           ),
         ),
       );
@@ -1726,80 +1930,19 @@ class SearchService {
     await _warmContactsCacheIfNeeded();
     final int ownerID = Configuration.instance.getUserID()!;
     final lowerCaseQuery = query.toLowerCase();
-    final searchResults = <GenericSearchResult>[];
     final allFiles = await getAllFilesForSearch();
-    final peopleToSharedFiles = <User, List<EnteFile>>{};
-    final peopleToSharedAlbums = <String, List<Collection>>{};
-    final existingEmails = <String>{};
-    final List<Collection> collections = _collectionService.getCollectionsForUI(
-      includedShared: true,
-      includeCollab: true,
+    final peopleToSharedFiles = _directContactsWithSharedFiles(
+      allFiles,
+      lowerCaseQuery: lowerCaseQuery,
     );
-
-    for (EnteFile file in allFiles) {
-      if (file.isOwner) continue;
-
-      final fileOwner = CollectionsService.instance.getFileOwner(
-        file.ownerID!,
-        file.collectionID,
-      );
-
-      if (matchesResolvedContactQuery(fileOwner, lowerCaseQuery)) {
-        if (peopleToSharedFiles.containsKey(fileOwner)) {
-          peopleToSharedFiles[fileOwner]!.add(file);
-        } else {
-          peopleToSharedFiles[fileOwner] = [file];
-          existingEmails.add(fileOwner.email);
-        }
-      }
-    }
-
-    final relevantContacts = UserService.instance.getRelevantContacts();
-
-    for (final user in relevantContacts) {
-      if (existingEmails.contains(user.email)) {
-        continue;
-      }
-      if (matchesResolvedContactQuery(user, lowerCaseQuery)) {
-        peopleToSharedFiles[user] = [];
-      }
-    }
-
-    for (Collection collection in collections) {
-      if (collection.isHidden() || collection.isOwner(ownerID)) {
-        continue;
-      }
-
-      if (peopleToSharedAlbums.containsKey(collection.owner.email)) {
-        peopleToSharedAlbums[collection.owner.email]!.add(collection);
-      } else {
-        peopleToSharedAlbums[collection.owner.email] = [collection];
-      }
-    }
-
-    for (final entry in peopleToSharedFiles.entries) {
-      final user = entry.key;
-      final files = entry.value;
-      final collections = peopleToSharedAlbums[user.email] ?? [];
-      final name = resolveDisplayName(user);
-      final params = _contactSearchParams(user, collections);
-
-      searchResults.add(
-        GenericSearchResult(
-          ResultType.shared,
-          name,
-          files,
-          hierarchicalSearchFilter: ContactsFilter(
-            user: user,
-            occurrence: kMostRelevantFilter,
-            matchedUploadedIDs: filesToUploadedFileIDs(files),
-          ),
-          params: params,
-        ),
-      );
-    }
-
-    return searchResults;
+    final peopleToSharedAlbums = _incomingContactCollectionsByUserId(
+      ownerID,
+      excludeArchived: false,
+    );
+    return _toContactSearchResults(
+      peopleToSharedFiles.entries,
+      peopleToSharedAlbums,
+    );
   }
 
   Future<List<GenericSearchResult>> getAllContactsSearchResults(
@@ -1808,51 +1951,12 @@ class SearchService {
     try {
       await _warmContactsCacheIfNeeded();
       final int ownerID = Configuration.instance.getUserID()!;
-      final searchResults = <GenericSearchResult>[];
       final allFiles = await getAllFilesForSearch();
-      final peopleToSharedFiles = <User, List<EnteFile>>{};
-      final peopleToSharedAlbums = <String, List<Collection>>{};
-      final existingEmails = <String>{};
-      final List<Collection> collections = _collectionService
-          .getCollectionsForUI(includedShared: true, includeCollab: true);
-
-      for (Collection collection in collections) {
-        if (collection.isHidden() ||
-            collection.isArchived() ||
-            collection.isOwner(ownerID)) {
-          continue;
-        }
-
-        if (peopleToSharedAlbums.containsKey(collection.owner.email)) {
-          peopleToSharedAlbums[collection.owner.email]!.add(collection);
-        } else {
-          peopleToSharedAlbums[collection.owner.email] = [collection];
-        }
-      }
-
-      for (EnteFile file in allFiles) {
-        if (file.isOwner) continue;
-
-        final fileOwner = CollectionsService.instance.getFileOwner(
-          file.ownerID!,
-          file.collectionID,
-        );
-        if (peopleToSharedFiles.containsKey(fileOwner)) {
-          peopleToSharedFiles[fileOwner]!.add(file);
-        } else {
-          peopleToSharedFiles[fileOwner] = [file];
-          existingEmails.add(fileOwner.email);
-        }
-      }
-
-      final allRelevantContacts = UserService.instance.getRelevantContacts();
-
-      for (final user in allRelevantContacts) {
-        if (existingEmails.contains(user.email)) {
-          continue;
-        }
-        peopleToSharedFiles[user] = [];
-      }
+      final peopleToSharedFiles = _directContactsWithSharedFiles(allFiles);
+      final peopleToSharedAlbums = _incomingContactCollectionsByUserId(
+        ownerID,
+        excludeArchived: true,
+      );
 
       final sortedEntries = peopleToSharedFiles.entries.toList();
       sortedEntries.sort((a, b) {
@@ -1868,32 +1972,11 @@ class SearchService {
         return aName.compareTo(bName);
       });
 
-      final limitedEntries = limit != null
-          ? _preserveEmailOnlyContactsWithinLimit(sortedEntries, limit)
-          : sortedEntries;
+      final limitedEntries = limit == null
+          ? sortedEntries
+          : sortedEntries.take(limit).toList();
 
-      for (var entry in limitedEntries) {
-        final user = entry.key;
-        final files = entry.value;
-        final name = resolveDisplayName(user);
-        final collections = peopleToSharedAlbums[user.email] ?? [];
-        final params = _contactSearchParams(user, collections);
-        searchResults.add(
-          GenericSearchResult(
-            ResultType.shared,
-            name,
-            files,
-            hierarchicalSearchFilter: ContactsFilter(
-              user: user,
-              occurrence: kMostRelevantFilter,
-              matchedUploadedIDs: filesToUploadedFileIDs(files),
-            ),
-            params: params,
-          ),
-        );
-      }
-
-      return searchResults;
+      return _toContactSearchResults(limitedEntries, peopleToSharedAlbums);
     } catch (e) {
       _logger.severe("Error in getAllContactSearchResults", e);
       return [];
@@ -1907,44 +1990,6 @@ class SearchService {
               monthData.name.toLowerCase().startsWith(query.toLowerCase()),
         )
         .toList();
-  }
-
-  List<MapEntry<User, List<EnteFile>>> _preserveEmailOnlyContactsWithinLimit(
-    List<MapEntry<User, List<EnteFile>>> sortedEntries,
-    int limit,
-  ) {
-    if (limit <= 0) {
-      return const [];
-    }
-    final limitedEntries = sortedEntries.take(limit).toList();
-    if (limitedEntries.length < limit ||
-        limitedEntries.any((entry) => entry.key.id == null)) {
-      return limitedEntries;
-    }
-
-    final includedEmails =
-        limitedEntries.map((entry) => entry.key.email).toSet();
-    MapEntry<User, List<EnteFile>>? overflowEmailOnly;
-    for (final entry in sortedEntries.skip(limit)) {
-      if (entry.key.id == null && !includedEmails.contains(entry.key.email)) {
-        overflowEmailOnly = entry;
-        break;
-      }
-    }
-    if (overflowEmailOnly == null) {
-      return limitedEntries;
-    }
-
-    limitedEntries[limitedEntries.length - 1] = overflowEmailOnly;
-    return limitedEntries;
-  }
-
-  Future<List<EnteFile>> _getFilesInYear(List<int> durationOfYear) async {
-    return await FilesDB.instance.getFilesCreatedWithinDurations(
-      [durationOfYear],
-      ignoreCollections(),
-      order: "DESC",
-    );
   }
 
   List<List<int>> _getDurationsForCalendarDateInEveryYear(

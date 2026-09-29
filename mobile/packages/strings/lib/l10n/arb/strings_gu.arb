@@ -1,72 +1,5 @@
 {
-  "ok": "સારું",
-  "@ok": {
-    "description": "Generic OK button label"
-  },
-  "contactSupport": "સહાયતા માટે સંપર્ક કરો",
-  "@contactSupport": {
-    "description": "Contact support button label"
-  },
-  "cancel": "રદ કરો",
-  "@cancel": {
-    "description": "Cancel button label"
-  },
-  "reportABug": "બગની જાણ કરો",
-  "@reportABug": {
-    "description": "Label for reporting a bug"
-  },
-  "email": "ઇમેઇલ",
-  "@email": {
-    "description": "Email field label"
-  },
-  "pleaseWait": "કૃપા કરીને રાહ જુવો...",
-  "@pleaseWait": {
-    "description": "Please wait message"
-  },
-  "verifyPassword": "પાસવર્ડ ચકાસો",
-  "@verifyPassword": {
-    "description": "Verify password button label"
-  },
-  "incorrectPasswordTitle": "ખોટો પાસવર્ડ",
-  "@incorrectPasswordTitle": {
-    "description": "Title for incorrect password error"
-  },
-  "enterPassword": "પાસવર્ડ દાખલ કરો",
-  "@enterPassword": {
-    "description": "Enter password field label"
-  },
-  "delete": "કાઢી નાખો",
-  "@delete": {
-    "description": "Delete button label"
-  },
-  "welcomeBack": "ફરી તમારુ સ્વાગત છે!",
-  "@welcomeBack": {
-    "description": "Welcome back message"
-  },
-  "useRecoveryKey": "પુનઃપ્રાપ્તિ કીનો ઉપયોગ કરો",
-  "@useRecoveryKey": {
-    "description": "Use recovery key button label"
-  },
-  "changeEmail": "ઈ - મેઈલ બદલો",
-  "@changeEmail": {
-    "description": "Change email button label"
-  },
-  "generatingEncryptionKeysTitle": "એન્ક્રિપ્શન ચાવીઓ જનરેટ કરી રહ્યાં છીએ...",
-  "@generatingEncryptionKeysTitle": {
-    "description": "Generating encryption keys title"
-  },
-  "recoveryKey": "પુનઃપ્રાપ્તિ ચાવી",
-  "@recoveryKey": {
-    "description": "Recovery key label"
-  },
-  "loggingOut": "લૉગ આઉટ થઈ રહ્યું છે...",
-  "@loggingOut": {
-    "description": "Message shown while logging out"
-  },
-  "androidBiometricSuccess": "સફળતા",
-  "@androidBiometricSuccess": {
-    "description": "Message to let the user know that authentication was successful. It is used on Android side. Maximum 60 characters."
-  },
+  "account": "ખાતું",
   "androidCancelButton": "રદ કરો",
   "@androidCancelButton": {
     "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
@@ -75,16 +8,131 @@
   "@androidSignInTitle": {
     "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
   },
-  "goToSettings": "સેટિંગ માં જાઓ",
-  "@goToSettings": {
-    "description": "Message showed on a button that the user can click to go to settings pages from the current dialog. It is used on both Android and iOS side. Maximum 30 characters."
+  "blog": "બ્લોગ",
+  "bothIssuerAndAccountCanNotBeEmpty": "રજૂકર્તા અને ખાતું બંને ખાલી હોઈ શકતા નથી",
+  "cancel": "રદ કરો",
+  "@cancel": {
+    "description": "Cancel button label"
   },
-  "iOSOkButton": "બરાબર",
-  "@iOSOkButton": {
-    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters."
+  "changeEmail": "ઈ - મેઈલ બદલો",
+  "@changeEmail": {
+    "description": "Change email button label"
   },
+  "changePassword": "પાસવર્ડ બદલો",
+  "codeIssuerHint": "રજૂકર્તા",
+  "contactSupport": "સહાયતા માટે સંપર્ક કરો",
+  "@contactSupport": {
+    "description": "Contact support button label"
+  },
+  "crashAndErrorReporting": "ભાંગી પડવાની અને ભૂલની જાણ કરવી",
+  "data": "માહિતી",
+  "delete": "કાઢી નાખો",
+  "@delete": {
+    "description": "Delete button label"
+  },
+  "deleteCodeMessage": "શું તમે ખરેખર આ કોડ કાઢી નાખવા માંગો છો? આ ક્રિયા બદલી શકાય તેવી નથી.",
+  "deleteCodeTitle": "કોડ કાઢી નાખીએ?",
+  "email": "ઇમેઇલ",
+  "@email": {
+    "description": "Email field label"
+  },
+  "emailUsMessage": "કૃપા કરીને અમને {email} ઇમેઇલ કરો",
+  "@emailUsMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "encrypted": "એનક્રિપ્ટ થયેલ",
+  "enterPassword": "પાસવર્ડ દાખલ કરો",
+  "@enterPassword": {
+    "description": "Enter password field label"
+  },
+  "export": "નિકાસ કરો",
+  "exportLogs": "લોગ નિકાસ કરો",
+  "@exportLogs": {
+    "description": "Button to export logs"
+  },
+  "general": "સામાન્ય",
+  "generatingEncryptionKeysTitle": "એન્ક્રિપ્શન ચાવીઓ જનરેટ કરી રહ્યાં છીએ...",
+  "@generatingEncryptionKeysTitle": {
+    "description": "Generating encryption keys title"
+  },
+  "getStarted": "શરૂ કરો",
+  "importAccountPageTitle": "એકાઉન્ટ વિગતો દાખલ કરો",
+  "importCodes": "કોડ્સ આયાત કરો",
+  "importEnterSetupKey": "સેટઅપ કી દાખલ કરો",
+  "importTypeEnteEncrypted": "એન્ટે એન્ક્રિપ્ટેડ નિકાસ",
+  "incorrectDetails": "ખોટી વિગતો",
+  "incorrectPasswordTitle": "ખોટો પાસવર્ડ",
+  "@incorrectPasswordTitle": {
+    "description": "Title for incorrect password error"
+  },
+  "loggingOut": "લૉગ આઉટ થઈ રહ્યું છે...",
+  "@loggingOut": {
+    "description": "Message shown while logging out"
+  },
+  "merchandise": "વેપારી વસ્તુઓ",
+  "nextTotpTitle": "આગળ",
+  "no": "ના",
+  "passwordEmptyError": "પાસવર્ડ ખાલી ન હોઈ શકે",
+  "passwordForDecryptingExport": "નિકાસને ડિક્રિપ્ટ કરવા માટે પાસવર્ડ",
+  "passwordToEncryptExport": "નિકાસને એન્ક્રિપ્ટ કરવા માટે પાસવર્ડ",
+  "plainText": "સાદુ લખાણ",
+  "pleaseLoginAgain": "કૃપા કરીને ફરી લોગિન કરો",
+  "pleaseVerifyDetails": "કૃપા કરીને વિગતો ચકાસો અને ફરી પ્રયાસ કરો",
+  "pleaseWait": "કૃપા કરીને રાહ જુવો...",
+  "@pleaseWait": {
+    "description": "Please wait message"
+  },
+  "preparingLogs": "લૉગ્સ તૈયાર કરી રહ્યાં છીએ...",
+  "rateUsOnStore": "{storeName} પર અમને રેટ કરો",
+  "@rateUsOnStore": {
+    "placeholders": {
+      "storeName": {}
+    }
+  },
+  "recoveryKey": "પુનઃપ્રાપ્તિ ચાવી",
+  "@recoveryKey": {
+    "description": "Recovery key label"
+  },
+  "recreatePasswordTitle": "પાસવર્ડ ફરીથી બનાવો",
+  "@recreatePasswordTitle": {
+    "description": "Title for recreate password dialog"
+  },
+  "reportABug": "બગની જાણ કરો",
+  "@reportABug": {
+    "description": "Label for reporting a bug"
+  },
+  "save": "સાચવો",
+  "@save": {
+    "description": "Label for save button"
+  },
+  "scanAQrCode": "QR કોડ સ્કેન કરો",
+  "secretCanNotBeEmpty": "રહસ્ય ખાલી ન હોઈ શકે",
+  "selectFile": "ફાઇલ પસંદ કરો",
+  "sendLogsDescription": "આ તમારી સમસ્યાને ડીબગ કરવામાં અમને મદદ કરવા માટે અમને લોગ મોકલશે. જ્યારે સંવેદનશીલ માહિતી લૉગ ન થાય તેની ખાતરી કરવા માટે અમે સાવચેતી રાખીએ છીએ, અમે તમને આ લોગ મોકલતા પહેલા જોવા માટે પ્રોત્સાહિત કરીએ છીએ.",
   "sessionExpired": "સત્ર સમાપ્ત થયુ",
   "@sessionExpired": {
     "description": "Error message when session has expired"
-  }
+  },
+  "singIn": "સાઇન ઇન કરો",
+  "success": "સફળતા",
+  "support": "સહાય",
+  "tags": "ચિઠ્ઠી",
+  "unlock": "અનલોક કરો",
+  "@unlock": {
+    "description": "Short action label used as the system authentication reason when unlocking the app"
+  },
+  "useRecoveryKey": "પુનઃપ્રાપ્તિ કીનો ઉપયોગ કરો",
+  "@useRecoveryKey": {
+    "description": "Use recovery key button label"
+  },
+  "verifyPassword": "પાસવર્ડ ચકાસો",
+  "@verifyPassword": {
+    "description": "Verify password button label"
+  },
+  "viewLogsAction": "લોગ જુઓ",
+  "yes": "હા"
 }

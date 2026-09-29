@@ -1,0 +1,1 @@
+- Improved follow-up questions about notes and packs, with checks for changed or unavailable sources.

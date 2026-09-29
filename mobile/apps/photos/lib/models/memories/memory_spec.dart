@@ -272,6 +272,7 @@ class ClipMemorySpec extends MemorySpec {
       firstDateToShow,
       lastDateToShow,
       clipMemoryType,
+      id: id,
     );
     clipMemory.title = title;
     return clipMemory;
@@ -279,10 +280,7 @@ class ClipMemorySpec extends MemorySpec {
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      "kind": kind,
-      "clipMemoryType": clipMemoryType.name,
-    };
+    return {"kind": kind, "clipMemoryType": clipMemoryType.name};
   }
 }
 
@@ -396,10 +394,7 @@ class FillerMemorySpec extends MemorySpec {
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      "kind": kind,
-      "yearsAgo": yearsAgo,
-    };
+    return {"kind": kind, "yearsAgo": yearsAgo};
   }
 }
 
@@ -434,8 +429,6 @@ class OnThisDayMemorySpec extends MemorySpec {
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      "kind": kind,
-    };
+    return {"kind": kind};
   }
 }

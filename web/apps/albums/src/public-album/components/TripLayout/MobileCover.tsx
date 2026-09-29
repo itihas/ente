@@ -1,15 +1,17 @@
 import { Box, Skeleton, styled, Typography } from "@mui/material";
+import { AlbumDescription } from "ente-new/photos/components/gallery/ListHeader";
 import { memo } from "react";
 import type { JourneyPoint } from "./types";
 
 interface MobileCoverProps {
     journeyData: JourneyPoint[];
     albumTitle?: string;
+    albumDescription?: string;
     coverImageUrl?: string | null;
 }
 
 export const MobileCover = memo<MobileCoverProps>(
-    ({ journeyData, albumTitle, coverImageUrl }) => {
+    ({ journeyData, albumTitle, albumDescription, coverImageUrl }) => {
         const sortedData = [...journeyData].sort(
             (a, b) => a.timestamp - b.timestamp,
         );
@@ -27,7 +29,6 @@ export const MobileCover = memo<MobileCoverProps>(
             year: "numeric",
         });
 
-        // Count unique locations based on unique name+country combinations
         const uniqueLocations = new Set(
             journeyData
                 .filter((point) => point.name && point.country)
@@ -65,10 +66,20 @@ export const MobileCover = memo<MobileCoverProps>(
                     {coverImageUrl ? (
                         <>
                             <TripTitle>{albumTitle || "Trip"}</TripTitle>
-                            <TripSubtitle>
+                            <TripSubtitle
+                                sx={{ pb: albumDescription ? 0 : undefined }}
+                            >
                                 {monthYear} • {diffDays} days • {locationCount}{" "}
                                 locations
                             </TripSubtitle>
+                            <AlbumDescription
+                                description={albumDescription}
+                                sx={{
+                                    mt: "4px",
+                                    pb: "20px",
+                                    color: "rgba(255, 255, 255, 0.85)",
+                                }}
+                            />
                         </>
                     ) : (
                         <>

@@ -1,0 +1,1 @@
+- Fixed OpenStreetMap tiles not loading for some self-hosted users - @Himanshucodess

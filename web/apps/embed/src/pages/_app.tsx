@@ -2,21 +2,20 @@ import "@fontsource-variable/inter";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import { CustomHead } from "ente-base/components/Head";
+import { ThemedLoadingBar } from "ente-base/components/ThemedLoadingBar";
 import {
     useIsRouteChangeInProgress,
     useSetupI18n,
     useSetupLogs,
 } from "ente-base/components/utils/hooks-app";
 import { photosTheme } from "ente-base/components/utils/theme";
+import { useLoadingBar } from "ente-base/components/utils/use-loading-bar";
 import { BaseContext, deriveBaseContext } from "ente-base/context";
 import { logStartupBanner } from "ente-base/log-web";
-import { ThemedLoadingBar } from "ente-new/photos/components/ThemedLoadingBar";
-import { useLoadingBar } from "ente-new/photos/components/utils/use-loading-bar";
+import "ente-gallery/styles/photoswipe.css";
 import { PhotosAppContext } from "ente-new/photos/types/context";
 import type { AppProps } from "next/app";
-import "photoswipe/dist/photoswipe.css";
 import { useCallback, useEffect, useMemo } from "react";
-import "styles/photoswipe.css";
 
 export default function App({ Component, pageProps }: AppProps) {
     useSetupLogs();
@@ -26,12 +25,10 @@ export default function App({ Component, pageProps }: AppProps) {
         logStartupBanner();
     }, []);
 
-    // Simplified - no complex dialogs needed for embed
     const isRouteChangeInProgress = useIsRouteChangeInProgress();
 
-    const { showLoadingBar, hideLoadingBar } = useLoadingBar();
+    const { loadingBarRef, showLoadingBar, hideLoadingBar } = useLoadingBar();
 
-    // Show loading bar on route changes
     useEffect(() => {
         if (isRouteChangeInProgress) {
             showLoadingBar();
@@ -40,13 +37,9 @@ export default function App({ Component, pageProps }: AppProps) {
         }
     }, [isRouteChangeInProgress, showLoadingBar, hideLoadingBar]);
 
-    const showMiniDialog = useCallback(() => {
-        // Simplified for embed - no complex dialogs needed
-    }, []);
+    const showMiniDialog = useCallback(() => undefined, []);
 
-    const logout = useCallback(() => {
-        // No logout functionality needed for embed
-    }, []);
+    const logout = useCallback(() => undefined, []);
 
     const baseContext = useMemo(
         () => deriveBaseContext({ logout, showMiniDialog }),
@@ -57,13 +50,9 @@ export default function App({ Component, pageProps }: AppProps) {
         () => ({
             showLoadingBar,
             hideLoadingBar,
-            showNotification: () => {
-                // No notifications in embed
-            },
+            showNotification: () => undefined,
             watchFolderView: false,
-            setWatchFolderView: () => {
-                // No watch folder in embed
-            },
+            setWatchFolderView: () => undefined,
         }),
         [showLoadingBar, hideLoadingBar],
     );
@@ -76,7 +65,7 @@ export default function App({ Component, pageProps }: AppProps) {
                 <BaseContext.Provider value={baseContext}>
                     <PhotosAppContext.Provider value={photosAppContextValue}>
                         <Component {...pageProps} />
-                        <ThemedLoadingBar ref={{ current: null }} />
+                        <ThemedLoadingBar ref={loadingBarRef} />
                     </PhotosAppContext.Provider>
                 </BaseContext.Provider>
             </ThemeProvider>

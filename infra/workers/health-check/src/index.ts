@@ -1,5 +1,3 @@
-/** Ping api.ente.com every minute and yell if it doesn't pong. */
-
 export default {
     async scheduled(_, env: Env, ctx: ExecutionContext) {
         ctx.waitUntil(ping(env, ctx));

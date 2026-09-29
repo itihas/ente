@@ -1,7 +1,3 @@
-//
-//  EnteAlbumWidget.swift
-//  EnteAlbumWidget
-
 import SwiftUI
 import UIKit
 import WidgetKit
@@ -36,7 +32,6 @@ struct Provider: TimelineProvider {
     func getTimeline(in _: Context, completion: @escaping (Timeline<Entry>) -> Void) {
         var entries: [FileEntry] = []
 
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
         let currentDate = Calendar.current.nextDate(
             after: Date(), matching: DateComponents(second: 0), matchingPolicy: .nextTime,
             direction: .backward
@@ -81,9 +76,6 @@ struct Provider: TimelineProvider {
         completion(timeline)
     }
 
-    //    func relevances() async -> WidgetRelevances<Void> {
-    //        // Generate a list containing the contexts this widget is relevant in.
-    //    }
 }
 
 struct FileEntry: TimelineEntry {
@@ -134,7 +126,7 @@ struct EnteAlbumWidgetEntryView: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(entry.title ?? "").font(
                                             .custom("Inter", size: 14, relativeTo: .caption)
-                                        )  // Custom with fallback
+                                        )
                                         .bold()
                                         .foregroundStyle(.white)
                                         .shadow(radius: 20)
@@ -178,7 +170,7 @@ struct EnteAlbumWidgetEntryView: View {
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(entry.title ?? "").font(
                                                 .custom("Inter", size: 14, relativeTo: .caption)
-                                            )  // Custom with fallback
+                                            )
                                             .bold()
                                             .foregroundStyle(.white)
                                             .shadow(radius: 20)
@@ -198,7 +190,7 @@ struct EnteAlbumWidgetEntryView: View {
                             )
                     }
                 } else if let uiImage = UIImage(named: "AlbumsWidgetDefault") {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         Spacer()
                         Image(uiImage: uiImage)
                             .resizable()
@@ -206,9 +198,16 @@ struct EnteAlbumWidgetEntryView: View {
                             .aspectRatio(contentMode: .fit)
                             .padding(8)
 
-                        Text("Go to Settings -> Widgets to customise the widget")
-                            .font(.custom("Inter", size: 12, relativeTo: .caption))
-                            .foregroundStyle(.white)  // Tint-aware color
+                        Text("Albums")
+                            .font(.custom("Inter", size: 14, relativeTo: .caption))
+                            .bold()
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+                            .backwardWidgetAccentable(true)
+
+                        Text("Click to customise")
+                            .font(.custom("Inter", size: 12, relativeTo: .caption2))
+                            .foregroundStyle(.white)
                             .multilineTextAlignment(.center)
                             .padding(.bottom, 12)
                             .padding(.horizontal, 8)
@@ -224,8 +223,9 @@ struct EnteAlbumWidgetEntryView: View {
             .edgesIgnoringSafeArea(.all)
             .widgetURL(
                 URL(
-                    string:
-                        "albumwidget://message?generatedId=\(entry.generatedId != nil ? String(entry.generatedId!) : "nan")&mainKey=\(entry.mainKey != nil ? entry.mainKey! : "nan")&homeWidget"
+                    string: entry.generatedId != nil
+                        ? "albumwidget://message?generatedId=\(entry.generatedId!)&mainKey=\(entry.mainKey ?? "")&homeWidget"
+                        : "albumwidget://configure?homeWidget"
                 )
             )
         }

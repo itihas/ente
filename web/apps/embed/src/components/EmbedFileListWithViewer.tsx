@@ -40,14 +40,10 @@ export const EmbedFileListWithViewer: React.FC<
         [files],
     );
 
-    const handleThumbnailClick = useCallback(
-        (index: number) => {
-            setCurrentIndex(index);
-            setOpenFileViewer(true);
-        },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [files.length],
-    );
+    const handleThumbnailClick = useCallback((index: number) => {
+        setCurrentIndex(index);
+        setOpenFileViewer(true);
+    }, []);
 
     const handleCloseFileViewer = useCallback(() => {
         setOpenFileViewer(false);
@@ -58,12 +54,18 @@ export const EmbedFileListWithViewer: React.FC<
         [onRemotePull],
     );
 
+    const albumDescription =
+        publicCollection.pubMagicMetadata?.data.caption?.trim();
+
     const header = useMemo(
         () => (
-            <GalleryItemsHeaderAdapter>
+            <GalleryItemsHeaderAdapter
+                sx={{ boxSizing: "border-box", p: "12px", pb: "4px", mb: 0 }}
+            >
                 <SpacedRow>
                     <GalleryItemsSummary
                         name={publicCollection.name}
+                        description={albumDescription}
                         fileCount={files.length}
                     />
                     <Typography
@@ -97,25 +99,24 @@ export const EmbedFileListWithViewer: React.FC<
                 </SpacedRow>
             </GalleryItemsHeaderAdapter>
         ),
-        [publicCollection.name, files.length],
+        [publicCollection.name, albumDescription, files.length],
     );
-
-    const footer = null;
 
     return (
         <Container>
-            <AutoSizer>
-                {({ height, width }) => (
-                    <EmbedFileList
-                        width={width}
-                        height={height}
-                        annotatedFiles={annotatedFiles}
-                        onItemClick={handleThumbnailClick}
-                        header={header}
-                        footer={footer}
-                    />
-                )}
-            </AutoSizer>
+            {header}
+            <ListArea>
+                <AutoSizer>
+                    {({ height, width }) => (
+                        <EmbedFileList
+                            width={width}
+                            height={height}
+                            annotatedFiles={annotatedFiles}
+                            onItemClick={handleThumbnailClick}
+                        />
+                    )}
+                </AutoSizer>
+            </ListArea>
             {openFileViewer && (
                 <FileViewer
                     open={openFileViewer}
@@ -126,16 +127,22 @@ export const EmbedFileListWithViewer: React.FC<
                     showFullscreenButton={true}
                     enableComment={false}
                     onTriggerRemotePull={handleTriggerRemotePull}
-                    onVisualFeedback={() => {
-                        // Visual feedback requested
-                    }}
+                    onVisualFeedback={() => undefined}
                 />
             )}
         </Container>
     );
 };
 
-const Container = styled("div")({ flex: 1, width: "100%" });
+const Container = styled("div")({
+    display: "flex",
+    flex: 1,
+    flexDirection: "column",
+    minHeight: 0,
+    width: "100%",
+});
+
+const ListArea = styled("div")({ flex: 1, minHeight: 0 });
 
 const fileTimelineDateString = (file: EnteFile) => {
     const date = fileCreationPhotoDate(file);

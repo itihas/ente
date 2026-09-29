@@ -1,10 +1,21 @@
+import type { KnowledgePack } from "@/services/knowledge";
 import {
+    DEFAULT_TAURI_CONTEXT_SIZE,
+    DEFAULT_WEB_CONTEXT_SIZE,
+    resolveGenerationBudget,
+} from "@/services/llm/budget";
+import type { NotesCollectionView } from "@/services/notes-lifecycle";
+import { isTauriRuntime as detectTauriAppRuntime } from "@/services/tauri-runtime";
+import {
+    ArrowLeft01Icon,
     ArrowRight01Icon,
     Bug01Icon,
     Cancel01Icon,
+    Delete01Icon,
     File01Icon,
+    Folder01Icon,
     InformationCircleIcon,
-    Key01Icon,
+    PackageIcon,
     Settings01Icon,
     SlidersHorizontalIcon,
     Upload01Icon,
@@ -18,10 +29,14 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    Divider,
     IconButton,
+    LinearProgress,
+    Link,
     ListItemButton,
     MenuItem,
     Stack,
+    Switch,
     TextField,
     Typography,
 } from "@mui/material";
@@ -29,7 +44,7 @@ import type { SxProps, Theme } from "@mui/material/styles";
 import {
     Notification,
     type NotificationAttributes,
-} from "ente-new/photos/components/Notification";
+} from "ente-base/components/Notification";
 import React, { memo } from "react";
 
 interface IconProps {
@@ -38,9 +53,8 @@ interface IconProps {
 }
 
 interface SuggestedModel {
+    id: string;
     name: string;
-    url: string;
-    mmproj?: string;
 }
 
 type ModelGateStatus =
@@ -53,54 +67,77 @@ type ModelGateStatus =
 
 type SxEntry = Exclude<SxProps<Theme>, readonly unknown[]>;
 
-export interface ModelSettingsDraft {
-    useCustomModel: boolean;
-    modelUrl: string;
-    mmprojUrl: string;
+const formatBytes = (bytes: number) => {
+    const units = ["B", "KB", "MB", "GB"];
+    let value = Math.max(0, bytes);
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit += 1;
+    }
+    return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+};
+
+const formatNotesUpdatedAt = (timestamp: number) =>
+    new Date(timestamp).toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+    });
+
+const compactInlineLinkSx = {
+    border: 0,
+    p: 0,
+    bgcolor: "transparent",
+    fontFamily: "inherit",
+    fontSize: "12px",
+    lineHeight: "15px",
+    fontWeight: 500,
+    color: "accent.main",
+    cursor: "pointer",
+} as const;
+
+interface ModelSettingsDraft {
+    modelId: string;
     contextLength: string;
-    maxTokens: string;
 }
 
 export interface ChatDialogsProps {
     showSettingsModal: boolean;
+    openSettingsModal: () => void;
     closeSettingsModal: () => void;
     dialogPaperSx: SxEntry;
     dialogTitleSx: SxEntry;
     actionButtonSx: SxEntry;
+    drawerIconButtonSx: SxEntry;
     settingsItemSx: SxEntry;
     smallIconProps: IconProps;
     compactIconProps: IconProps;
-    isLoggedIn: boolean;
-    signedInEmail?: string | null;
+    tinyIconProps: IconProps;
     saveLogs: () => void | Promise<void>;
     handleCheckForUpdates: () => void | Promise<void>;
-    handleLogout: () => void;
-    openLoginFromChat: () => void;
-    openPasskeysFromChat: () => void;
     advancedUnlocked: boolean;
-    buildVersion: string;
+    buildVersion?: string;
     handleBuildVersionTap: () => void;
     openModelSettings: () => void;
     openSystemPromptSettings: () => void;
     isSmall: boolean;
+    renameSessionId: string | null;
+    renameSessionTitle: string;
+    setRenameSessionTitle: (title: string) => void;
+    handleCancelRenameSession: () => void;
+    handleConfirmRenameSession: () => void | Promise<void>;
     deleteSessionId: string | null;
     deleteSessionLabel: string;
     handleCancelDeleteSession: () => void;
     handleConfirmDeleteSession: () => void | Promise<void>;
     showModelSettings: boolean;
     closeModelSettings: () => void;
-    useCustomModel: boolean;
+    selectedModelId: string;
     defaultModelName: string;
-    defaultModelUrl: string;
-    defaultModelMmproj?: string;
     loadedModelName: string | null;
-    allowMmproj: boolean;
     isTauriRuntime: boolean;
-    modelUrl: string;
-    mmprojUrl: string;
     suggestedModels: SuggestedModel[];
     contextLength: string;
-    maxTokens: string;
     isSavingModel: boolean;
     handleSaveModel: (draft: ModelSettingsDraft) => void;
     handleUseDefaultModel: () => void;
@@ -109,9 +146,26 @@ export interface ChatDialogsProps {
     systemPrompt: string;
     handleSaveSystemPrompt: (promptText: string) => void;
     handleUseDefaultSystemPrompt: () => void;
-    syncNotificationOpen: boolean;
-    setSyncNotificationOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    syncNotification?: NotificationAttributes;
+    knowledgePacks: KnowledgePack[];
+    knowledgeCatalogLoading: boolean;
+    knowledgeCatalogError: string | null;
+    retryKnowledgeCatalog: () => void;
+    enabledKnowledgePackIds: Set<string>;
+    knowledgeDownloadProgress: Record<string, number | undefined>;
+    knowledgeErrors: Record<string, string | undefined>;
+    handleDownloadKnowledgePack: (stableId: string) => void;
+    handleCancelKnowledgePackDownload: (stableId: string) => void;
+    handleSetKnowledgePackEnabled: (stableId: string, enabled: boolean) => void;
+    notesCollections: NotesCollectionView[];
+    notesCollectionsLoading: boolean;
+    notesCollectionsError: string | null;
+    retryNotesCollections: () => void;
+    handleAddNotesFolder: () => void;
+    handleRemoveNotesCollection: (collectionId: string, label: string) => void;
+    handleIndexNotesCollection: (collectionId: string, force?: boolean) => void;
+    chatNotificationOpen: boolean;
+    setChatNotificationOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    chatNotification?: NotificationAttributes;
     modelGateStatus: ModelGateStatus;
     imagePreview: { url: string; name: string } | null;
     closeImagePreview: () => void;
@@ -120,44 +174,41 @@ export interface ChatDialogsProps {
 export const ChatDialogs = memo(
     ({
         showSettingsModal,
+        openSettingsModal,
         closeSettingsModal,
         dialogPaperSx,
         dialogTitleSx,
         actionButtonSx,
+        drawerIconButtonSx,
         settingsItemSx,
         smallIconProps,
         compactIconProps,
-        isLoggedIn,
-        signedInEmail,
+        tinyIconProps,
         saveLogs,
         handleCheckForUpdates,
-        handleLogout,
-        openLoginFromChat,
-        openPasskeysFromChat,
         advancedUnlocked,
         buildVersion,
         handleBuildVersionTap,
         openModelSettings,
         openSystemPromptSettings,
         isSmall,
+        renameSessionId,
+        renameSessionTitle,
+        setRenameSessionTitle,
+        handleCancelRenameSession,
+        handleConfirmRenameSession,
         deleteSessionId,
         deleteSessionLabel,
         handleCancelDeleteSession,
         handleConfirmDeleteSession,
         showModelSettings,
         closeModelSettings,
-        useCustomModel,
+        selectedModelId,
         defaultModelName,
-        defaultModelUrl,
-        defaultModelMmproj,
         loadedModelName,
-        allowMmproj,
         isTauriRuntime,
-        modelUrl,
-        mmprojUrl,
         suggestedModels,
         contextLength,
-        maxTokens,
         isSavingModel,
         handleSaveModel,
         handleUseDefaultModel,
@@ -166,28 +217,39 @@ export const ChatDialogs = memo(
         systemPrompt,
         handleSaveSystemPrompt,
         handleUseDefaultSystemPrompt,
-        syncNotificationOpen,
-        setSyncNotificationOpen,
-        syncNotification,
+        knowledgePacks,
+        knowledgeCatalogLoading,
+        knowledgeCatalogError,
+        retryKnowledgeCatalog,
+        enabledKnowledgePackIds,
+        knowledgeDownloadProgress,
+        knowledgeErrors,
+        handleDownloadKnowledgePack,
+        handleCancelKnowledgePackDownload,
+        handleSetKnowledgePackEnabled,
+        notesCollections,
+        notesCollectionsLoading,
+        notesCollectionsError,
+        retryNotesCollections,
+        handleAddNotesFolder,
+        handleRemoveNotesCollection,
+        handleIndexNotesCollection,
+        chatNotificationOpen,
+        setChatNotificationOpen,
+        chatNotification,
         modelGateStatus,
         imagePreview,
         closeImagePreview,
     }: ChatDialogsProps) => {
         const openExternalUrl = async (url: string) => {
-            const hasTauriBridge =
-                typeof window !== "undefined" &&
-                ("__TAURI__" in window ||
-                    "__TAURI_IPC__" in window ||
-                    "__TAURI_INTERNALS__" in window ||
-                    "__TAURI_METADATA__" in window);
-
-            if (isTauriRuntime || hasTauriBridge) {
+            if (isTauriRuntime || detectTauriAppRuntime()) {
                 try {
-                    const { open } = await import("@tauri-apps/api/shell");
-                    await open(url);
+                    const { openUrl } =
+                        await import("@tauri-apps/plugin-opener");
+                    await openUrl(url);
                     return;
                 } catch {
-                    // fall through to browser open fallback
+                    // Fall through to window.open.
                 }
             }
 
@@ -199,175 +261,88 @@ export const ChatDialogs = memo(
             }
         };
 
-        // --- Model settings draft state ---
-        const [draftUseCustomModel, setDraftUseCustomModel] =
-            React.useState(false);
-        const [draftModelUrl, setDraftModelUrl] = React.useState("");
-        const [draftMmprojUrl, setDraftMmprojUrl] = React.useState("");
         const [draftContextLength, setDraftContextLength] = React.useState("");
-        const [draftMaxTokens, setDraftMaxTokens] = React.useState("");
-        const [draftModelUrlError, setDraftModelUrlError] = React.useState<
-            string | null
-        >(null);
-        const [draftMmprojError, setDraftMmprojError] = React.useState<
-            string | null
-        >(null);
+        const isModelPreparationActive =
+            modelGateStatus === "checking" ||
+            modelGateStatus === "preloading" ||
+            modelGateStatus === "downloading";
         const [draftContextError, setDraftContextError] = React.useState<
-            string | null
-        >(null);
-        const [draftMaxTokensError, setDraftMaxTokensError] = React.useState<
             string | null
         >(null);
         const [showAdvancedLimits, setShowAdvancedLimits] =
             React.useState(false);
-        const [selectedModelId, setSelectedModelId] = React.useState("default");
+        const [draftModelId, setDraftModelId] = React.useState("default");
+        const [showBackupComingSoon, setShowBackupComingSoon] =
+            React.useState(false);
+        const [showKnowledgeSettings, setShowKnowledgeSettings] =
+            React.useState(false);
+        const [showNotesSettings, setShowNotesSettings] = React.useState(false);
+        const [attributionPack, setAttributionPack] =
+            React.useState<KnowledgePack | null>(null);
 
-        // --- System prompt draft state ---
+        const returnToSettings = () => {
+            setShowKnowledgeSettings(false);
+            setShowNotesSettings(false);
+            openSettingsModal();
+        };
+
         const [draftSystemPrompt, setDraftSystemPrompt] = React.useState("");
+        const wasSystemPromptSettingsOpen = React.useRef(false);
 
         const modelOptions = React.useMemo(
             () => [
-                {
-                    id: "default",
-                    name: `${defaultModelName} (Default)`,
-                    url: defaultModelUrl,
-                    mmproj: allowMmproj
-                        ? (defaultModelMmproj ?? undefined)
-                        : "",
-                },
-                ...suggestedModels
-                    .filter((model) => model.url !== defaultModelUrl)
-                    .map((model) => ({
-                        id: model.url,
-                        name: model.name,
-                        url: model.url,
-                        mmproj: model.mmproj,
-                    })),
-                { id: "custom", name: "Custom", url: "", mmproj: "" },
+                { id: "default", name: `${defaultModelName} (Default)` },
+                ...suggestedModels,
             ],
-            [
-                allowMmproj,
-                defaultModelMmproj,
-                defaultModelName,
-                defaultModelUrl,
-                suggestedModels,
-            ],
+            [defaultModelName, suggestedModels],
         );
-        const isCustomSelected = selectedModelId === "custom";
-        const canSaveModelSettings =
-            !isCustomSelected || draftModelUrl.trim().length > 0;
 
-        // Initialize model settings draft from parent state when dialog opens
         React.useEffect(() => {
             if (!showModelSettings) return;
-            setDraftUseCustomModel(useCustomModel);
-            setDraftModelUrl(modelUrl);
-            setDraftMmprojUrl(mmprojUrl);
-            setDraftContextLength(contextLength);
-            setDraftMaxTokens(maxTokens);
-            setDraftModelUrlError(null);
-            setDraftMmprojError(null);
-            setDraftContextError(null);
-            setDraftMaxTokensError(null);
-            const matchedOption = useCustomModel
-                ? modelOptions.find((model) => model.url === modelUrl)
-                : undefined;
-            setSelectedModelId(
-                !useCustomModel ? "default" : (matchedOption?.id ?? "custom"),
+            setDraftModelId(
+                modelOptions.some((model) => model.id === selectedModelId)
+                    ? selectedModelId
+                    : "default",
             );
-            setShowAdvancedLimits(!!contextLength || !!maxTokens);
-        }, [
-            contextLength,
-            maxTokens,
-            mmprojUrl,
-            modelOptions,
-            modelUrl,
-            showModelSettings,
-            useCustomModel,
-        ]);
+            setDraftContextLength(contextLength);
+            setDraftContextError(null);
+            setShowAdvancedLimits(!!contextLength);
+        }, [contextLength, modelOptions, selectedModelId, showModelSettings]);
 
-        // Initialize system prompt draft from parent state when dialog opens
         React.useEffect(() => {
-            if (!showSystemPromptSettings) return;
-            setDraftSystemPrompt(systemPrompt);
-        }, [showSystemPromptSettings]); // eslint-disable-line react-hooks/exhaustive-deps
+            const didOpen =
+                showSystemPromptSettings &&
+                !wasSystemPromptSettingsOpen.current;
+            wasSystemPromptSettingsOpen.current = showSystemPromptSettings;
+            if (didOpen) setDraftSystemPrompt(systemPrompt);
+        }, [showSystemPromptSettings, systemPrompt]);
 
         const validateModelSettings = React.useCallback(() => {
-            const validateUrl = (value: string) => {
-                if (!value) return undefined;
-                try {
-                    const url = new URL(value);
-                    if (
-                        url.hostname !== "huggingface.co" &&
-                        !url.hostname.endsWith(".huggingface.co")
-                    ) {
-                        return "URL must be a huggingface.co link";
-                    }
-                    if (url.pathname.includes("/blob/")) {
-                        return "Use a direct file URL, not a /blob/ page";
-                    }
-                    if (!url.pathname.endsWith(".gguf")) {
-                        return "URL must end with .gguf";
-                    }
-                    return undefined;
-                } catch {
-                    return "Enter a valid URL";
-                }
-            };
-
-            const modelError = draftUseCustomModel
-                ? draftModelUrl
-                    ? validateUrl(draftModelUrl)
-                    : "Required"
-                : undefined;
-            const mmprojErr =
-                draftUseCustomModel && isTauriRuntime
-                    ? validateUrl(draftMmprojUrl)
-                    : undefined;
-
-            const contextErrorValue =
+            let contextErrorValue =
                 draftContextLength && !/^\d+$/.test(draftContextLength)
-                    ? "Enter a number"
-                    : undefined;
-            const maxTokensErrorValue =
-                draftMaxTokens && !/^\d+$/.test(draftMaxTokens)
                     ? "Enter a number"
                     : undefined;
 
             const contextValue = draftContextLength
                 ? Number(draftContextLength)
                 : undefined;
-            const maxTokensValue = draftMaxTokens
-                ? Number(draftMaxTokens)
-                : undefined;
+            if (!contextErrorValue) {
+                const contextSize = isTauriRuntime
+                    ? (contextValue ?? DEFAULT_TAURI_CONTEXT_SIZE)
+                    : Math.min(
+                          contextValue ?? DEFAULT_WEB_CONTEXT_SIZE,
+                          DEFAULT_WEB_CONTEXT_SIZE,
+                      );
+                try {
+                    resolveGenerationBudget(contextSize);
+                } catch (error) {
+                    contextErrorValue = (error as Error).message;
+                }
+            }
 
-            const maxTokensLimitError =
-                contextValue && maxTokensValue && maxTokensValue > contextValue
-                    ? "Must be <= context length"
-                    : undefined;
-
-            setDraftModelUrlError(modelError ?? null);
-            setDraftMmprojError(mmprojErr ?? null);
             setDraftContextError(contextErrorValue ?? null);
-            setDraftMaxTokensError(
-                maxTokensErrorValue ?? maxTokensLimitError ?? null,
-            );
-
-            return !(
-                modelError ||
-                mmprojErr ||
-                contextErrorValue ||
-                maxTokensErrorValue ||
-                maxTokensLimitError
-            );
-        }, [
-            draftContextLength,
-            draftMaxTokens,
-            draftMmprojUrl,
-            draftModelUrl,
-            draftUseCustomModel,
-            isTauriRuntime,
-        ]);
+            return !contextErrorValue;
+        }, [draftContextLength, isTauriRuntime]);
 
         return (
             <>
@@ -422,20 +397,23 @@ export const ChatDialogs = memo(
                         <IconButton
                             aria-label="Close image preview"
                             onClick={closeImagePreview}
-                            sx={{
-                                position: "absolute",
-                                top: { xs: 12, sm: 16 },
-                                right: { xs: 12, sm: 16 },
-                                width: 36,
-                                height: 36,
-                                color: "common.white",
-                                bgcolor: "rgba(0, 0, 0, 0.38)",
-                                "&:hover": { bgcolor: "rgba(0, 0, 0, 0.54)" },
-                            }}
+                            sx={[
+                                drawerIconButtonSx,
+                                {
+                                    position: "absolute",
+                                    top: { xs: 12, sm: 16 },
+                                    right: { xs: 12, sm: 16 },
+                                    color: "common.white",
+                                    bgcolor: "rgba(0, 0, 0, 0.38)",
+                                    "&:hover": {
+                                        bgcolor: "rgba(0, 0, 0, 0.54)",
+                                    },
+                                },
+                            ]}
                         >
                             <HugeiconsIcon
                                 icon={Cancel01Icon}
-                                {...smallIconProps}
+                                {...tinyIconProps}
                             />
                         </IconButton>
                     </DialogContent>
@@ -468,7 +446,9 @@ export const ChatDialogs = memo(
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 gap: 1,
-                                pr: 1,
+                                px: 3,
+                                py: 1.5,
+                                pr: 1.5,
                             },
                         ]}
                     >
@@ -476,39 +456,16 @@ export const ChatDialogs = memo(
                         <IconButton
                             aria-label="Close settings"
                             onClick={closeSettingsModal}
-                            sx={actionButtonSx}
+                            sx={drawerIconButtonSx}
                         >
                             <HugeiconsIcon
                                 icon={Cancel01Icon}
-                                {...smallIconProps}
+                                {...tinyIconProps}
                             />
                         </IconButton>
                     </DialogTitle>
                     <DialogContent sx={{ flex: 1, overflowY: "auto" }}>
                         <Stack sx={{ gap: 2 }}>
-                            {isLoggedIn && (
-                                <Box
-                                    sx={{
-                                        px: 2,
-                                        py: 1.5,
-                                        borderRadius: 2,
-                                        border: "1px solid",
-                                        borderColor: "divider",
-                                        bgcolor: "background.default",
-                                    }}
-                                >
-                                    <Typography
-                                        variant="mini"
-                                        sx={{ color: "text.muted" }}
-                                    >
-                                        Signed in as
-                                    </Typography>
-                                    <Typography variant="small">
-                                        {signedInEmail ?? ""}
-                                    </Typography>
-                                </Box>
-                            )}
-
                             <Stack sx={{ gap: 1 }}>
                                 <ListItemButton
                                     onClick={() => {
@@ -534,6 +491,56 @@ export const ChatDialogs = memo(
                                         {...smallIconProps}
                                     />
                                 </ListItemButton>
+
+                                {isTauriRuntime && (
+                                    <ListItemButton
+                                        onClick={() => {
+                                            closeSettingsModal();
+                                            setShowNotesSettings(true);
+                                        }}
+                                        sx={settingsItemSx}
+                                    >
+                                        <HugeiconsIcon
+                                            icon={Folder01Icon}
+                                            {...compactIconProps}
+                                        />
+                                        <Typography
+                                            variant="small"
+                                            sx={{ flex: 1 }}
+                                        >
+                                            Your Notes
+                                        </Typography>
+                                        <HugeiconsIcon
+                                            icon={ArrowRight01Icon}
+                                            {...smallIconProps}
+                                        />
+                                    </ListItemButton>
+                                )}
+
+                                {isTauriRuntime && (
+                                    <ListItemButton
+                                        onClick={() => {
+                                            closeSettingsModal();
+                                            setShowKnowledgeSettings(true);
+                                        }}
+                                        sx={settingsItemSx}
+                                    >
+                                        <HugeiconsIcon
+                                            icon={PackageIcon}
+                                            {...compactIconProps}
+                                        />
+                                        <Typography
+                                            variant="small"
+                                            sx={{ flex: 1 }}
+                                        >
+                                            Ensu Packs
+                                        </Typography>
+                                        <HugeiconsIcon
+                                            icon={ArrowRight01Icon}
+                                            {...smallIconProps}
+                                        />
+                                    </ListItemButton>
+                                )}
 
                                 {isTauriRuntime && (
                                     <ListItemButton
@@ -583,83 +590,28 @@ export const ChatDialogs = memo(
                                     />
                                 </ListItemButton>
 
-                                {isLoggedIn && (
-                                    <ListItemButton
-                                        onClick={() => {
-                                            closeSettingsModal();
-                                            openPasskeysFromChat();
-                                        }}
-                                        sx={settingsItemSx}
+                                <ListItemButton
+                                    onClick={() => {
+                                        closeSettingsModal();
+                                        setShowBackupComingSoon(true);
+                                    }}
+                                    sx={settingsItemSx}
+                                >
+                                    <HugeiconsIcon
+                                        icon={Upload01Icon}
+                                        {...compactIconProps}
+                                    />
+                                    <Typography
+                                        variant="small"
+                                        sx={{ flex: 1 }}
                                     >
-                                        <HugeiconsIcon
-                                            icon={Key01Icon}
-                                            {...compactIconProps}
-                                        />
-                                        <Typography
-                                            variant="small"
-                                            sx={{ flex: 1 }}
-                                        >
-                                            Passkeys
-                                        </Typography>
-                                        <HugeiconsIcon
-                                            icon={ArrowRight01Icon}
-                                            {...smallIconProps}
-                                        />
-                                    </ListItemButton>
-                                )}
-
-                                {!isLoggedIn && (
-                                    <ListItemButton
-                                        onClick={() => {
-                                            closeSettingsModal();
-                                            openLoginFromChat();
-                                        }}
-                                        sx={settingsItemSx}
-                                    >
-                                        <HugeiconsIcon
-                                            icon={Upload01Icon}
-                                            {...compactIconProps}
-                                        />
-                                        <Typography
-                                            variant="small"
-                                            sx={{ flex: 1 }}
-                                        >
-                                            Sign In to Backup
-                                        </Typography>
-                                        <HugeiconsIcon
-                                            icon={ArrowRight01Icon}
-                                            {...smallIconProps}
-                                        />
-                                    </ListItemButton>
-                                )}
-
-                                {isLoggedIn && (
-                                    <ListItemButton
-                                        onClick={() => {
-                                            closeSettingsModal();
-                                            handleLogout();
-                                        }}
-                                        sx={[
-                                            settingsItemSx,
-                                            { color: "critical.main" },
-                                        ]}
-                                    >
-                                        <HugeiconsIcon
-                                            icon={Cancel01Icon}
-                                            {...compactIconProps}
-                                        />
-                                        <Typography
-                                            variant="small"
-                                            sx={{ flex: 1, fontWeight: 600 }}
-                                        >
-                                            Sign Out
-                                        </Typography>
-                                        <HugeiconsIcon
-                                            icon={ArrowRight01Icon}
-                                            {...smallIconProps}
-                                        />
-                                    </ListItemButton>
-                                )}
+                                        Sign In to Backup
+                                    </Typography>
+                                    <HugeiconsIcon
+                                        icon={ArrowRight01Icon}
+                                        {...smallIconProps}
+                                    />
+                                </ListItemButton>
 
                                 <ListItemButton
                                     onClick={() => {
@@ -774,21 +726,660 @@ export const ChatDialogs = memo(
                                 </Stack>
                             )}
 
-                            <Typography
-                                variant="mini"
-                                onClick={handleBuildVersionTap}
-                                sx={{
-                                    color: "text.muted",
-                                    textAlign: "center",
-                                    cursor: "pointer",
-                                    userSelect: "none",
-                                    py: 1,
-                                }}
+                            {buildVersion && (
+                                <Typography
+                                    variant="mini"
+                                    onClick={handleBuildVersionTap}
+                                    sx={{
+                                        color: "text.muted",
+                                        textAlign: "center",
+                                        cursor: "pointer",
+                                        userSelect: "none",
+                                        py: 1,
+                                    }}
+                                >
+                                    Build {buildVersion}
+                                </Typography>
+                            )}
+                        </Stack>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog
+                    open={showNotesSettings}
+                    onClose={returnToSettings}
+                    fullScreen={isSmall}
+                    maxWidth={false}
+                    fullWidth
+                    slotProps={{
+                        paper: { sx: [dialogPaperSx, { maxWidth: 720 }] },
+                    }}
+                >
+                    <DialogTitle
+                        sx={[
+                            dialogTitleSx,
+                            {
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                pl: 1,
+                            },
+                        ]}
+                    >
+                        <IconButton
+                            aria-label="Back to settings"
+                            onClick={returnToSettings}
+                            sx={drawerIconButtonSx}
+                        >
+                            <HugeiconsIcon
+                                icon={ArrowLeft01Icon}
+                                {...tinyIconProps}
+                            />
+                        </IconButton>
+                        <Box component="span" sx={{ flex: 1 }}>
+                            Your Notes
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent>
+                        <Stack sx={{ gap: 2 }}>
+                            {notesCollectionsError && (
+                                <Stack
+                                    direction="row"
+                                    sx={{ alignItems: "center", gap: 1 }}
+                                >
+                                    <Typography
+                                        variant="small"
+                                        sx={{ flex: 1, color: "critical.main" }}
+                                    >
+                                        {notesCollectionsError}
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        onClick={retryNotesCollections}
+                                    >
+                                        Retry
+                                    </Button>
+                                </Stack>
+                            )}
+                            {notesCollectionsLoading && <LinearProgress />}
+                            {notesCollections.map((collection) => {
+                                const indexing =
+                                    collection.status === "indexing" ||
+                                    collection.status === "updating";
+                                const starting =
+                                    collection.activity === "starting";
+                                const progress = collection.indexingProgress;
+                                const canRetry =
+                                    collection.status === "error" ||
+                                    collection.status === "unavailable" ||
+                                    collection.activity === "failed";
+                                const waitingMessage =
+                                    collection.activity ===
+                                    "waitingForGeneration"
+                                        ? "Indexing will resume after the current response."
+                                        : collection.activity ===
+                                            "waitingForModel"
+                                          ? "Indexing will start when the model is ready."
+                                          : null;
+                                return (
+                                    <Stack
+                                        key={collection.id}
+                                        sx={{
+                                            gap: 1.25,
+                                            p: 2,
+                                            borderRadius: 2,
+                                            bgcolor: "fill.faint",
+                                        }}
+                                    >
+                                        <Stack
+                                            direction="row"
+                                            sx={{
+                                                alignItems: "center",
+                                                gap: 1,
+                                            }}
+                                        >
+                                            <Stack
+                                                sx={{ flex: 1, minWidth: 0 }}
+                                            >
+                                                <Typography variant="h6" noWrap>
+                                                    {collection.label}
+                                                </Typography>
+                                                <Typography
+                                                    variant="mini"
+                                                    noWrap
+                                                    sx={{ color: "text.muted" }}
+                                                >
+                                                    {starting &&
+                                                    collection.indexedDocumentCount ===
+                                                        0
+                                                        ? "Preparing notes…"
+                                                        : `${collection.indexedDocumentCount} ${collection.indexedDocumentCount === 1 ? "note indexed" : "notes indexed"}`}
+                                                    {collection.lastUpdatedAtMs !=
+                                                        null && (
+                                                        <>
+                                                            {" · Updated at "}
+                                                            {formatNotesUpdatedAt(
+                                                                collection.lastUpdatedAtMs,
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </Typography>
+                                            </Stack>
+                                            <IconButton
+                                                aria-label={`Remove ${collection.label}`}
+                                                disabled={indexing || starting}
+                                                onClick={() =>
+                                                    handleRemoveNotesCollection(
+                                                        collection.id,
+                                                        collection.label,
+                                                    )
+                                                }
+                                                sx={actionButtonSx}
+                                            >
+                                                <HugeiconsIcon
+                                                    icon={Delete01Icon}
+                                                    {...compactIconProps}
+                                                />
+                                            </IconButton>
+                                        </Stack>
+                                        {indexing && (
+                                            <Stack
+                                                direction="row"
+                                                sx={{
+                                                    alignItems: "center",
+                                                    gap: 1,
+                                                }}
+                                            >
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={progress ?? 0}
+                                                    sx={{ flex: 1 }}
+                                                />
+                                                <Typography
+                                                    variant="mini"
+                                                    sx={{ color: "text.muted" }}
+                                                >
+                                                    {progress ?? 0}%
+                                                </Typography>
+                                            </Stack>
+                                        )}
+                                        {starting && <LinearProgress />}
+                                        {waitingMessage && (
+                                            <Typography
+                                                variant="small"
+                                                sx={{ color: "text.muted" }}
+                                            >
+                                                {waitingMessage}
+                                            </Typography>
+                                        )}
+                                        {collection.lastError && (
+                                            <Typography
+                                                variant="small"
+                                                sx={{ color: "critical.main" }}
+                                            >
+                                                {collection.lastError}
+                                            </Typography>
+                                        )}
+                                        {collection.watcherError && (
+                                            <Typography
+                                                variant="small"
+                                                sx={{ color: "text.muted" }}
+                                            >
+                                                {collection.watcherError}
+                                            </Typography>
+                                        )}
+                                        {(canRetry ||
+                                            collection.watcherError) && (
+                                            <Button
+                                                size="small"
+                                                onClick={() =>
+                                                    handleIndexNotesCollection(
+                                                        collection.id,
+                                                        true,
+                                                    )
+                                                }
+                                                sx={{ alignSelf: "flex-start" }}
+                                            >
+                                                {canRetry
+                                                    ? "Try again"
+                                                    : "Refresh"}
+                                            </Button>
+                                        )}
+                                    </Stack>
+                                );
+                            })}
+                            <ListItemButton
+                                disabled={notesCollectionsLoading}
+                                onClick={handleAddNotesFolder}
+                                sx={settingsItemSx}
                             >
-                                Build {buildVersion}
+                                <HugeiconsIcon
+                                    icon={Folder01Icon}
+                                    {...compactIconProps}
+                                />
+                                <Typography variant="small" sx={{ flex: 1 }}>
+                                    Add notes folder
+                                </Typography>
+                            </ListItemButton>
+                            <Typography
+                                variant="small"
+                                sx={{ px: 2, color: "text.muted" }}
+                            >
+                                Ensu reads and indexes markdown files in the
+                                selected folder. Source files are never
+                                modified.
                             </Typography>
                         </Stack>
                     </DialogContent>
+                </Dialog>
+
+                <Dialog
+                    open={showKnowledgeSettings}
+                    onClose={returnToSettings}
+                    fullScreen={isSmall}
+                    maxWidth="sm"
+                    fullWidth
+                    slotProps={{ paper: { sx: dialogPaperSx } }}
+                >
+                    <DialogTitle
+                        sx={[
+                            dialogTitleSx,
+                            {
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                pl: 1,
+                            },
+                        ]}
+                    >
+                        <IconButton
+                            aria-label="Back to settings"
+                            onClick={returnToSettings}
+                            sx={drawerIconButtonSx}
+                        >
+                            <HugeiconsIcon
+                                icon={ArrowLeft01Icon}
+                                {...tinyIconProps}
+                            />
+                        </IconButton>
+                        <Box component="span">Ensu Packs</Box>
+                    </DialogTitle>
+                    <DialogContent>
+                        <Stack sx={{ gap: 2 }}>
+                            {knowledgeCatalogError && (
+                                <Stack
+                                    direction="row"
+                                    sx={{ alignItems: "center", gap: 1 }}
+                                >
+                                    <Typography
+                                        variant="small"
+                                        sx={{ flex: 1, color: "critical.main" }}
+                                    >
+                                        {knowledgeCatalogError}
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        onClick={retryKnowledgeCatalog}
+                                    >
+                                        Retry
+                                    </Button>
+                                </Stack>
+                            )}
+                            {knowledgeCatalogLoading && <LinearProgress />}
+                            {knowledgePacks.map((pack) => {
+                                const progress =
+                                    knowledgeDownloadProgress[pack.stableId];
+                                const installed =
+                                    pack.status === "ready" ||
+                                    pack.status === "updateAvailable";
+                                const isMutating = progress !== undefined;
+                                const enabled =
+                                    enabledKnowledgePackIds.has(
+                                        pack.stableId,
+                                    ) && installed;
+                                return (
+                                    <Stack
+                                        key={pack.stableId}
+                                        sx={{
+                                            gap: 1.5,
+                                            p: 2,
+                                            borderRadius: 2,
+                                            bgcolor: "fill.faint",
+                                        }}
+                                    >
+                                        <Stack
+                                            direction="row"
+                                            sx={{
+                                                alignItems: "center",
+                                                gap: 1.5,
+                                            }}
+                                        >
+                                            <Stack sx={{ flex: 1, gap: 0.5 }}>
+                                                <Typography variant="h6">
+                                                    {pack.label}
+                                                </Typography>
+                                                <Stack
+                                                    direction="row"
+                                                    sx={{
+                                                        alignItems: "center",
+                                                        gap: 0.75,
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        variant="mini"
+                                                        sx={{
+                                                            color: "text.muted",
+                                                        }}
+                                                    >
+                                                        {formatBytes(
+                                                            pack.downloadSizeBytes,
+                                                        )}
+                                                    </Typography>
+                                                    <Typography
+                                                        variant="mini"
+                                                        sx={{
+                                                            color: "text.muted",
+                                                        }}
+                                                    >
+                                                        ·
+                                                    </Typography>
+                                                    <Link
+                                                        component="button"
+                                                        type="button"
+                                                        underline="hover"
+                                                        onClick={() =>
+                                                            setAttributionPack(
+                                                                pack,
+                                                            )
+                                                        }
+                                                        sx={compactInlineLinkSx}
+                                                    >
+                                                        {
+                                                            pack.attribution
+                                                                .licenseLabel
+                                                        }
+                                                    </Link>
+                                                </Stack>
+                                            </Stack>
+                                            {installed && !isMutating ? (
+                                                <Switch
+                                                    checked={enabled}
+                                                    disabled={
+                                                        knowledgeCatalogLoading
+                                                    }
+                                                    onChange={(_, checked) =>
+                                                        handleSetKnowledgePackEnabled(
+                                                            pack.stableId,
+                                                            checked,
+                                                        )
+                                                    }
+                                                    slotProps={{
+                                                        input: {
+                                                            "aria-label": `Enable ${pack.label}`,
+                                                        },
+                                                    }}
+                                                />
+                                            ) : pack.status === "download" &&
+                                              !isMutating ? (
+                                                <Button
+                                                    variant="contained"
+                                                    color="accent"
+                                                    size="small"
+                                                    disabled={
+                                                        knowledgeCatalogLoading
+                                                    }
+                                                    onClick={() =>
+                                                        handleDownloadKnowledgePack(
+                                                            pack.stableId,
+                                                        )
+                                                    }
+                                                >
+                                                    Download
+                                                </Button>
+                                            ) : null}
+                                        </Stack>
+
+                                        {isMutating && (
+                                            <Stack
+                                                direction="row"
+                                                sx={{
+                                                    alignItems: "center",
+                                                    gap: 1,
+                                                }}
+                                            >
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={Math.max(
+                                                        0,
+                                                        Math.min(100, progress),
+                                                    )}
+                                                    sx={{ flex: 1 }}
+                                                />
+                                                <IconButton
+                                                    aria-label={`Cancel ${pack.label} download`}
+                                                    onClick={() =>
+                                                        handleCancelKnowledgePackDownload(
+                                                            pack.stableId,
+                                                        )
+                                                    }
+                                                    sx={actionButtonSx}
+                                                >
+                                                    <HugeiconsIcon
+                                                        icon={Cancel01Icon}
+                                                        {...compactIconProps}
+                                                    />
+                                                </IconButton>
+                                            </Stack>
+                                        )}
+
+                                        {!isMutating &&
+                                            pack.status ===
+                                                "updateAvailable" && (
+                                                <Button
+                                                    variant="contained"
+                                                    color="accent"
+                                                    size="small"
+                                                    disabled={
+                                                        knowledgeCatalogLoading
+                                                    }
+                                                    sx={{
+                                                        alignSelf: "flex-start",
+                                                    }}
+                                                    onClick={() =>
+                                                        handleDownloadKnowledgePack(
+                                                            pack.stableId,
+                                                        )
+                                                    }
+                                                >
+                                                    Update
+                                                </Button>
+                                            )}
+
+                                        {knowledgeErrors[pack.stableId] && (
+                                            <Typography
+                                                variant="small"
+                                                sx={{ color: "critical.main" }}
+                                            >
+                                                {knowledgeErrors[pack.stableId]}
+                                            </Typography>
+                                        )}
+                                    </Stack>
+                                );
+                            })}
+                        </Stack>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog
+                    open={Boolean(attributionPack)}
+                    onClose={() => setAttributionPack(null)}
+                    maxWidth="xs"
+                    fullWidth
+                    slotProps={{ paper: { sx: dialogPaperSx } }}
+                >
+                    <DialogTitle
+                        sx={[
+                            dialogTitleSx,
+                            {
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 1,
+                                px: 3,
+                                py: 1.5,
+                                pr: 1.5,
+                            },
+                        ]}
+                    >
+                        <Box component="span">{attributionPack?.label}</Box>
+                        <IconButton
+                            aria-label="Close pack details"
+                            onClick={() => setAttributionPack(null)}
+                            sx={drawerIconButtonSx}
+                        >
+                            <HugeiconsIcon
+                                icon={Cancel01Icon}
+                                {...tinyIconProps}
+                            />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ px: 3, pt: 1, pb: 3 }}>
+                        {attributionPack && (
+                            <Stack
+                                sx={{
+                                    gap: 1.25,
+                                    p: 2,
+                                    borderRadius: 1.5,
+                                    bgcolor: "fill.faint",
+                                }}
+                            >
+                                <Typography variant="small">
+                                    From {attributionPack.attribution.credit}
+                                </Typography>
+                                <Typography variant="small">
+                                    {
+                                        attributionPack.attribution
+                                            .modificationNotice
+                                    }
+                                </Typography>
+                                <Stack
+                                    direction="row"
+                                    sx={{ gap: 2, flexWrap: "wrap" }}
+                                >
+                                    <Link
+                                        component="button"
+                                        type="button"
+                                        underline="hover"
+                                        onClick={() =>
+                                            void openExternalUrl(
+                                                attributionPack.attribution
+                                                    .publicPackUrl,
+                                            )
+                                        }
+                                        sx={compactInlineLinkSx}
+                                    >
+                                        Source ↗
+                                    </Link>
+                                    <Link
+                                        component="button"
+                                        type="button"
+                                        underline="hover"
+                                        onClick={() =>
+                                            void openExternalUrl(
+                                                attributionPack.attribution
+                                                    .licenseUrl,
+                                            )
+                                        }
+                                        sx={compactInlineLinkSx}
+                                    >
+                                        License ↗
+                                    </Link>
+                                </Stack>
+                                <Divider sx={{ my: 0.25 }} />
+                                <Typography
+                                    variant="small"
+                                    sx={{ color: "text.muted" }}
+                                >
+                                    Wikimedia and Ensu are not affiliated.
+                                    Wikimedia project names identify the source
+                                    material only.
+                                </Typography>
+                            </Stack>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog
+                    open={showBackupComingSoon}
+                    onClose={() => setShowBackupComingSoon(false)}
+                    fullScreen={isSmall}
+                    maxWidth="xs"
+                    fullWidth
+                    slotProps={{ paper: { sx: dialogPaperSx } }}
+                >
+                    <DialogTitle sx={dialogTitleSx}>Coming soon</DialogTitle>
+                    <DialogContent>
+                        <Typography variant="body" sx={{ color: "text.muted" }}>
+                            Sign in and cloud backup will be available in a
+                            future update.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions sx={{ px: 3, pb: 3 }}>
+                        <Button
+                            variant="contained"
+                            color="accent"
+                            onClick={() => setShowBackupComingSoon(false)}
+                        >
+                            Got it
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={Boolean(renameSessionId)}
+                    onClose={handleCancelRenameSession}
+                    fullScreen={isSmall}
+                    maxWidth="xs"
+                    fullWidth
+                    slotProps={{ paper: { sx: dialogPaperSx } }}
+                >
+                    <DialogTitle sx={dialogTitleSx}>Rename chat</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            value={renameSessionTitle}
+                            onChange={(event) =>
+                                setRenameSessionTitle(event.target.value)
+                            }
+                            autoFocus
+                            fullWidth
+                            label="Chat name"
+                            slotProps={{ htmlInput: { maxLength: 40 } }}
+                            onKeyDown={(event) => {
+                                if (
+                                    event.key === "Enter" &&
+                                    !event.nativeEvent.isComposing
+                                ) {
+                                    void handleConfirmRenameSession();
+                                }
+                            }}
+                        />
+                    </DialogContent>
+                    <DialogActions sx={{ px: 3, pb: 3 }}>
+                        <Button
+                            onClick={handleCancelRenameSession}
+                            color="secondary"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="accent"
+                            disabled={!renameSessionTitle.trim()}
+                            onClick={() => void handleConfirmRenameSession()}
+                        >
+                            Rename
+                        </Button>
+                    </DialogActions>
                 </Dialog>
 
                 <Dialog
@@ -847,37 +1438,14 @@ export const ChatDialogs = memo(
                                         select
                                         fullWidth
                                         label="Model"
-                                        value={selectedModelId}
-                                        onChange={(event) => {
-                                            const nextId = event.target.value;
-                                            const nextModel = modelOptions.find(
-                                                (model) => model.id === nextId,
-                                            );
-                                            setSelectedModelId(nextId);
-                                            if (!nextModel) return;
-                                            if (nextId === "default") {
-                                                setDraftUseCustomModel(false);
-                                                setDraftModelUrl("");
-                                                setDraftMmprojUrl("");
-                                                return;
-                                            }
-                                            setDraftUseCustomModel(true);
-                                            if (nextId === "custom") {
-                                                setDraftModelUrl("");
-                                                setDraftMmprojUrl("");
-                                                return;
-                                            }
-                                            setDraftModelUrl(nextModel.url);
-                                            setDraftMmprojUrl(
-                                                allowMmproj
-                                                    ? (nextModel.mmproj ?? "")
-                                                    : "",
-                                            );
-                                        }}
+                                        value={draftModelId}
+                                        onChange={(event) =>
+                                            setDraftModelId(event.target.value)
+                                        }
                                         helperText={
                                             loadedModelName
                                                 ? `Loaded: ${loadedModelName}`
-                                                : "Custom reveals direct Hugging Face URLs."
+                                                : " "
                                         }
                                     >
                                         {modelOptions.map((model) => (
@@ -890,43 +1458,6 @@ export const ChatDialogs = memo(
                                         ))}
                                     </TextField>
                                 </Stack>
-
-                                {isCustomSelected && (
-                                    <Stack sx={{ gap: 1.5 }}>
-                                        <TextField
-                                            fullWidth
-                                            label="Model .gguf URL"
-                                            placeholder="https://huggingface.co/..."
-                                            value={draftModelUrl}
-                                            onChange={(event) =>
-                                                setDraftModelUrl(
-                                                    event.target.value,
-                                                )
-                                            }
-                                            error={!!draftModelUrlError}
-                                            helperText={
-                                                draftModelUrlError ?? " "
-                                            }
-                                        />
-                                        {allowMmproj && (
-                                            <TextField
-                                                fullWidth
-                                                label="mmproj .gguf URL"
-                                                placeholder="(optional for multimodal)"
-                                                value={draftMmprojUrl}
-                                                onChange={(event) =>
-                                                    setDraftMmprojUrl(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                error={!!draftMmprojError}
-                                                helperText={
-                                                    draftMmprojError ?? " "
-                                                }
-                                            />
-                                        )}
-                                    </Stack>
-                                )}
 
                                 <Stack sx={{ gap: 1.5 }}>
                                     <Button
@@ -946,7 +1477,7 @@ export const ChatDialogs = memo(
                                             variant="mini"
                                             sx={{ color: "text.muted" }}
                                         >
-                                            Context length and max output
+                                            Context length
                                         </Typography>
                                     )}
                                     {showAdvancedLimits && (
@@ -969,28 +1500,15 @@ export const ChatDialogs = memo(
                                                     draftContextError ?? " "
                                                 }
                                             />
-                                            <TextField
-                                                fullWidth
-                                                label="Max output"
-                                                placeholder="2048"
-                                                value={draftMaxTokens}
-                                                onChange={(event) =>
-                                                    setDraftMaxTokens(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                error={!!draftMaxTokensError}
-                                                helperText={
-                                                    draftMaxTokensError ?? " "
-                                                }
-                                            />
                                         </Stack>
                                     )}
                                     <Typography
                                         variant="mini"
                                         sx={{ color: "text.muted" }}
                                     >
-                                        Leave blank to use model defaults
+                                        Leave blank to use model defaults.
+                                        Response length adjusts automatically to
+                                        the context length.
                                     </Typography>
                                 </Stack>
                             </Stack>
@@ -1001,18 +1519,17 @@ export const ChatDialogs = memo(
                                     variant="contained"
                                     color="accent"
                                     disabled={
-                                        !canSaveModelSettings ||
                                         isSavingModel ||
-                                        modelGateStatus === "downloading"
+                                        isModelPreparationActive
                                     }
                                     onClick={() => {
                                         if (!validateModelSettings()) return;
                                         handleSaveModel({
-                                            useCustomModel: draftUseCustomModel,
-                                            modelUrl: draftModelUrl,
-                                            mmprojUrl: draftMmprojUrl,
+                                            modelId:
+                                                draftModelId === "default"
+                                                    ? ""
+                                                    : draftModelId,
                                             contextLength: draftContextLength,
-                                            maxTokens: draftMaxTokens,
                                         });
                                     }}
                                 >
@@ -1021,6 +1538,7 @@ export const ChatDialogs = memo(
                                 <Button
                                     onClick={handleUseDefaultModel}
                                     color="secondary"
+                                    disabled={isModelPreparationActive}
                                 >
                                     Reset to defaults
                                 </Button>
@@ -1054,8 +1572,8 @@ export const ChatDialogs = memo(
                                 sx={{ color: "text.muted" }}
                             >
                                 This prompt is used as-is. Use $date anywhere to
-                                insert the current date and time. Leave blank to
-                                use the default prompt.
+                                insert the current date. Leave blank to use the
+                                default prompt.
                             </Typography>
                             <TextField
                                 fullWidth
@@ -1063,7 +1581,7 @@ export const ChatDialogs = memo(
                                 minRows={10}
                                 maxRows={18}
                                 label="Prompt text"
-                                placeholder="You are a concise assistant. Current date and time: $date"
+                                placeholder="You are a concise assistant. Current date: $date"
                                 value={draftSystemPrompt}
                                 onChange={(event) =>
                                     setDraftSystemPrompt(event.target.value)
@@ -1093,9 +1611,9 @@ export const ChatDialogs = memo(
                 </Dialog>
 
                 <Notification
-                    open={syncNotificationOpen}
-                    onClose={() => setSyncNotificationOpen(false)}
-                    attributes={syncNotification}
+                    open={chatNotificationOpen}
+                    onClose={() => setChatNotificationOpen(false)}
+                    attributes={chatNotification}
                     horizontal={isSmall ? "left" : "right"}
                     vertical="bottom"
                     sx={{

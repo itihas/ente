@@ -1,0 +1,228 @@
+import { SpaceFileViewer } from "components/FileViewer";
+import { SpacePageMeta } from "components/PageMeta";
+import { SpaceRouteFallback } from "components/RouteFallback";
+import log from "ente-base/log";
+import React from "react";
+import {
+    loadCurrentSpacePost,
+    loadCurrentSpacePostAssetURL,
+    replyToCurrentPost,
+    setCurrentPostLiked,
+    type SpacePost,
+} from "services/space";
+import { useSpaceAppState } from "state/app-state";
+import { spaceAppBackgroundColor } from "styles/colors";
+import { viewerPhotosFromPost } from "utils/post-photos";
+import { hasPreviousSpaceRoute, useSpaceRouter } from "utils/route-transitions";
+import { postPhotoIdFromObjectKey, spaceRoutes } from "utils/routes";
+
+const postBackground = "#000000";
+
+const valueFromQuery = (value: string | string[] | undefined) =>
+    Array.isArray(value) ? value[0] : value;
+
+const postIdFromQuery = (value: string | string[] | undefined) => {
+    const postIdText = valueFromQuery(value);
+    if (!postIdText || !/^\d+$/.test(postIdText)) return undefined;
+
+    const postId = Number(postIdText);
+    return Number.isSafeInteger(postId) && postId > 0 ? postId : undefined;
+};
+
+const routeParamsFromPath = () => {
+    if (typeof window == "undefined") return {};
+
+    const match = /^\/app\/posts\/([^/?#]+)\/([^/?#]+)/.exec(
+        window.location.pathname,
+    );
+    if (!match?.[1] || !match[2]) return {};
+
+    try {
+        return {
+            postId: postIdFromQuery(decodeURIComponent(match[2])),
+            spaceId: decodeURIComponent(match[1]),
+        };
+    } catch {
+        return {};
+    }
+};
+
+const viewerPhotoFromPost = (post: SpacePost) => ({
+    alt: `${post.name} post`,
+    avatarUrl: post.avatarUrl,
+    caption: post.caption,
+    friendID: post.friendID,
+    height: post.height,
+    photos: post.photos,
+    imageUrl: post.imageUrl ?? "",
+    name: post.name,
+    postId: post.postId,
+    spaceId: post.spaceId,
+    timestampMs: post.timestampMs,
+    viewerLiked: post.viewerLiked,
+    width: post.width,
+});
+
+const Page: React.FC = () => {
+    const router = useSpaceRouter();
+    const { profile, profileLoadError, profileLoadStatus } = useSpaceAppState();
+    const pathParams = routeParamsFromPath();
+    const spaceId =
+        valueFromQuery(router.query.spaceId) ?? pathParams.spaceId ?? "";
+    const postId = postIdFromQuery(router.query.postId) ?? pathParams.postId;
+    const photoId =
+        valueFromQuery(router.query.photo) ??
+        (typeof window == "undefined"
+            ? undefined
+            : (new URLSearchParams(window.location.search).get("photo") ??
+              undefined));
+    const [post, setPost] = React.useState<SpacePost | null>(null);
+    const [postLoadError, setPostLoadError] = React.useState<string>();
+    const [isPostLoading, setIsPostLoading] = React.useState(false);
+    const postRouteKey = spaceId && postId ? `${spaceId}:${postId}` : "";
+    const isOwnPost = Boolean(post && post.spaceId == profile?.spaceId);
+
+    React.useEffect(() => {
+        if (profileLoadStatus == "ready" && !profile) {
+            void router.replace(spaceRoutes.onboarding);
+        }
+    }, [profile, profileLoadStatus, router]);
+
+    React.useEffect(() => {
+        if (
+            profileLoadStatus != "ready" ||
+            !profile?.spaceId ||
+            !spaceId ||
+            !postId
+        ) {
+            return;
+        }
+
+        const viewerSpaceId = profile.spaceId;
+        let cancelled = false;
+        setPost(null);
+        setPostLoadError(undefined);
+        setIsPostLoading(true);
+
+        void loadCurrentSpacePost(spaceId, postId, viewerSpaceId)
+            .then((nextPost) => {
+                if (cancelled) return;
+                if (!nextPost) {
+                    setPostLoadError("Post unavailable.");
+                    return;
+                }
+                setPost(nextPost);
+            })
+            .catch((error: unknown) => {
+                log.error("Failed to load space post", error);
+                if (!cancelled) setPostLoadError("Post unavailable.");
+            })
+            .finally(() => {
+                if (!cancelled) setIsPostLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [postRouteKey, profile?.spaceId, profileLoadStatus, spaceId, postId]);
+
+    const openOwnerProfile = React.useCallback(() => {
+        const ownerSpaceId = post?.spaceId ?? spaceId;
+        if (ownerSpaceId == profile?.spaceId) {
+            void router.push(spaceRoutes.profile);
+        } else if (post?.username) {
+            void router.push(
+                spaceRoutes.friendPage,
+                spaceRoutes.friend(post.username),
+            );
+        } else {
+            void router.push(spaceRoutes.home);
+        }
+    }, [post?.spaceId, post?.username, profile?.spaceId, router, spaceId]);
+
+    const closePost = React.useCallback(() => {
+        if (hasPreviousSpaceRoute()) {
+            router.back();
+            return;
+        }
+        void router.replace(spaceRoutes.home);
+    }, [router]);
+
+    if (
+        !router.isReady ||
+        profileLoadStatus != "ready" ||
+        !profile ||
+        !spaceId ||
+        !postId ||
+        isPostLoading ||
+        !post
+    ) {
+        return (
+            <SpaceRouteFallback
+                background={spaceAppBackgroundColor}
+                message={postLoadError || profileLoadError}
+            />
+        );
+    }
+    const actorSpaceId = profile.spaceId;
+    if (!actorSpaceId) {
+        return (
+            <SpaceRouteFallback
+                background={spaceAppBackgroundColor}
+                message={postLoadError || profileLoadError}
+            />
+        );
+    }
+
+    const photos = viewerPhotosFromPost(viewerPhotoFromPost(post));
+    const photoIndex =
+        photoId === undefined
+            ? 0
+            : photos.findIndex(
+                  (photo) =>
+                      photo.imageAsset &&
+                      postPhotoIdFromObjectKey(photo.imageAsset.objectKey) ==
+                          photoId,
+              );
+    if (photoIndex < 0) {
+        return (
+            <SpaceRouteFallback
+                background={spaceAppBackgroundColor}
+                message="Photo unavailable."
+            />
+        );
+    }
+
+    return (
+        <>
+            <SpacePageMeta themeColor={postBackground} />
+            <SpaceFileViewer
+                key={`${post.postId}:${photoId ?? ""}`}
+                photo={viewerPhotoFromPost(post)}
+                photos={photos}
+                initialPhotoIndex={photoIndex}
+                onLoadPhoto={loadCurrentSpacePostAssetURL}
+                postActionMode={isOwnPost ? "hidden" : "like-only"}
+                onClose={closePost}
+                onOpenProfile={openOwnerProfile}
+                onReplyToPost={
+                    isOwnPost
+                        ? undefined
+                        : (postSpaceId, nextPostId, text, objectKey) =>
+                              replyToCurrentPost(
+                                  actorSpaceId,
+                                  postSpaceId,
+                                  nextPostId,
+                                  text,
+                                  objectKey,
+                              )
+                }
+                onSetPostLiked={async (nextPostId, liked) => {
+                    await setCurrentPostLiked(actorSpaceId, nextPostId, liked);
+                }}
+            />
+        </>
+    );
+};
+
+export default Page;

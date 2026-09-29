@@ -62,8 +62,9 @@ class UserDetails {
     if (familyData?.members == null) {
       return null;
     }
-    return familyData!.members!
-        .firstWhereOrNull((member) => member.email.trim() == email.trim());
+    return familyData!.members!.firstWhereOrNull(
+      (member) => member.email.trim() == email.trim(),
+    );
   }
 
   bool isFamilyAdmin() {
@@ -85,9 +86,6 @@ class UserDetails {
     );
   }
 
-  // getFamilyOrPersonalUsage will return total usage for family if user
-  // belong to family group. Otherwise, it will return storage consumed by
-  // current user
   int getFamilyOrPersonalUsage() {
     return isPartOfFamily() ? familyData!.getTotalUsage() : usage;
   }
@@ -100,15 +98,11 @@ class UserDetails {
     return max(getTotalStorage() - getFamilyOrPersonalUsage(), 0);
   }
 
-  // getTotalStorage will return total storage available including the
-  // storage bonus
   int getTotalStorage() {
     return (isPartOfFamily() ? familyData!.storage : subscription.storage) +
         storageBonus;
   }
 
-  // return the member storage limit if user is part of family and the admin
-  // has set the storage limit for the user.
   int? familyMemberStorageLimit() {
     if (isPartOfFamily()) {
       final FamilyMember? currentUserMember = currentFamilyMember();
@@ -117,7 +111,6 @@ class UserDetails {
     return null;
   }
 
-  // This is the total storage for which user has paid for.
   int getPlanPlusAddonStorage() {
     return (isPartOfFamily() ? familyData!.storage : subscription.storage) +
         bonusData!.totalAddOnBonus();
@@ -131,7 +124,7 @@ class UserDetails {
       (map['storageBonus'] ?? 0) as int,
       (map['sharedCollectionsCount'] ?? 0) as int,
       Subscription.fromMap(map['subscription']),
-      FamilyData.fromMap(map['familyData']),
+      map['familyData'] != null ? FamilyData.fromMap(map['familyData']) : null,
       ProfileData.fromJson(map['profileData']),
       BonusData.fromJson(map['bonusData']),
     );
@@ -161,6 +154,7 @@ class FamilyMember {
   final String email;
   final int usage;
   final String id;
+  final int? userID;
   final bool isAdmin;
   final FamilyMemberStatus status;
   final int? storageLimit;
@@ -169,6 +163,7 @@ class FamilyMember {
     this.email,
     this.usage,
     this.id,
+    this.userID,
     this.isAdmin,
     this.status,
     this.storageLimit,
@@ -185,6 +180,7 @@ class FamilyMember {
       (map['email'] ?? '') as String,
       (map['usage'] ?? 0) as int,
       map['id'] as String,
+      map['userID'] as int?,
       map['isAdmin'] as bool,
       FamilyMemberStatus.fromServerValue(map['status'] as String?),
       map['storageLimit'] as int?,
@@ -196,6 +192,7 @@ class FamilyMember {
       'email': email,
       'usage': usage,
       'id': id,
+      'userID': userID,
       'isAdmin': isAdmin,
       'status': status.serverValue,
       'storageLimit': storageLimit,
@@ -213,14 +210,12 @@ class ProfileData {
   bool isEmailMFAEnabled;
   bool isTwoFactorEnabled;
 
-  // Constructor with default values
   ProfileData({
     this.canDisableEmailMFA = false,
     this.isEmailMFAEnabled = false,
     this.isTwoFactorEnabled = false,
   });
 
-  // Factory method to create ProfileData instance from JSON
   factory ProfileData.fromJson(Map<String, dynamic>? json) {
     return ProfileData(
       canDisableEmailMFA: json?['canDisableEmailMFA'] ?? false,
@@ -229,7 +224,6 @@ class ProfileData {
     );
   }
 
-  // Method to convert ProfileData instance to JSON
   Map<String, dynamic> toJson() {
     return {
       'canDisableEmailMFA': canDisableEmailMFA,
@@ -244,17 +238,11 @@ class ProfileData {
 class FamilyData {
   final List<FamilyMember>? members;
 
-  // Storage available based on the family plan
   final int storage;
   final int expiryTime;
   final int adminBonus;
 
-  FamilyData(
-    this.members,
-    this.storage,
-    this.expiryTime,
-    this.adminBonus,
-  );
+  FamilyData(this.members, this.storage, this.expiryTime, this.adminBonus);
 
   int getTotalUsage() {
     return members
@@ -268,8 +256,7 @@ class FamilyData {
     return members!.firstWhereOrNull((element) => element.id == id);
   }
 
-  static fromMap(Map<String, dynamic>? map) {
-    if (map == null) return null;
+  static FamilyData fromMap(Map<String, dynamic> map) {
     assert(map['members'] != null && map['members'].length >= 0);
     final members = List<FamilyMember>.from(
       map['members'].map((x) => FamilyMember.fromMap(x)),

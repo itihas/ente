@@ -21,7 +21,6 @@ var tokenMap map[string]string = make(map[string]string)
 
 type Client struct {
 	restClient *resty.Client
-	// use separate client for downloading files
 	downloadClient *resty.Client
 }
 

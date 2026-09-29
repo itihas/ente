@@ -1,10 +1,11 @@
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/widgets.dart";
 import "package:flutter_test/flutter_test.dart";
 import "package:intl/date_symbol_data_local.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import "package:photos/models/location/location.dart";
+import "package:photos/models/memories/clip_memory.dart";
 import "package:photos/models/memories/filler_memory.dart";
 import "package:photos/models/memories/memories_cache.dart";
 import "package:photos/models/memories/memory.dart";
@@ -16,22 +17,19 @@ import "package:photos/models/memories/time_memory.dart";
 import "package:photos/models/memories/trip_memory.dart";
 
 void main() {
-  final l10n = lookupAppLocalizations(const Locale("en"));
+  final l10n = lookupStringsLocalizations(const Locale("en"));
   final calcTime = DateTime.utc(2026, 3, 26, 8);
 
   setUpAll(() async {
     await initializeDateFormatting("en");
   });
 
-  EnteFile buildFile(
-    int generatedId, {
-    int? uploadedId,
-    int? creationTime,
-  }) {
+  EnteFile buildFile(int generatedId, {int? uploadedId, int? creationTime}) {
     final file = EnteFile();
     file.generatedID = generatedId;
     file.uploadedFileID = uploadedId ?? generatedId;
-    file.creationTime = creationTime ??
+    file.creationTime =
+        creationTime ??
         DateTime.utc(2020, 1, generatedId.clamp(1, 28)).microsecondsSinceEpoch;
     file.fileType = FileType.image;
     return file;
@@ -83,10 +81,7 @@ void main() {
         "lastTimeToShow": 20,
         "id": "trip-legacy",
         "calculationTime": 0,
-        "location": {
-          "latitude": 12.34,
-          "longitude": 56.78,
-        },
+        "location": {"latitude": 12.34, "longitude": 56.78},
       });
 
       final hydrated = cached.toSmartMemory(buildMemories([201, 202]));
@@ -164,6 +159,14 @@ void main() {
         activity: PeopleActivity.hiking,
       )..title = "Stored people title";
 
+      final clipMemory = ClipMemory(
+        buildMemories([711, 712]),
+        110,
+        120,
+        ClipMemoryType.goldenHourPortraits,
+        id: "clip-typed",
+      )..title = "Stored clip title";
+
       final originals = <SmartMemory>[
         tripMemory,
         timeMemory,
@@ -172,6 +175,7 @@ void main() {
         fillerMemory,
         onThisDayMemory,
         peopleMemory,
+        clipMemory,
       ];
 
       for (final original in originals) {
@@ -213,10 +217,7 @@ void main() {
         "lastTimeToShow": 20,
         "id": "trip-legacy-cache",
         "calculationTime": 0,
-        "location": {
-          "latitude": 1.23,
-          "longitude": 4.56,
-        },
+        "location": {"latitude": 1.23, "longitude": 4.56},
       });
 
       final cache = MemoriesCache(

@@ -20,7 +20,6 @@ import 'package:flutter/material.dart';
 
 typedef DialogBuilder = DialogWidget Function(BuildContext context);
 
-///Will return null if dismissed by tapping outside
 Future<ButtonResult?> showErrorDialog(
   BuildContext context,
   String title,
@@ -39,11 +38,7 @@ Future<ButtonResult?> showErrorDialog(
         isInAlert: true,
         buttonAction: ButtonAction.first,
         onTap: () async {
-          await sendEmail(
-            context,
-            to: "support@ente.com",
-            body: body,
-          );
+          await sendEmail(context, to: "support@ente.com", body: body);
         },
       ),
       const ButtonWidget(
@@ -110,7 +105,6 @@ String parseErrorForUI(
   }
 }
 
-///Will return null if dismissed by tapping outside
 Future<ButtonResult?> showGenericErrorDialog({
   required BuildContext context,
   bool isDismissible = true,
@@ -150,7 +144,7 @@ Future<ButtonResult?> showGenericErrorDialog({
           buttonAction: ButtonAction.third,
           isInAlert: true,
           onTap: () async {
-            PlatformUtil.openWebView(
+            await PlatformUtil.openWebView(
               context,
               context.strings.faq,
               "https://ente.com/help/auth/troubleshooting/windows-login",
@@ -228,7 +222,6 @@ DialogWidget choiceDialog({
   return DialogWidget(title: title, body: body, buttons: buttons, icon: icon);
 }
 
-///Will return null if dismissed by tapping outside
 Future<ButtonResult?> showChoiceDialog(
   BuildContext context, {
   required String title,
@@ -272,7 +265,6 @@ Future<ButtonResult?> showChoiceDialog(
   );
 }
 
-///Will return null if dismissed by tapping outside
 Future<ButtonResult?> showChoiceActionSheet(
   BuildContext context, {
   required String title,
@@ -339,7 +331,7 @@ ProgressDialog createProgressDialog(
   return dialog;
 }
 
-//Can return ButtonResult? from ButtonWidget or Exception? from TextInputDialog
+// Returns null after submit, ButtonResult on cancel, and Exception on failure.
 Future<dynamic> showTextInputDialog(
   BuildContext context, {
   required String title,

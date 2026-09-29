@@ -9,8 +9,7 @@ import {
     deletePublicReaction,
     getStoredAnonIdentity,
 } from "@/public-album/social/api/public-reaction";
-import { useBrowserBackClose } from "@/shared/hooks/useBrowserBackClose";
-import { getAvatarColor } from "@/shared/utils/avatar-colors";
+import { useBrowserBackClose } from "@/shared/hooks/use-browser-back-close";
 import CloseIcon from "@mui/icons-material/Close";
 import {
     Avatar,
@@ -25,11 +24,13 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
-import { type ModalVisibilityProps } from "ente-base/components/utils/modal";
+import type { ModalVisibilityProps } from "ente-base/components/utils/modal";
+import { formatTimeAgo } from "ente-base/date";
 import type { PublicAlbumsCredentials } from "ente-base/http";
 import log from "ente-base/log";
+import { getAvatarColor } from "ente-gallery/utils/avatar-colors";
 import type { EnteFile } from "ente-media/file";
-import i18n, { t } from "i18next";
+import { t } from "i18next";
 import React, {
     useCallback,
     useEffect,
@@ -37,14 +38,10 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { type Comment, type UnifiedReaction } from "../lib/social-types";
+import type { Comment, UnifiedReaction } from "../lib/social-types";
 import { AddNameModal } from "./AddNameModal";
 import { PublicCommentModal } from "./PublicCommentModal";
 import { PublicLikeModal } from "./PublicLikeModal";
-
-// =============================================================================
-// Icons
-// =============================================================================
 
 const SendIcon: React.FC = () => (
     <svg
@@ -150,51 +147,12 @@ const PersonIcon: React.FC = () => (
     </svg>
 );
 
-// =============================================================================
-// Types
-// =============================================================================
-
-/** Collection info for the dropdown. */
 interface CollectionInfo {
     id: number;
     name: string;
     commentCount: number;
     coverFile?: EnteFile;
 }
-
-// =============================================================================
-// Utility Functions
-// =============================================================================
-
-const formatTimeAgo = (timestampMicros: number): string => {
-    // Server timestamps are in microseconds, convert to milliseconds
-    const timestampMs = Math.floor(timestampMicros / 1000);
-    const now = Date.now();
-    const diff = now - timestampMs;
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return t("just_now");
-    if (minutes < 60) return t("minutes_ago", { count: minutes });
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return t("hours_ago", { count: hours });
-    const days = Math.floor(hours / 24);
-    if (days < 7) return t("days_ago", { count: days });
-
-    // For 7+ days, show actual date using locale-aware formatting
-    const date = new Date(timestampMs);
-    const currentYear = new Date(now).getFullYear();
-    const locale = i18n.language;
-    if (date.getFullYear() === currentYear) {
-        return date.toLocaleDateString(locale, {
-            month: "short",
-            day: "numeric",
-        });
-    }
-    return date.toLocaleDateString(locale, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-    });
-};
 
 const getParentComment = (
     parentID: string | undefined,
@@ -204,10 +162,6 @@ const getParentComment = (
     return comments.find((c) => c.id === parentID);
 };
 
-/**
- * Truncates comment text to first 100 characters of the first line.
- * Adds "..." if multiline or if first line exceeds 100 chars.
- */
 const truncateCommentText = (text: string): string => {
     const lines = text.split("\n");
     const firstLine = lines[0] ?? text;
@@ -218,23 +172,14 @@ const truncateCommentText = (text: string): string => {
     return isMultiline ? firstLine + "..." : firstLine;
 };
 
-// =============================================================================
-// Shared Comment Components
-// =============================================================================
-
 interface CommentHeaderProps {
     userName: string;
     timestamp: number;
     avatarSize?: number;
     isMaskedEmail?: boolean;
-    /** Key used for computing avatar color (e.g., anonUserID for anonymous users). */
     avatarColorKey?: string;
 }
 
-/**
- * Header component showing avatar, username, and timestamp.
- * Used consistently for both root comments and replies.
- */
 const CommentHeader: React.FC<CommentHeaderProps> = ({
     userName,
     timestamp,
@@ -269,9 +214,6 @@ interface QuotedReplyProps {
     currentAnonUserID?: string;
 }
 
-/**
- * Shows the quoted parent comment inside a reply bubble.
- */
 const QuotedReply: React.FC<QuotedReplyProps> = ({
     parentComment,
     isOwn,
@@ -280,9 +222,7 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
     anonUserNames,
     currentAnonUserID,
 }) => {
-    // Get the author name
     const getAuthorName = (): string => {
-        // Check if this is the current user (logged in or anonymous)
         if (parentComment.userID === currentUserID) {
             return t("you");
         }
@@ -293,7 +233,6 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
             return t("you");
         }
 
-        // For anonymous users, look up in anonUserNames
         if (parentComment.anonUserID) {
             return (
                 anonUserNames?.get(parentComment.anonUserID) ??
@@ -301,7 +240,6 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
             );
         }
 
-        // For registered users, look up email
         const email = userIDToEmail?.get(parentComment.userID);
         return email ?? t("user");
     };
@@ -353,96 +291,29 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
     );
 };
 
-// =============================================================================
-// Main Component
-// =============================================================================
-
 export interface CommentsSidebarProps extends ModalVisibilityProps {
-    /**
-     * The file whose comments are being displayed.
-     */
     file?: EnteFile;
-    /**
-     * True while the parent is fetching the initial social payload for the
-     * current file.
-     */
     isSocialDataLoading?: boolean;
-    /**
-     * The currently active collection ID (when viewing from within a collection).
-     */
     activeCollectionID?: number;
-    /**
-     * The current user's ID.
-     */
     currentUserID?: number;
-    /**
-     * Pre-fetched comments by collection ID.
-     */
     prefetchedComments?: Map<number, Comment[]>;
-    /**
-     * Pre-fetched reactions by collection ID (includes both file and comment reactions).
-     */
     prefetchedReactions?: Map<number, UnifiedReaction[]>;
-    /**
-     * Pre-fetched user ID to email mapping.
-     */
     prefetchedUserIDToEmail?: Map<number, string>;
-    /**
-     * Called when a comment is successfully added. The parent should update its
-     * comments state to include this new comment.
-     */
     onCommentAdded?: (comment: Comment) => void;
-    /**
-     * Called when a comment is successfully deleted. The parent should update its
-     * comments state to mark this comment as deleted.
-     */
     onCommentDeleted?: (collectionID: number, commentID: string) => void;
-    /**
-     * Called when a comment reaction is added. The parent should update its
-     * reactions state to include this new reaction.
-     */
     onCommentReactionAdded?: (reaction: UnifiedReaction) => void;
-    /**
-     * Called when a comment reaction is deleted. The parent should update its
-     * reactions state to remove this reaction.
-     */
     onCommentReactionDeleted?: (
         collectionID: number,
         reactionID: string,
     ) => void;
-    /**
-     * If set, the sidebar will scroll to and highlight this comment.
-     */
     highlightCommentID?: string;
-    /**
-     * Public album credentials for anonymous commenting.
-     * Required when viewing a public album (no logged in user).
-     */
     publicAlbumsCredentials?: PublicAlbumsCredentials;
-    /**
-     * The decrypted collection key (base64 encoded) for encrypting comments.
-     * Required when viewing a public album (no logged in user).
-     */
     collectionKey?: string;
-    /**
-     * Map of anonymous user ID to decrypted user name.
-     */
     anonUserNames?: Map<string, string>;
-    /**
-     * Called when user clicks "Join album to like" in the public like modal.
-     * Should trigger the join album flow (with mobile deep link fallback).
-     */
     onJoinAlbum?: () => void;
-    /**
-     * Whether the "Join album" option is enabled for this public link.
-     * When false, the "Join album and like/comment" buttons will be hidden.
-     */
     enableJoin?: boolean;
 }
 
-/**
- * A sidebar panel for displaying and managing comments on a file.
- */
 interface ContextMenuState {
     comment: Comment;
     anchorEl: HTMLElement;
@@ -488,55 +359,45 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
     const [showPublicLikeModal, setShowPublicLikeModal] = useState(false);
     const [pendingCommentLike, setPendingCommentLike] =
         useState<Comment | null>(null);
-    /** Tracks whether the AddNameModal was triggered by a comment like action */
     const [addNameForCommentLike, setAddNameForCommentLike] = useState(false);
-    /** Tracks whether the user has set up their anonymous identity for commenting */
     const [hasAnonIdentity, setHasAnonIdentity] = useState(false);
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
     const hasLoadedRef = useRef(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const commentsContainerRef = useRef<HTMLDivElement>(null);
-    // Ref to preserve isLiked state during context menu close animation
+    // Keep the label stable during the menu's close animation.
     const contextMenuIsLikedRef = useRef(false);
     const showLoading = loading || isSocialDataLoading;
 
-    // Comments grouped by collection: collectionID -> comments
     const [commentsByCollection, setCommentsByCollection] = useState<
         Map<number, Comment[]>
     >(new Map());
 
-    // Selected collection for viewing comments (when in gallery view)
     const [selectedCollectionID, setSelectedCollectionID] = useState<
         number | undefined
     >(undefined);
 
-    // Thumbnail URLs for each collection's cover file: collectionID -> URL
     const [thumbnailURLs, setThumbnailURLs] = useState<Map<number, string>>(
         new Map(),
     );
 
-    // Comment reactions: commentID -> reactionID (for current user's likes)
     const [likedComments, setLikedComments] = useState<Map<string, string>>(
         new Map(),
     );
 
-    // All reactions by collection: collectionID -> reactions array
     const [reactionsByCollection, setReactionsByCollection] = useState<
         Map<number, UnifiedReaction[]>
     >(new Map());
 
-    // Track whether we've scrolled to the highlight comment for this open
     const hasScrolledToHighlightRef = useRef(false);
 
-    // Focus input when replying to a comment
     useEffect(() => {
         if (replyingTo && inputRef.current) {
             inputRef.current.focus();
         }
     }, [replyingTo]);
 
-    // Reset tracking refs when sidebar closes
     useEffect(() => {
         if (!open) {
             hasScrolledToHighlightRef.current = false;
@@ -544,7 +405,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         }
     }, [open]);
 
-    // Scroll to and highlight the target comment when opening from feed
     useEffect(() => {
         if (
             !open ||
@@ -562,7 +422,7 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         let cleanupTimeout: ReturnType<typeof setTimeout> | undefined;
         let blinkInterval: ReturnType<typeof setInterval> | undefined;
 
-        // Wait for DOM to update after comments state change
+        // Let the comments render before locating the target.
         const initialTimeout = setTimeout(() => {
             const commentWrapper = commentsContainerRef.current?.querySelector(
                 `[data-comment-id="${highlightCommentID}"]`,
@@ -570,24 +430,21 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             if (commentWrapper) {
                 hasScrolledToHighlightRef.current = true;
 
-                // Scroll to the comment
                 commentWrapper.scrollIntoView({
                     behavior: "smooth",
                     block: "center",
                 });
 
-                // Find the bubble element inside the wrapper
                 const bubbleElement = commentWrapper.querySelector<HTMLElement>(
                     "[data-comment-bubble]",
                 );
 
                 if (bubbleElement) {
-                    // Wait for scroll to mostly complete, then apply blink highlight
+                    // Start highlighting after smooth scrolling settles.
                     highlightTimeout = setTimeout(() => {
                         const computedStyle = getComputedStyle(bubbleElement);
                         const originalBg = computedStyle.backgroundColor;
 
-                        // Parse the RGB values to create 80% opacity version
                         const rgbMatch = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(
                             originalBg,
                         );
@@ -607,12 +464,10 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                 : originalBg;
                         }, 300);
 
-                        // Stop blinking after 1.5 seconds
                         fadeTimeout = setTimeout(() => {
                             if (blinkInterval) clearInterval(blinkInterval);
                             bubbleElement.style.backgroundColor = originalBg;
 
-                            // Clean up transition style
                             cleanupTimeout = setTimeout(() => {
                                 bubbleElement.style.transition = "";
                                 bubbleElement.style.backgroundColor = "";
@@ -632,7 +487,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         };
     }, [open, highlightCommentID, showLoading, comments]);
 
-    // Reset state when the file changes to avoid showing stale data
     useEffect(() => {
         setSelectedCollectionID(undefined);
         setComments([]);
@@ -642,11 +496,9 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         hasLoadedRef.current = false;
     }, [file?.id]);
 
-    // Check if opened from a collection context
     const hasCollectionContext =
         activeCollectionID !== undefined && activeCollectionID !== 0;
 
-    // Build collection info for the current public album.
     const collectionsInfo = useMemo((): CollectionInfo[] => {
         if (!file) return [];
 
@@ -663,14 +515,12 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         ];
     }, [file, commentsByCollection]);
 
-    // Collections sorted by comment count (descending) for dropdown
     const sortedCollectionsInfo = useMemo(() => {
         return [...collectionsInfo].sort(
             (a, b) => b.commentCount - a.commentCount,
         );
     }, [collectionsInfo]);
 
-    // Currently selected collection info
     const selectedCollectionInfo = useMemo(() => {
         const targetID = hasCollectionContext
             ? activeCollectionID
@@ -687,16 +537,12 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         sortedCollectionsInfo,
     ]);
 
-    // Check if the current user can delete a given comment.
-    // In public albums, only the original author can delete their comment.
+    // Only the original author may delete a public comment.
     const canDeleteComment = useCallback(
         (comment: Comment): boolean => {
-            // Comment author can always delete their own comment
-            // For logged-in users, check userID
             if (comment.userID === currentUserID) {
                 return true;
             }
-            // For anonymous users, check anonUserID
             if (selectedCollectionInfo) {
                 const storedIdentity = getStoredAnonIdentity(
                     selectedCollectionInfo.id,
@@ -713,39 +559,30 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         [currentUserID, selectedCollectionInfo],
     );
 
-    // Load comments and reactions from prefetched data.
     const loadComments = useCallback(() => {
         if (!file || !open || !prefetchedComments) return;
 
-        // Only show loading spinner on initial load, not during polling refresh
+        // Polling refreshes must not replace the list with a spinner.
         const isInitialLoad = !hasLoadedRef.current;
         if (isInitialLoad) {
             setLoading(true);
         }
 
         try {
-            // Use prefetched data
             setCommentsByCollection(prefetchedComments);
             setReactionsByCollection(prefetchedReactions ?? new Map());
 
-            // Set comments for the currently selected collection
             if (hasCollectionContext && activeCollectionID) {
                 const activeComments =
                     prefetchedComments.get(activeCollectionID) ?? [];
                 setComments(activeComments);
             } else {
-                // For gallery view, only auto-select on initial load.
-                // Use functional update to check current selection without
-                // adding selectedCollectionID as a dependency.
+                // Polling must preserve the user's collection selection.
                 setSelectedCollectionID((currentSelection) => {
                     if (currentSelection !== undefined) {
-                        // Already have a selection, don't change it.
-                        // The useEffect that watches selectedCollectionID will
-                        // update the displayed comments.
                         return currentSelection;
                     }
 
-                    // Initial selection: find collection with most comments.
                     let maxCount = -1;
                     let bestCollectionID: number | undefined;
                     for (const [
@@ -785,14 +622,12 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         activeCollectionID,
     ]);
 
-    // Load comments when the sidebar opens
     useEffect(() => {
         if (open) {
             loadComments();
         }
     }, [open, loadComments]);
 
-    // Set initial selected collection to the one with most comments (gallery view)
     useEffect(() => {
         if (
             open &&
@@ -800,7 +635,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             selectedCollectionID === undefined &&
             commentsByCollection.size > 0
         ) {
-            // Find the collection with the most comments.
             let maxCount = -1;
             let bestCollectionID: number | undefined;
             for (const [
@@ -826,7 +660,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         commentsByCollection,
     ]);
 
-    // Update displayed comments when selected collection changes (gallery view)
     useEffect(() => {
         if (!hasCollectionContext && selectedCollectionID !== undefined) {
             const collectionComments =
@@ -835,7 +668,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         }
     }, [hasCollectionContext, selectedCollectionID, commentsByCollection]);
 
-    // Update hasAnonIdentity when collection changes.
     useEffect(() => {
         if (selectedCollectionInfo) {
             const storedIdentity = getStoredAnonIdentity(
@@ -845,7 +677,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         }
     }, [selectedCollectionInfo]);
 
-    // Fetch thumbnails for each collection's cover file
     useEffect(() => {
         if (!open || collectionsInfo.length === 0) {
             return;
@@ -885,9 +716,8 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         };
     }, [open, collectionsInfo]);
 
-    // Build liked comments map from reactions when selected collection changes
     useEffect(() => {
-        // Don't reset state on close - preserves UI during exit animation
+        // Keep reaction state through the close animation.
         if (!open) return;
         if (!selectedCollectionInfo) {
             setLikedComments(new Map());
@@ -902,11 +732,9 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
 
         const storedIdentity = getStoredAnonIdentity(selectedCollectionInfo.id);
 
-        // Find comment reactions that are likes from the current user (or anon user)
         const newLikedComments = new Map<string, string>();
         for (const reaction of reactions) {
             if (reaction.commentID && reaction.reactionType === "green_heart") {
-                // Check if this is the current user's reaction
                 const isCurrentUserReaction =
                     reaction.userID === currentUserID ||
                     (storedIdentity &&
@@ -919,6 +747,14 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         setLikedComments(newLikedComments);
     }, [open, selectedCollectionInfo, reactionsByCollection, currentUserID]);
 
+    const requestCommentIdentity = () => {
+        if (enableJoin) {
+            setShowPublicCommentModal(true);
+        } else {
+            setShowAddNameModal(true);
+        }
+    };
+
     const handleSend = async () => {
         if (!commentText.trim() || !file || !selectedCollectionInfo) return;
 
@@ -926,13 +762,10 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         if (storedIdentity && publicAlbumsCredentials && collectionKey) {
             await sendPublicComment(commentText.trim());
         } else {
-            setShowPublicCommentModal(true);
+            requestCommentIdentity();
         }
     };
 
-    /**
-     * Send a comment to the public album API using stored anonymous identity.
-     */
     const sendPublicComment = async (text: string) => {
         if (
             !file ||
@@ -962,7 +795,8 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 storedIdentity,
             );
 
-            // Add the new comment to local state
+            // Anonymous users use userID 0.
+            // Local timestamps mirror the server's microseconds.
             const newComment: Comment = {
                 id: newCommentID,
                 collectionID,
@@ -970,9 +804,9 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 text,
                 parentCommentID: replyingTo?.id,
                 isDeleted: false,
-                userID: 0, // Anonymous user
+                userID: 0,
                 anonUserID: storedIdentity.anonUserID,
-                createdAt: Date.now() * 1000, // Microseconds to match server format
+                createdAt: Date.now() * 1000,
                 updatedAt: Date.now() * 1000,
             };
             setComments((prev) => [...prev, newComment]);
@@ -986,10 +820,9 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             setCommentText("");
             setReplyingTo(null);
 
-            // Notify parent to update its comments state
             onCommentAdded?.(newComment);
 
-            // Scroll to bottom after adding comment
+            // column-reverse puts the bottom at scrollTop 0.
             setTimeout(() => {
                 if (commentsContainerRef.current) {
                     commentsContainerRef.current.scrollTop = 0;
@@ -1039,10 +872,8 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
 
         const collectionID = selectedCollectionInfo.id;
 
-        // Check if this is for a comment like action
         if (addNameForCommentLike && pendingCommentLike) {
             try {
-                // Create anonymous identity with the provided name
                 const identity = await createAnonIdentity(
                     publicAlbumsCredentials,
                     collectionID,
@@ -1050,7 +881,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                     collectionKey,
                 );
 
-                // Now like the comment using the new identity
                 const reactionID = await addPublicCommentReaction(
                     publicAlbumsCredentials,
                     collectionID,
@@ -1093,8 +923,7 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             return;
         }
 
-        // Handle comment action - just create identity, don't send comment
-        // User will type and send the comment afterwards
+        // Naming only unlocks the input; it does not submit a comment.
         try {
             await createAnonIdentity(
                 publicAlbumsCredentials,
@@ -1102,33 +931,28 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 name,
                 collectionKey,
             );
-            // Identity created, user can now type and send comments
             setHasAnonIdentity(true);
         } catch (e) {
             log.error("Failed to create anonymous identity", e);
         }
     };
 
-    // Check if user needs to set up identity before commenting.
     const needsIdentityToComment = !!selectedCollectionInfo && !hasAnonIdentity;
 
     const handleReply = (commentToReply: Comment) => {
         setReplyingTo(commentToReply);
 
-        // For public albums, check if we have an identity
         if (needsIdentityToComment) {
-            setShowPublicCommentModal(true);
+            requestCommentIdentity();
         }
     };
 
-    // Handler for clicking the comment input area on public albums
     const handleInputClick = () => {
         if (needsIdentityToComment) {
-            setShowPublicCommentModal(true);
+            requestCommentIdentity();
         }
     };
 
-    // Handler for keydown: Enter to send, Shift+Enter for new line
     const handleCommentKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -1179,7 +1003,12 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             const storedIdentity = getStoredAnonIdentity(collectionID);
             if (!storedIdentity) {
                 setPendingCommentLike(targetComment);
-                setShowPublicLikeModal(true);
+                if (enableJoin) {
+                    setShowPublicLikeModal(true);
+                } else {
+                    setAddNameForCommentLike(true);
+                    setShowAddNameModal(true);
+                }
                 return;
             }
 
@@ -1284,7 +1113,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                         return;
                     }
 
-                    // Update local state
                     setComments((prev) =>
                         prev.map((c) =>
                             c.id === targetComment.id
@@ -1307,7 +1135,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                         return next;
                     });
 
-                    // Notify parent to update its comments state
                     onCommentDeleted?.(
                         targetComment.collectionID,
                         targetComment.id,
@@ -1319,7 +1146,7 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         }
     };
 
-    // Filter out deleted comments and sort by timestamp (newest first for column-reverse layout)
+    // column-reverse expects newest comments first.
     const sortedComments = [...comments]
         .filter((c) => !c.isDeleted)
         .sort((a, b) => b.createdAt - a.createdAt);
@@ -1474,9 +1301,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                         <EmptyMessage>{t("no_comments_yet")}</EmptyMessage>
                     ) : (
                         sortedComments.map((comment, index) => {
-                            // Check if this is the current user's comment
-                            // For logged-in users, check userID
-                            // For anonymous users, check anonUserID against stored identity
                             const storedIdentity = selectedCollectionInfo
                                 ? getStoredAnonIdentity(
                                       selectedCollectionInfo.id,
@@ -1490,16 +1314,14 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                 comment.userID === currentUserID ||
                                 isCurrentAnonUser;
 
-                            // With column-reverse, visual order is reversed from array order
-                            // Visual "above" = higher index, visual "below" = lower index
+                            // column-reverse puts the higher index above this comment.
                             const prevComment = sortedComments[index + 1];
                             const nextComment = sortedComments[index - 1];
 
-                            // 10 minutes in microseconds (server timestamps are in microseconds)
+                            // Server timestamps are microseconds.
+                            // Consecutive comments group within ten minutes.
                             const GROUP_TIME_THRESHOLD = 10 * 60 * 1000 * 1000;
 
-                            // Comments are in same sequence if same user AND within 10 minutes
-                            // For anon users, also check if they have the same anonUserID
                             const isSameUser = (a: Comment, b: Comment) => {
                                 if (a.anonUserID && b.anonUserID) {
                                     return a.anonUserID === b.anonUserID;
@@ -1531,13 +1353,11 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                             const showOwnTimestamp =
                                 commentIsOwn && isFirstInSequence;
 
-                            // Get the display name, avatar color key, and masked email status for the comment author
                             const getCommentAuthorInfo = (): {
                                 name: string;
                                 avatarColorKey: string;
                                 isMaskedEmail: boolean;
                             } => {
-                                // If anonymous user, check anonUserNames map
                                 if (comment.anonUserID) {
                                     const anonName =
                                         anonUserNames?.get(
@@ -1546,12 +1366,10 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                         `${t("anonymous")} ${comment.anonUserID.slice(-4)}`;
                                     return {
                                         name: anonName,
-                                        // Use name for avatar color (varying length like mobile emails)
                                         avatarColorKey: anonName,
                                         isMaskedEmail: false,
                                     };
                                 }
-                                // For registered users, use email
                                 const emailFromMap =
                                     prefetchedUserIDToEmail?.get(
                                         comment.userID,
@@ -1559,7 +1377,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                 const email = emailFromMap ?? t("user");
                                 return {
                                     name: email,
-                                    // Use email or userID for avatar color
                                     avatarColorKey: emailFromMap
                                         ? emailFromMap
                                         : String(comment.userID),
@@ -1728,7 +1545,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                     >
                                         Replying to{" "}
                                         {(() => {
-                                            // Check for anonymous user
                                             if (replyingTo.anonUserID) {
                                                 const storedIdentity =
                                                     selectedCollectionInfo
@@ -1737,9 +1553,8 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                                           )
                                                         : undefined;
                                                 if (
-                                                    storedIdentity &&
                                                     replyingTo.anonUserID ===
-                                                        storedIdentity.anonUserID
+                                                    storedIdentity?.anonUserID
                                                 ) {
                                                     return t("yourself");
                                                 }
@@ -1749,7 +1564,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                                     ) ?? t("user")
                                                 );
                                             }
-                                            // Regular user
                                             return replyingTo.userID ===
                                                 currentUserID
                                                 ? t("yourself")
@@ -1849,7 +1663,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 </InputContainer>
             </DrawerContentWrapper>
 
-            {/* Public album modals */}
             <PublicCommentModal
                 open={showPublicCommentModal}
                 onClose={() => setShowPublicCommentModal(false)}
@@ -1874,8 +1687,7 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                     setPendingCommentLike(null);
                 }}
                 onExited={() => {
-                    // Reset actionType after modal has fully closed to avoid
-                    // visual glitch of icon changing during exit animation
+                    // Keep the modal variant stable through its exit animation.
                     setAddNameForCommentLike(false);
                 }}
                 onSubmit={handleNameSubmit}
@@ -1885,11 +1697,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
     );
 };
 
-// =============================================================================
-// Styled Components
-// =============================================================================
-
-// Drawer & Layout
 const SidebarDrawer = styled(Drawer)(({ theme }) => ({
     "& .MuiDrawer-paper": {
         width: "23vw",
@@ -1948,7 +1755,6 @@ const CloseButton = styled(IconButton)(({ theme }) => ({
     }),
 }));
 
-// Collection Dropdown
 const CollectionDropdownButton = styled(Box)(({ theme }) => ({
     display: "inline-flex",
     alignItems: "center",
@@ -1998,13 +1804,13 @@ const CollectionThumbnailPlaceholder = styled(Box)(() => ({
     backgroundColor: "#08C225",
 }));
 
+// The negative margin centers these states below the 56px header offset.
 const LoadingContainer = styled(Box)(() => ({
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     height: "100%",
     paddingRight: 24,
-    // Offset for header (marginBottom: 48) + padding diff (32-24=8) = 56, halved
     marginTop: -28,
 }));
 
@@ -2014,7 +1820,6 @@ const EmptyMessage = styled(Typography)(({ theme }) => ({
     alignItems: "center",
     height: "100%",
     paddingRight: 24,
-    // Offset for header (marginBottom: 48) + padding diff (32-24=8) = 56, halved
     marginTop: -28,
     color: "#666",
     ...theme.applyStyles("dark", { color: "rgba(255, 255, 255, 0.5)" }),
@@ -2079,7 +1884,6 @@ const CommentsContainer = styled(Box)(({ theme }) => ({
     }),
 }));
 
-// Comment Header
 const CommentHeaderContainer = styled(Box)(() => ({
     display: "flex",
     alignItems: "center",
@@ -2117,7 +1921,6 @@ const OwnTimestamp = styled(Typography)(({ theme }) => ({
     ...theme.applyStyles("dark", { color: "rgba(255, 255, 255, 0.7)" }),
 }));
 
-// Comment Bubbles
 const CommentBubbleWrapper = styled(Box, {
     shouldForwardProp: (prop) =>
         !["isOwn", "isFirstOwn", "isLastOwn", "isHighlighted"].includes(
@@ -2179,7 +1982,6 @@ const QuotedReplyContainer = styled(Box, {
         })),
 }));
 
-// Input Area
 const InputContainer = styled(Box)(({ theme }) => ({
     position: "relative",
     backgroundColor: "#F3F3F3",
@@ -2259,7 +2061,6 @@ const SendButton = styled(IconButton)(({ theme }) => ({
     }),
 }));
 
-// Context Menu
 const ContextMenuOverlay = styled(Box)(() => ({
     position: "absolute",
     top: -25,

@@ -1,52 +1,21 @@
-import * as ffmpeg from "@/public-album/media/processing/ffmpeg";
 import log from "ente-base/log";
+import * as ffmpeg from "ente-gallery/services/ffmpeg";
 import { FileType, type FileTypeInfo } from "ente-media/file-type";
 import { isHEICExtension } from "ente-media/formats";
 import { heicToJPEG } from "ente-media/heic-convert";
 import { scaledImageDimensions } from "ente-media/image";
 import { withTimeout } from "ente-utils/promise";
 
-/** Maximum width or height of the generated thumbnail */
 const maxThumbnailDimension = 720;
-/** Maximum size (in bytes) of the generated thumbnail */
-const maxThumbnailSize = 100 * 1024; // 100 KB
+const maxThumbnailSize = 100 * 1024;
 
-/**
- * Timeout (ms) to wait before giving up on canvas thumbnail generation.
- *
- * [Note: Rendering arbitrary file types to the canvas needs a timeout]
- *
- * When generating thumbnails on the web, we use an HTML canvas. We take the
- * file's content, a blob, and load it on the canvas by creating an image URL
- * for this blob (using `createObjectURL`).
- *
- * In case when the browser knows how to render images of this type, this works
- * great. Later we can read off the thumbnail from the (resized) canvas.
- *
- * However, if this in not a file format that the browser can understand, then
- * this process just hangs. There isn't a trivial way of knowing beforehand
- * which browser will support which file type, so we need to add a timeout.
- */
+// Unsupported image formats may never fire a load event.
 const canvasThumbnailGenerationTimeout = 30 * 1000;
 
-/**
- * Generate a JPEG thumbnail for the given image or video blob.
- *
- * The thumbnail has a smaller file size so that is quick to load. But more
- * importantly, it uses a universal file format (JPEG in our case) so that the
- * thumbnail itself can be opened in all clients, even those like the web client
- * itself that might not yet have support for more exotic formats.
- *
- * @param blob The image or video blob whose thumbnail we want to generate.
- *
- * @param fileTypeInfo The type information for the file this blob came from.
- *
- * @return The JPEG data of the generated thumbnail.
- */
 export const generateThumbnailWeb = async (
     blob: Blob,
     fileTypeInfo: FileTypeInfo,
-): Promise<Uint8Array> =>
+): Promise<Uint8Array<ArrayBuffer>> =>
     fileTypeInfo.fileType == FileType.image
         ? await generateImageThumbnailWeb(blob, fileTypeInfo)
         : await generateVideoThumbnailWeb(blob);
@@ -96,7 +65,9 @@ const generateImageThumbnailUsingCanvas = async (blob: Blob) => {
     return await compressedJPEGData(canvas);
 };
 
-const compressedJPEGData = async (canvas: HTMLCanvasElement) => {
+const compressedJPEGData = async (
+    canvas: HTMLCanvasElement,
+): Promise<Uint8Array<ArrayBuffer>> => {
     let blob: Blob | undefined | null;
     let prevSize = Number.MAX_SAFE_INTEGER;
     let quality = 0.7;
@@ -134,7 +105,7 @@ const generateVideoThumbnailWeb = async (blob: Blob) => {
     }
 };
 
-export const generateVideoThumbnailUsingCanvas = async (blob: Blob) => {
+const generateVideoThumbnailUsingCanvas = async (blob: Blob) => {
     const canvas = document.createElement("canvas");
     const canvasCtx = canvas.getContext("2d")!;
 
@@ -168,11 +139,7 @@ export const generateVideoThumbnailUsingCanvas = async (blob: Blob) => {
     return await compressedJPEGData(canvas);
 };
 
-/**
- * A fallback, black, thumbnail for use in cases where thumbnail generation
- * fails.
- */
-export const fallbackThumbnail = () =>
+export const fallbackThumbnail = (): Uint8Array<ArrayBuffer> =>
     Uint8Array.from(atob(blackThumbnailB64), (c) => c.charCodeAt(0));
 
 const blackThumbnailB64 =

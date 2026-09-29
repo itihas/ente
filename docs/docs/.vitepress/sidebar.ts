@@ -1,5 +1,4 @@
-// When adding new pages, they need to be manually inserted into their
-// appropriate place here.
+// Add new pages to this sidebar manually.
 
 export const sidebar = [
     {
@@ -159,6 +158,10 @@ export const sidebar = [
                                 link: "/photos/features/sharing-and-collaboration/share",
                             },
                             {
+                                text: "Library sharing",
+                                link: "/photos/features/sharing-and-collaboration/library-sharing",
+                            },
+                            {
                                 text: "Collaboration",
                                 link: "/photos/features/sharing-and-collaboration/collaboration",
                             },
@@ -219,6 +222,10 @@ export const sidebar = [
                         collapsed: true,
                         items: [
                             {
+                                text: "Android gallery integration",
+                                link: "/photos/features/utilities/android-gallery",
+                            },
+                            {
                                 text: "Cast",
                                 link: "/photos/features/utilities/cast/",
                             },
@@ -233,6 +240,10 @@ export const sidebar = [
                             {
                                 text: "Detect Text (OCR)",
                                 link: "/photos/features/utilities/detect-text",
+                            },
+                            {
+                                text: "Guest view",
+                                link: "/photos/features/utilities/guest-view",
                             },
                             {
                                 text: "QR codes in photos",
@@ -327,7 +338,17 @@ export const sidebar = [
         text: "Auth",
         items: [
             { text: "Introduction", link: "/auth/" },
-            { text: "Features", link: "/auth/features/" },
+            {
+                text: "Features",
+                collapsed: true,
+                items: [
+                    { text: "Overview", link: "/auth/features/" },
+                    {
+                        text: "Offline mode",
+                        link: "/auth/features/offline-mode",
+                    },
+                ],
+            },
             {
                 text: "FAQ",
                 collapsed: true,
@@ -371,13 +392,30 @@ export const sidebar = [
                     },
                 ],
             },
+            {
+                text: "Troubleshooting",
+                collapsed: true,
+                items: [
+                    {
+                        text: "Offline codes unavailable",
+                        link: "/auth/troubleshooting/offline-codes-unavailable",
+                    },
+                    {
+                        text: "Linux system authentication",
+                        link: "/auth/troubleshooting/linux-system-auth",
+                    },
+                    {
+                        text: "Windows",
+                        link: "/auth/troubleshooting/windows",
+                    },
+                ],
+            },
         ],
     },
     {
         text: "Locker",
         items: [
             { text: "Introduction", link: "/locker/" },
-            { text: "Changelog", link: "/locker/changelog" },
             {
                 text: "Getting Started",
                 collapsed: true,
@@ -501,6 +539,10 @@ export const sidebar = [
                                 text: "Overview",
                                 link: "/locker/features/legacy/",
                             },
+                            {
+                                text: "Legacy Kits",
+                                link: "/locker/features/legacy/legacy-kits",
+                            },
                         ],
                     },
                 ],
@@ -547,10 +589,52 @@ export const sidebar = [
         collapsed: true,
         items: [
             { text: "Introduction", link: "/ensu/" },
+            { text: "How it works", link: "/ensu/how-it-works" },
+            {
+                text: "Features",
+                collapsed: true,
+                items: [{ text: "Overview", link: "/ensu/features/" }],
+            },
             {
                 text: "FAQ",
                 link: "/ensu/faq/",
             },
+        ],
+    },
+    {
+        text: "Toys",
+        collapsed: false,
+        items: [
+            {
+                text: "Paste",
+                collapsed: true,
+                items: [
+                    { text: "Introduction", link: "/paste/" },
+                    {
+                        text: "Send your first paste",
+                        link: "/paste/getting-started",
+                    },
+                    {
+                        text: "How encryption works",
+                        link: "/paste/features/security",
+                    },
+                    { text: "FAQ", link: "/paste/faq" },
+                ],
+            },
+            {
+                text: "2of3",
+                collapsed: true,
+                items: [
+                    { text: "Introduction", link: "/2of3/" },
+                    {
+                        text: "Getting started",
+                        link: "/2of3/getting-started",
+                    },
+                    { text: "How it works", link: "/2of3/how-it-works" },
+                    { text: "FAQ", link: "/2of3/faq" },
+                ],
+            },
+            { text: "QR", link: "/qr/" },
         ],
     },
     {
@@ -630,6 +714,10 @@ export const sidebar = [
                 collapsed: true,
                 items: [
                     {
+                        text: "Building from source",
+                        link: "/self-hosting/development/building-from-source",
+                    },
+                    {
                         text: "Building mobile apps",
                         link: "/self-hosting/development/mobile-build",
                     },
@@ -672,6 +760,10 @@ export const sidebar = [
                     {
                         text: "Docker / quickstart",
                         link: "/self-hosting/troubleshooting/docker",
+                    },
+                    {
+                        text: "Updated images",
+                        link: "/self-hosting/troubleshooting/ghcr",
                     },
                     {
                         text: "Uploads",

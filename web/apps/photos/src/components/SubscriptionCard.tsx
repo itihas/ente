@@ -22,21 +22,10 @@ import { t } from "i18next";
 import type React from "react";
 
 interface SubscriptionCardProps {
-    /**
-     * Details for the logged in user.
-     *
-     * Can be undefined if the fetch has not yet completed.
-     */
     userDetails: UserDetails | undefined;
-    /**
-     * Called when the user clicks on the card.
-     */
     onClick: () => void;
 }
 
-/**
- * The card in the sidebar that shows a summary of the user's plan and usage.
- */
 export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
     userDetails,
     onClick,
@@ -58,11 +47,7 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
 
 const BackgroundOverlay: React.FC = () => (
     <img
-        style={{
-            aspectRatio: "2/1",
-            // Remove extra whitespace below the image.
-            verticalAlign: "bottom",
-        }}
+        style={{ aspectRatio: "2/1", verticalAlign: "bottom" }}
         width="100%"
         src="/images/subscription-card-background/1x.png"
         srcSet="/images/subscription-card-background/2x.png 2x, /images/subscription-card-background/3x.png 3x"
@@ -75,31 +60,20 @@ const ClickOverlay: React.FC<ButtonishProps> = ({ onClick }) => (
     </ClickOverlayButton>
 );
 
-/**
- * The transparent button element offers activation of the subscription card.
- *
- * A mixin of {@link FocusVisibleUnstyledButton} and {@link Overlay}, plus
- * custom styling to place its contents (chevron) at the middle right.
- */
 const ClickOverlayButton = styled(UnstyledButton)(
     ({ theme }) => `
-    /* Overlay */
     position: absolute;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
 
-    /* Position the chevron at the middle right */
     display: flex;
     justify-content: flex-end;
     align-items: center;
 
-    /* Reset the button color */
     color: inherit;
 
-    /* FocusVisibleUnstyledButton, but customized to work button with the larger
-       subscription card and its border radii. */
     &:focus-visible {
         outline: 1.5px solid ${theme.vars.palette.stroke.base};
         outline-offset: 2px;
@@ -117,7 +91,7 @@ interface SubscriptionCardContentOverlayProps {
     userDetails: UserDetails;
 }
 
-export const SubscriptionCardContentOverlay: React.FC<
+const SubscriptionCardContentOverlay: React.FC<
     SubscriptionCardContentOverlayProps
 > = ({ userDetails }) => {
     const inFamily = isPartOfFamilyWithOtherMembers(userDetails);
@@ -209,18 +183,7 @@ const IndividualUsageSection: React.FC<IndividualUsageSectionProps> = ({
     storage,
     fileCount,
 }) => (
-    // [Note: Fallback translation for languages with multiple plurals]
-    //
-    // Languages like Polish and Arabian have multiple plural forms, and
-    // currently i18n falls back to the base language translation instead of the
-    // "_other" form if all the plural forms are not listed out.
-    //
-    // As a workaround, name the _other form as the unprefixed name. That is,
-    // instead of calling the most general plural form as foo_count_other, call
-    // it foo_count (To keep our heads straight, we adopt the convention that
-    // all such pluralizable strings use the _count suffix, but that's not a
-    // requirement from the library).
-
+    // Use the unsuffixed key as the fallback for languages with more plural forms.
     <Stack sx={{ gap: 1.5 }}>
         <UsageBar>
             <UsageBarSegment
@@ -246,14 +209,8 @@ const UsageBar = styled("div")`
     background-color: rgba(255 255 255 / 0.2);
 `;
 
-type UsageBarSegmentProps = UsageStorage & {
-    /** A CSS color string representing the color that this segment  */
-    fillColor: string;
-};
+type UsageBarSegmentProps = UsageStorage & { fillColor: string };
 
-/**
- * A bar inside a UsageContainer.
- */
 const UsageBarSegment: React.FC<UsageBarSegmentProps> = ({
     usage,
     storage,

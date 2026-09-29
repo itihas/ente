@@ -1,17 +1,22 @@
-import {
-    fetchFileData,
-    fetchFilePreviewData,
-} from "@/public-album/data/api/public-file-data";
 import { decryptBlobBytes } from "ente-base/crypto";
 import type { EncryptedBlob } from "ente-base/crypto/types";
 import type { PublicAlbumsCredentials } from "ente-base/http";
 import log from "ente-base/log";
+import {
+    fetchFileData,
+    fetchFilePreviewData,
+} from "ente-gallery/services/file-data";
+import {
+    maxHLSMetadataBytes,
+    reconstructHLSPlaylist,
+} from "ente-gallery/utils/hls";
 import { fileLogID, type EnteFile } from "ente-media/file";
 import { FileType } from "ente-media/file-type";
+import { gunzipWithLimit } from "ente-new/photos/utils/gzip";
 import { ensurePrecondition } from "ente-utils/ensure";
 import { z } from "zod";
 
-export interface HLSPlaylistData {
+interface HLSPlaylistData {
     playlistURL: string;
     width: number;
     height: number;
@@ -54,10 +59,11 @@ export const hlsPlaylistDataForFile = async (
     );
     if (!videoURL) return undefined;
 
-    const playlist = playlistTemplate.replaceAll(
-        "\noutput.ts",
-        `\n${videoURL}`,
-    );
+    const playlist = reconstructHLSPlaylist(playlistTemplate, videoURL);
+    if (!playlist) {
+        log.warn(`Ignoring invalid HLS playlist for ${fileLogID(file)}`);
+        return undefined;
+    }
 
     const playlistURL = await blobToDataURL(
         new Blob([playlist], { type: "application/vnd.apple.mpegurl" }),
@@ -80,14 +86,12 @@ const decryptPlaylistJSON = async (
     file: EnteFile,
 ) => {
     const decryptedBytes = await decryptBlobBytes(encryptedPlaylist, file.key);
-    const jsonString = await gunzip(decryptedBytes);
+    const jsonString = await gunzipWithLimit(
+        decryptedBytes,
+        maxHLSMetadataBytes,
+    );
     return PlaylistJSON.parse(JSON.parse(jsonString));
 };
-
-const gunzip = async (data: Uint8Array) =>
-    await new Response(
-        new Blob([data]).stream().pipeThrough(new DecompressionStream("gzip")),
-    ).text();
 
 const blobToDataURL = (blob: Blob) =>
     new Promise<string>((resolve) => {

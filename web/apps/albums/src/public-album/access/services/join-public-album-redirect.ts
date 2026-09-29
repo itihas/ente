@@ -1,5 +1,4 @@
 import type { PublicAlbumsCredentials } from "ente-base/http";
-import { photosAppOrigin } from "ente-base/origins";
 import type { Collection } from "ente-media/collection";
 import type { RefObject } from "react";
 
@@ -10,24 +9,16 @@ export interface JoinPublicAlbumRedirectProps {
     credentials?: RefObject<PublicAlbumsCredentials | undefined>;
 }
 
-/**
- * Build the web app redirect URL for joining an album.
- */
 const buildWebRedirectURL = (
     accessToken: string,
     collectionId: number,
     currentHash: string,
     jwtToken?: string,
 ): string => {
-    const webAppURL = photosAppOrigin();
     const hashSuffix = jwtToken ? `&jwt=${encodeURIComponent(jwtToken)}` : "";
-    return `${webAppURL}/?joinAlbum=${accessToken}&collectionId=${collectionId}#${currentHash}${hashSuffix}`;
+    return `https://photos.ente.com/?joinAlbum=${accessToken}&collectionId=${collectionId}#${currentHash}${hashSuffix}`;
 };
 
-/**
- * Handle the fallback flow when the native app doesn't open.
- * Redirects to web app with all join context in the URL.
- */
 const handleWebFallback = (
     accessToken: string,
     collectionId: number,
@@ -43,10 +34,6 @@ const handleWebFallback = (
     window.location.href = redirectURL;
 };
 
-/**
- * Attempt to open the native app via deep link, with fallback to web.
- * Returns a cleanup function to clear the timeout if needed.
- */
 const tryDeepLinkWithFallback = (
     deepLinkURL: string,
     fallbackFn: () => void | Promise<void>,

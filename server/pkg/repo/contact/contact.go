@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
-	"github.com/ente-io/museum/ente"
-	contactmodel "github.com/ente-io/museum/ente/contact"
-	"github.com/ente-io/museum/pkg/utils/array"
-	"github.com/ente-io/museum/pkg/utils/crypto"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	contactmodel "github.com/ente/museum/ente/contact"
+	"github.com/ente/museum/pkg/repo"
+	"github.com/ente/museum/pkg/utils/crypto"
+	"github.com/ente/stacktrace"
 	"github.com/lib/pq"
 )
 
@@ -107,24 +108,11 @@ func (r *Repository) hasActiveEmergencyRelationship(ctx context.Context, actorUs
 }
 
 func (r *Repository) hasSharedActiveFamily(ctx context.Context, actorUserID int64, contactUserID int64) (bool, error) {
-	var exists bool
-	err := r.DB.QueryRowContext(
+	return (&repo.UserRepository{DB: r.DB}).AreUsersInSameFamily(
 		ctx,
-		`SELECT EXISTS(
-			SELECT 1
-			FROM users actor
-			JOIN users contact ON actor.family_admin_id = contact.family_admin_id
-			WHERE actor.user_id = $1
-			  AND contact.user_id = $2
-			  AND actor.family_admin_id IS NOT NULL
-		)`,
 		actorUserID,
 		contactUserID,
-	).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
+	)
 }
 
 func (r *Repository) hasCommonSharedCollection(ctx context.Context, actorUserID int64, contactUserID int64) (bool, error) {
@@ -177,6 +165,30 @@ func (r *Repository) Get(ctx context.Context, userID int64, id string) (*contact
 		return nil, stacktrace.Propagate(err, "failed to get contact")
 	}
 	return entity, nil
+}
+
+type ContactUpdateState struct {
+	ContactUserID int64
+	IsDeleted     bool
+}
+
+func (r *Repository) GetContactUpdateState(ctx context.Context, userID int64, id string) (ContactUpdateState, error) {
+	var state ContactUpdateState
+	err := r.DB.QueryRowContext(
+		ctx,
+		`SELECT contact_user_id, is_deleted
+		   FROM contact_entity
+		  WHERE id = $1 AND user_id = $2`,
+		id,
+		userID,
+	).Scan(&state.ContactUserID, &state.IsDeleted)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ContactUpdateState{}, &ente.ErrNotFoundError
+		}
+		return ContactUpdateState{}, stacktrace.Propagate(err, "failed to get contact update state")
+	}
+	return state, nil
 }
 
 func (r *Repository) Update(ctx context.Context, userID int64, id string, req contactmodel.UpdateRequest) error {
@@ -488,14 +500,14 @@ func (r *Repository) AddBucket(row contactmodel.Attachment, bucketID string, col
 		WHERE attachment_id = $2 AND user_id = $3 AND attachment_type = $4`, columnName, columnName)
 	result, err := r.DB.Exec(query, bucketID, row.AttachmentID, row.UserID, string(row.AttachmentType))
 	if err != nil {
-		return stacktrace.Propagate(err, "failed to add bucket to "+columnName)
+		return stacktrace.Propagate(err, "failed to add bucket to %s", columnName)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return stacktrace.Propagate(err, "")
 	}
 	if rowsAffected == 0 {
-		return stacktrace.NewError("bucket not added to " + columnName)
+		return stacktrace.NewError("bucket not added to %s", columnName)
 	}
 	return nil
 }
@@ -512,14 +524,14 @@ func (r *Repository) RemoveBucket(row contactmodel.Attachment, bucketID string, 
 		WHERE attachment_id = $2 AND user_id = $3 AND attachment_type = $4`, columnName, columnName)
 	result, err := r.DB.Exec(query, bucketID, row.AttachmentID, row.UserID, string(row.AttachmentType))
 	if err != nil {
-		return stacktrace.Propagate(err, "failed to remove bucket from "+columnName)
+		return stacktrace.Propagate(err, "failed to remove bucket from %s", columnName)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return stacktrace.Propagate(err, "")
 	}
 	if rowsAffected == 0 {
-		return stacktrace.NewError("bucket not removed from " + columnName)
+		return stacktrace.NewError("bucket not removed from %s", columnName)
 	}
 	return nil
 }
@@ -542,14 +554,14 @@ func (r *Repository) MoveBetweenBuckets(row contactmodel.Attachment, bucketID st
 		WHERE attachment_id = $2 AND user_id = $3 AND attachment_type = $4`, destColumn, destColumn, sourceColumn, sourceColumn)
 	result, err := r.DB.Exec(query, bucketID, row.AttachmentID, row.UserID, string(row.AttachmentType))
 	if err != nil {
-		return stacktrace.Propagate(err, "failed to move bucket from "+sourceColumn+" to "+destColumn)
+		return stacktrace.Propagate(err, "failed to move bucket from %s to %s", sourceColumn, destColumn)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return stacktrace.Propagate(err, "")
 	}
 	if rowsAffected == 0 {
-		return stacktrace.NewError("bucket not moved from " + sourceColumn + " to " + destColumn)
+		return stacktrace.NewError("bucket not moved from %s to %s", sourceColumn, destColumn)
 	}
 	return nil
 }
@@ -587,11 +599,9 @@ func (r *Repository) GetPendingSyncAttachmentAndExtendLock(
 	}
 	if attachment.SyncLockedTill > newSyncLockTime {
 		return nil, stacktrace.NewError(
-			fmt.Sprintf(
-				"newSyncLockTime (%d) is less than existing SyncLockedTill(%d)",
-				newSyncLockTime,
-				attachment.SyncLockedTill,
-			),
+			"newSyncLockTime (%d) is less than existing SyncLockedTill(%d)",
+			newSyncLockTime,
+			attachment.SyncLockedTill,
 		)
 	}
 	if _, err := tx.ExecContext(
@@ -632,10 +642,10 @@ func (r *Repository) MarkAttachmentReplicationAsDone(ctx context.Context, row co
 }
 
 func (r *Repository) RegisterReplicationAttempt(ctx context.Context, row contactmodel.Attachment, dstBucketID string) error {
-	if array.StringInList(dstBucketID, row.DeleteFromBuckets) {
+	if slices.Contains(row.DeleteFromBuckets, dstBucketID) {
 		return r.MoveBetweenBuckets(row, dstBucketID, DeletionColumn, InflightRepColumn)
 	}
-	if !array.StringInList(dstBucketID, row.InflightRepBuckets) {
+	if !slices.Contains(row.InflightRepBuckets, dstBucketID) {
 		return r.AddBucket(row, dstBucketID, InflightRepColumn)
 	}
 	return nil

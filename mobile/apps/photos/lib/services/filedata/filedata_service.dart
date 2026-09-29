@@ -5,7 +5,6 @@ import "package:flutter/foundation.dart" show Uint8List;
 import "package:logging/logging.dart";
 import "package:photos/db/files_db.dart";
 import "package:photos/db/ml/db.dart";
-import "package:photos/db/ml/filedata.dart";
 import "package:photos/gateways/files/file_data_gateway.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/service_locator.dart";
@@ -29,9 +28,7 @@ class FileDataService {
     previewIds = <int, PreviewInfo>{};
   }
 
-  /// Used to not sync preview ids everytime a chunking and preview
-  /// upload is successful, instead update the local copy of those
-  /// preview ids
+  // Update the local preview cache without syncing after every upload.
   void appendPreview(int id, String objectId, int objectSize) {
     if (previewIds.containsKey(id)) return;
     previewIds[id] = PreviewInfo(objectId: objectId, objectSize: objectSize);

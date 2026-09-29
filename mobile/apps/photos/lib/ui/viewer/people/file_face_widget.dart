@@ -1,5 +1,6 @@
 import "dart:typed_data";
 
+import "package:ente_ui/components/loading_widget.dart";
 import 'package:flutter/widgets.dart';
 import "package:logging/logging.dart";
 import "package:photos/db/ml/db.dart";
@@ -8,7 +9,6 @@ import 'package:photos/models/file/file.dart';
 import "package:photos/models/ml/face/face.dart";
 import "package:photos/service_locator.dart" show isLocalGalleryMode;
 import "package:photos/theme/ente_theme.dart";
-import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/utils/face/face_thumbnail_cache.dart";
 
@@ -17,7 +17,6 @@ final _logger = Logger("FaceWidget");
 class FileFaceWidget extends StatefulWidget {
   final EnteFile file;
 
-  // Data to find the right face, in order of preference
   final Uint8List? faceCrop;
   final Face? face;
   final String? clusterID;
@@ -25,14 +24,7 @@ class FileFaceWidget extends StatefulWidget {
   final bool useFullFile;
   final bool thumbnailFallback;
 
-  /// Physical pixel width for image decoding optimization.
-  ///
-  /// When provided and > 0, the image will be decoded at this width, with height
-  /// computed to preserve aspect ratio. This reduces memory usage for small displays.
-  ///
-  /// Typically calculated as: `(logicalWidth * MediaQuery.devicePixelRatioOf(context)).toInt()`
-  ///
-  /// If null or <= 0, the image is decoded at full resolution.
+  // Physical pixels; null or non-positive decodes at full resolution.
   final int? cachedPixelWidth;
 
   const FileFaceWidget(
@@ -79,9 +71,8 @@ class _FileFaceWidgetState extends State<FileFaceWidget> {
       future: faceCropFuture,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          // Only cacheWidth (not cacheHeight) to preserve aspect ratio.
-          // Face crops are typically portrait, so constraining width ensures
-          // sufficient height for BoxFit.cover without upscaling.
+          // Decode by width only so portrait crops retain enough height for
+          // BoxFit.cover without upscaling.
           final shouldOptimize =
               widget.cachedPixelWidth != null && widget.cachedPixelWidth! > 0;
           final ImageProvider imageProvider = shouldOptimize
@@ -135,7 +126,8 @@ class _FileFaceWidgetState extends State<FileFaceWidget> {
         _logger.severe("Missing file ID for face crop generation");
         return null;
       }
-      final Face? faceToUse = widget.face ??
+      final Face? faceToUse =
+          widget.face ??
           await mlDataDB.getCoverFaceForPerson(
             recentFileID: recentFileID,
             clusterID: widget.clusterID,

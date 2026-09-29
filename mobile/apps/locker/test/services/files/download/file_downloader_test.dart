@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:locker/services/configuration.dart';
 import 'package:locker/services/files/download/file_downloader.dart'
     as file_downloader;
 import 'package:locker/services/files/offline/offline_file_storage.dart';
@@ -42,29 +44,65 @@ void main() {
       }
     });
 
-    test('returns ID-keyed cached decrypted copy and ignores localPath',
+    for (final title in ['${'a' * 251}.pdf', '${'\u6587' * 83}ab.pdf']) {
+      test(
+        'stages a 255-byte filename with ${title.length} characters',
         () async {
-      final staleLocalPath = await writeFile(
-        p.join(root.path, 'old-local-copy.pdf'),
-        'stale local bytes',
-      );
-      final file = lockerFile(
-        uploadedFileID: 901,
-        title: 'statement.pdf',
-        localPath: staleLocalPath.path,
-      );
-      final cachedDecrypted = await writeFile(
-        getCachedDecryptedFilePath(file),
-        'current cached bytes',
-      );
+          expect(utf8.encode(title).length, 255);
+          final file = lockerFile(uploadedFileID: 904, title: title);
+          final temporaryPath = file_downloader.getTemporaryDecryptedFilePath(
+            file,
+          );
 
-      final opened = await file_downloader.openFile(file, Uint8List(32));
+          final temporaryFile = await writeFile(
+            temporaryPath,
+            'downloaded bytes',
+          );
 
-      expect(opened, isNotNull);
-      expect(opened!.path, cachedDecrypted.path);
-      expect(await opened.readAsString(), 'current cached bytes');
-      expect(await staleLocalPath.readAsString(), 'stale local bytes');
-    });
+          expect(await temporaryFile.readAsString(), 'downloaded bytes');
+          expect(file.displayName, title);
+          expect(
+            p.dirname(temporaryPath),
+            p.normalize(Configuration.instance.getTempDirectory()),
+          );
+          expect(temporaryPath, isNot(getCachedDecryptedFilePath(file)));
+          expect(
+            temporaryPath,
+            isNot(
+              file_downloader.getTemporaryDecryptedFilePath(
+                lockerFile(uploadedFileID: 905, title: title),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    test(
+      'returns ID-keyed cached decrypted copy and ignores localPath',
+      () async {
+        final staleLocalPath = await writeFile(
+          p.join(root.path, 'old-local-copy.pdf'),
+          'stale local bytes',
+        );
+        final file = lockerFile(
+          uploadedFileID: 901,
+          title: 'statement.pdf',
+          localPath: staleLocalPath.path,
+        );
+        final cachedDecrypted = await writeFile(
+          getCachedDecryptedFilePath(file),
+          'current cached bytes',
+        );
+
+        final opened = await file_downloader.openFile(file, Uint8List(32));
+
+        expect(opened, isNotNull);
+        expect(opened!.path, cachedDecrypted.path);
+        expect(await opened.readAsString(), 'current cached bytes');
+        expect(await staleLocalPath.readAsString(), 'stale local bytes');
+      },
+    );
 
     test('isolates cached decrypted files by uploaded file ID', () async {
       final sharedLocalPath = await writeFile(

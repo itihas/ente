@@ -1,5 +1,5 @@
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/material.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/ui/components/alert_bottom_sheet.dart";
 import "package:photos/ui/components/buttons/button_widget_v2.dart";
 import "package:photos/ui/settings/developer_settings_page.dart";
@@ -44,20 +44,18 @@ class _DeveloperSettingsTapAreaState extends State<DeveloperSettingsTapArea> {
 
     await showAlertBottomSheet(
       context,
-      title: AppLocalizations.of(context).developerSettings,
-      message: AppLocalizations.of(context).developerSettingsWarning,
+      title: context.strings.developerSettings,
+      message: context.strings.developerSettingsWarning,
       assetPath: "assets/warning-grey.png",
       isDismissible: false,
       buttons: [
         ButtonWidgetV2(
           buttonType: ButtonTypeV2.primary,
-          labelText: AppLocalizations.of(context).yes,
+          labelText: context.strings.yes,
           onTap: () async {
             Navigator.of(context).pop();
             await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const DeveloperSettingsPage(),
-              ),
+              MaterialPageRoute(builder: (_) => const DeveloperSettingsPage()),
             );
             widget.onSettingsChanged?.call();
           },

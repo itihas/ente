@@ -1,16 +1,17 @@
 import "dart:async";
 
 import "package:ente_pure_utils/ente_pure_utils.dart";
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/collection_updated_event.dart";
+import "package:photos/events/contact_relationships_invalidated_event.dart";
 import "package:photos/events/contacts_changed_event.dart";
 import "package:photos/events/event.dart";
 import "package:photos/events/location_tag_updated_event.dart";
 import "package:photos/events/magic_cache_updated_event.dart";
 import "package:photos/events/people_changed_event.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/models/collection/collection.dart";
 import "package:photos/models/collection/collection_items.dart";
 import "package:photos/models/search/search_result.dart";
@@ -23,6 +24,8 @@ import "package:photos/ui/viewer/location/add_location_sheet.dart";
 import "package:photos/ui/viewer/location/pick_center_point_widget.dart";
 import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/share_util.dart";
+
+const _kSearchPreviewFallbackClusterSize = 3;
 
 enum ResultType {
   collection,
@@ -51,57 +54,53 @@ enum SectionType {
   wrapped,
   location,
   album,
-  // People section shows the files shared by other persons
   contacts,
   fileTypesAndExtension,
 }
 
 extension SectionTypeExtensions on SectionType {
-  // passing context for internalization in the future
   String sectionTitle(BuildContext context) {
     switch (this) {
       case SectionType.face:
-        return AppLocalizations.of(context).people;
+        return context.strings.people;
       case SectionType.magic:
-        return AppLocalizations.of(context).discover;
+        return context.strings.discover;
       case SectionType.wrapped:
         return "Ente Rewind";
       case SectionType.location:
-        return AppLocalizations.of(context).locations;
+        return context.strings.locations;
       case SectionType.ritual:
-        return AppLocalizations.of(context).ritualsTitle;
+        return context.strings.ritualsTitle;
       case SectionType.contacts:
-        return AppLocalizations.of(context).contacts;
+        return context.strings.contacts;
       case SectionType.album:
-        return AppLocalizations.of(context).albums;
+        return context.strings.albums;
       case SectionType.fileTypesAndExtension:
-        return AppLocalizations.of(context).fileTypes;
+        return context.strings.fileTypes;
     }
   }
 
   String getEmptyStateText(BuildContext context) {
     switch (this) {
       case SectionType.face:
-        return AppLocalizations.of(context).searchPersonsEmptySection;
+        return context.strings.searchPersonsEmptySection;
       case SectionType.magic:
-        return AppLocalizations.of(context).searchDiscoverEmptySection;
+        return context.strings.searchDiscoverEmptySection;
       case SectionType.wrapped:
         return "Check back soon for your 2025 highlights.";
       case SectionType.location:
-        return AppLocalizations.of(context).searchLocationEmptySection;
+        return context.strings.searchLocationEmptySection;
       case SectionType.ritual:
-        return AppLocalizations.of(context).ritualSearchEmpty;
+        return context.strings.ritualSearchEmpty;
       case SectionType.contacts:
-        return AppLocalizations.of(context).searchPeopleEmptySection;
+        return context.strings.searchPeopleEmptySection;
       case SectionType.album:
-        return AppLocalizations.of(context).searchAlbumsEmptySection;
+        return context.strings.searchAlbumsEmptySection;
       case SectionType.fileTypesAndExtension:
-        return AppLocalizations.of(context).searchFileTypesAndNamesEmptySection;
+        return context.strings.searchFileTypesAndNamesEmptySection;
     }
   }
 
-  // isCTAVisible is used to show/hide the CTA button in the empty state
-  // Disable the CTA for face, content, moment, fileTypesAndExtension, fileCaption
   bool get isCTAVisible {
     switch (this) {
       case SectionType.face:
@@ -150,13 +149,13 @@ extension SectionTypeExtensions on SectionType {
       case SectionType.wrapped:
         return "";
       case SectionType.location:
-        return AppLocalizations.of(context).addNew;
+        return context.strings.addNew;
       case SectionType.ritual:
         return "";
       case SectionType.contacts:
-        return AppLocalizations.of(context).invite;
+        return context.strings.invite;
       case SectionType.album:
-        return AppLocalizations.of(context).addNew;
+        return context.strings.addNew;
       case SectionType.fileTypesAndExtension:
         return "";
     }
@@ -187,14 +186,13 @@ extension SectionTypeExtensions on SectionType {
     switch (this) {
       case SectionType.contacts:
         return () async {
-          await shareText(
-            AppLocalizations.of(context).shareTextRecommendUsingEnte,
-          );
+          await shareText(context.strings.shareTextRecommendUsingEnteForPhotos);
         };
       case SectionType.location:
         return () async {
           final centerPoint = await showPickCenterPointSheet(context);
           if (centerPoint != null) {
+            if (!context.mounted) return;
             showAddLocationSheet(context, centerPoint);
           }
         };
@@ -204,37 +202,40 @@ extension SectionTypeExtensions on SectionType {
         return () async {
           final result = await showTextInputDialog(
             context,
-            title: AppLocalizations.of(context).newAlbum,
-            submitButtonLabel: AppLocalizations.of(context).create,
-            hintText: AppLocalizations.of(context).enterAlbumName,
+            title: context.strings.newAlbum,
+            submitButtonLabel: context.strings.create,
+            hintText: context.strings.enterAlbumName,
             alwaysShowSuccessState: false,
             initialValue: "",
-            textCapitalization: TextCapitalization.words,
+            textCapitalization: TextCapitalization.sentences,
             onSubmit: (String text) async {
-              // indicates user cancelled the rename request
               if (text.trim() == "") {
                 return;
               }
               try {
-                final Collection c =
-                    await CollectionsService.instance.createAlbum(text);
+                final Collection c = await CollectionsService.instance
+                    .createAlbum(text);
 
-                // Close the dialog now so that it does not flash when leaving the album again.
+                // Close now so it does not flash when returning from the album.
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
 
+                if (!context.mounted) return;
                 // ignore: unawaited_futures
                 await routeToPage(
                   context,
                   CollectionPage(CollectionWithThumbnail(c, null)),
                 );
               } catch (e, s) {
-                Logger("CreateNewAlbumIcon")
-                    .severe("Failed to create a new album", e, s);
+                Logger(
+                  "CreateNewAlbumIcon",
+                ).severe("Failed to create a new album", e, s);
                 rethrow;
               }
             },
           );
           if (result is Exception) {
+            if (!context.mounted) return;
             await showGenericErrorDialog(context: context, error: result);
           }
         };
@@ -247,10 +248,7 @@ extension SectionTypeExtensions on SectionType {
     }
   }
 
-  Future<List<SearchResult>> getData(
-    BuildContext? context, {
-    int? limit,
-  }) {
+  Future<List<SearchResult>> getData(BuildContext? context, {int? limit}) {
     switch (this) {
       case SectionType.face:
         return SearchService.instance.getAllFace(
@@ -258,9 +256,15 @@ extension SectionTypeExtensions on SectionType {
           minClusterSize: limit == null
               ? kMinimumClusterSizeAllFaces
               : kMinimumClusterSizeSearchResult,
+          fallbackMinClusterSize: limit == null
+              ? null
+              : _kSearchPreviewFallbackClusterSize,
         );
       case SectionType.magic:
-        return SearchService.instance.getMagicSectionResults(context!);
+        return SearchService.instance.getMagicSectionResults(
+          context!,
+          limit: limit,
+        );
       case SectionType.wrapped:
         return Future.value(const <SearchResult>[]);
       case SectionType.location:
@@ -275,8 +279,10 @@ extension SectionTypeExtensions on SectionType {
         return SearchService.instance.getAllCollectionSearchResults(limit);
 
       case SectionType.fileTypesAndExtension:
-        return SearchService.instance
-            .getAllFileTypesAndExtensionsResults(context!, limit);
+        return SearchService.instance.getAllFileTypesAndExtensionsResults(
+          context!,
+          limit,
+        );
     }
   }
 
@@ -294,6 +300,7 @@ extension SectionTypeExtensions on SectionType {
         return [Bus.instance.on<PeopleChangedEvent>()];
       case SectionType.contacts:
         return [
+          Bus.instance.on<ContactRelationshipsInvalidatedEvent>(),
           Bus.instance.on<PeopleChangedEvent>(),
           Bus.instance.on<ContactsChangedEvent>(),
         ];
@@ -302,8 +309,6 @@ extension SectionTypeExtensions on SectionType {
     }
   }
 
-  ///Events to listen to for different search sections, different from common
-  ///events listened to in AllSectionsExampleState.
   List<Stream<Event>> sectionUpdateEvents() {
     switch (this) {
       case SectionType.location:
@@ -316,6 +321,7 @@ extension SectionTypeExtensions on SectionType {
         return [];
       case SectionType.contacts:
         return [
+          Bus.instance.on<ContactRelationshipsInvalidatedEvent>(),
           Bus.instance.on<PeopleChangedEvent>(),
           Bus.instance.on<ContactsChangedEvent>(),
         ];

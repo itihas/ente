@@ -9,10 +9,7 @@ Migrating from Amazon Photos to Ente requires downloading your photos from Amazo
 
 ## Understanding Amazon's limitations
 
-Amazon Photos does not provide a way to export all of your photos and videos, or
-even albums with a single click. According to their
-[help desk article](https://www.amazon.com/gp/help/customer/display.html?nodeId=GVCELKY5JW77VE7W),
-you have to select and download photos individually or in batches.
+Amazon Photos does not provide a way to export all of your photos and videos, or even albums with a single click. According to their [help desk article](https://www.amazon.com/gp/help/customer/display.html?nodeId=GVCELKY5JW77VE7W), you have to select and download photos individually or in batches.
 
 ## Migration Process
 
@@ -46,7 +43,10 @@ This organization will be reflected in Ente if you choose the "Separate albums" 
 2. Sign in to your Ente account
 3. Drag and drop the downloaded folder(s) into the Ente app
 4. Choose how to organize: single album or separate albums per folder
-5. Let the upload complete
+5. Review the photo, video, and album counts, then start the upload
+6. Expand the progress card if you want to review completed, skipped, or failed files
+
+Learn more about the review, progress, stop, completion, and retry screens in [Import from Local Hard Disk](/photos/migration/from-local-hard-disk).
 
 **Upload features:**
 
@@ -76,5 +76,4 @@ Once your photos are in Ente:
 
 ## Need Help?
 
-If you run into any issues during this migration, please reach out to
-[support@ente.com](mailto:support@ente.com) and we will be happy to help you!
+If you run into any issues during this migration, please reach out to [support@ente.com](mailto:support@ente.com) and we will be happy to help you!

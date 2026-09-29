@@ -2,34 +2,42 @@ import "dart:async";
 import "dart:convert";
 import "dart:io";
 
+import "package:crypto/crypto.dart";
 import "package:dio/dio.dart";
+import "package:ente_pure_utils/ente_pure_utils.dart"
+    show deleteFileSystemEntityIfPresent;
 import "package:flutter/foundation.dart";
 import "package:logging/logging.dart";
 import "package:path_provider/path_provider.dart";
 import "package:photos/core/network/network.dart";
-import "package:photos/service_locator.dart"
-    show flagService, isLocalGalleryMode;
 import "package:synchronized/synchronized.dart";
 
 class RemoteAssetsService {
   static final _logger = Logger("RemoteAssetsService");
   static const int _resumableThresholdBytes = 10 * 1024 * 1024;
 
-  bool checkRemovedOldAssets = false;
-
   RemoteAssetsService._privateConstructor();
   final StreamController<(String, int, int)> _progressController =
       StreamController<(String, int, int)>.broadcast();
   final Map<String, Lock> _assetLocks = {};
+  Future<void>? _oldModelsCleanupFuture;
 
   Stream<(String, int, int)> get progressStream => _progressController.stream;
 
   static final RemoteAssetsService instance =
       RemoteAssetsService._privateConstructor();
 
-  Future<File> getAsset(String remotePath, {bool refetch = false}) async {
+  Future<File> getAsset(
+    String remotePath, {
+    bool refetch = false,
+    String? expectedSha256,
+    String? cacheFileName,
+  }) async {
     return _lockFor(remotePath).synchronized(() async {
-      final path = await _getLocalPath(remotePath);
+      final path = await _getLocalPath(
+        remotePath,
+        cacheFileName: cacheFileName,
+      );
       final file = File(path);
       if (await file.exists() && !refetch) {
         _logger.info("Returning cached file for $remotePath");
@@ -38,20 +46,41 @@ class RemoteAssetsService {
 
       final tempFile = File(_tempPath(path));
       await _downloadFile(remotePath, tempFile.path);
+      await _validateDownloadedFileSha256(tempFile, remotePath, expectedSha256);
       await _replaceFile(tempFile, file);
       await _deleteResumeMetadata(tempFile.path);
       return file;
     });
   }
 
-  Future<String> getAssetPath(String remotePath, {bool refetch = false}) async {
+  Future<void> deleteAsset(String remotePath, {String? cacheFileName}) {
+    return _lockFor(remotePath).synchronized(() async {
+      final localPath = await _getLocalPath(
+        remotePath,
+        cacheFileName: cacheFileName,
+      );
+      await _deleteAssetArtifacts(localPath);
+    });
+  }
+
+  Future<String> getAssetPath(
+    String remotePath, {
+    bool refetch = false,
+    String? expectedSha256,
+  }) async {
     await cleanupOldModelsIfNeeded();
-    final file = await getAsset(remotePath, refetch: refetch);
+    final file = await getAsset(
+      remotePath,
+      refetch: refetch,
+      expectedSha256: expectedSha256,
+    );
     return file.path;
   }
 
-  ///Returns asset if the remote asset is new compared to the local copy of it
-  Future<File?> getAssetIfUpdated(String remotePath) async {
+  Future<File?> getAssetIfUpdated(
+    String remotePath, {
+    String? expectedSha256,
+  }) async {
     return _lockFor(remotePath).synchronized(() async {
       try {
         final path = await _getLocalPath(remotePath);
@@ -60,6 +89,11 @@ class RemoteAssetsService {
 
         if (!await file.exists()) {
           await _downloadFile(remotePath, tempFile.path);
+          await _validateDownloadedFileSha256(
+            tempFile,
+            remotePath,
+            expectedSha256,
+          );
           await _replaceFile(tempFile, file);
           await _deleteResumeMetadata(tempFile.path);
           return file;
@@ -67,6 +101,11 @@ class RemoteAssetsService {
 
         final existingFileSize = await file.length();
         await _downloadFile(remotePath, tempFile.path);
+        await _validateDownloadedFileSha256(
+          tempFile,
+          remotePath,
+          expectedSha256,
+        );
         final newFileSize = await tempFile.length();
         if (existingFileSize != newFileSize) {
           await _replaceFile(tempFile, file);
@@ -76,6 +115,8 @@ class RemoteAssetsService {
 
         await _clearResumeArtifacts(tempFile.path);
         return null;
+      } on _RemoteAssetHashMismatchException {
+        rethrow;
       } catch (e) {
         _logger.warning("Error getting asset if updated", e);
         return null;
@@ -83,26 +124,29 @@ class RemoteAssetsService {
     });
   }
 
-  Future<bool> hasAsset(String remotePath) async {
-    final path = await _getLocalPath(remotePath);
-    return File(path).exists();
+  Future<bool> hasAsset(String remotePath, {String? cacheFileName}) {
+    return _lockFor(remotePath).synchronized(() async {
+      final path = await _getLocalPath(
+        remotePath,
+        cacheFileName: cacheFileName,
+      );
+      return File(path).exists();
+    });
   }
 
-  Future<String> _getLocalPath(String remotePath) async {
+  Future<String> _getLocalPath(
+    String remotePath, {
+    String? cacheFileName,
+  }) async {
     return (await getApplicationSupportDirectory()).path +
         "/assets/" +
-        _urlToFileName(remotePath);
+        (cacheFileName ?? _urlToFileName(remotePath));
   }
 
   String _urlToFileName(String url) {
-    // Remove the protocol part (http:// or https://)
     String fileName = url
         .replaceAll(RegExp(r'https?://'), '')
-        // Replace all non-alphanumeric characters except for underscores and periods with an underscore
         .replaceAll(RegExp(r'[^\w\.]'), '_');
-    // Optionally, you might want to trim the resulting string to a certain length
-
-    // Replace periods with underscores for better readability, if desired
     fileName = fileName.replaceAll('.', '_');
 
     return fileName;
@@ -128,9 +172,9 @@ class RemoteAssetsService {
         useResumable
             ? "Using resumable download for $url (${probe.totalBytes} bytes)"
             : "Using single-shot download for $url despite resumable "
-                "downloads being enabled (size: ${probe.totalBytes} bytes, "
-                "acceptsRanges: ${probe.acceptsRanges}, "
-                "strongEtag: ${probe.ifRangeValidator != null})",
+                  "downloads being enabled (size: ${probe.totalBytes} bytes, "
+                  "acceptsRanges: ${probe.acceptsRanges}, "
+                  "strongEtag: ${probe.ifRangeValidator != null})",
       );
     }
     if (useResumable) {
@@ -154,28 +198,40 @@ class RemoteAssetsService {
     );
   }
 
-  Future<void> cleanupOldModelsIfNeeded() async {
-    if (checkRemovedOldAssets) return;
-    const oldModelNames = [
-      "https://models.ente.io/clip-image-vit-32-float32.onnx",
-      "https://models.ente.io/clip-text-vit-32-uint8.onnx",
-      "https://models.ente.io/mobileclip_s2_image_opset18_rgba_sim.onnx",
-      "https://models.ente.io/mobileclip_s2_image_opset18_rgba_opt.onnx",
-      "https://models.ente.io/mobileclip_s2_text_int32.onnx",
-      "https://models.ente.io/yolov5s_face_opset18_rgba_opt.onnx",
-      "https://models.ente.io/yolov5s_face_opset18_rgba_opt_nosplits.onnx",
-    ];
+  Future<void> cleanupOldModelsIfNeeded() =>
+      _oldModelsCleanupFuture ??= _cleanupOldModels();
 
-    await cleanupSelectedModels(oldModelNames);
+  Future<void> _cleanupOldModels() async {
+    try {
+      const oldModelNames = [
+        "https://models.ente.io/clip-image-vit-32-float32.onnx",
+        "https://models.ente.io/clip-text-vit-32-uint8.onnx",
+        "https://models.ente.io/mobileclip_s2_image_opset18_rgba_sim.onnx",
+        "https://models.ente.io/mobileclip_s2_image_opset18_rgba_opt.onnx",
+        "https://models.ente.io/mobileclip_s2_text_int32.onnx",
+        "https://models.ente.io/yolov5s_face_opset18_rgba_opt.onnx",
+        "https://models.ente.io/yolov5s_face_opset18_rgba_opt_nosplits.onnx",
+        "https://models.ente.io/yolov5s_face_640_640_dynamic.onnx",
+        "https://models.ente.io/mobilefacenet_opset15.onnx",
+        "https://models.ente.com/yolov5s_face_640_640_dynamic.onnx",
+        "https://models.ente.com/mobilefacenet_opset15.onnx",
+        "https://models.ente.io/mobileclip_s2_image.onnx",
+        "https://models.ente.com/mobileclip_s2_image.onnx",
+      ];
 
-    checkRemovedOldAssets = true;
-    _logger.info("Old ML models cleaned up");
+      await cleanupSelectedModels(oldModelNames);
+      _logger.info("Old ML models cleaned up");
+    } catch (_) {
+      _oldModelsCleanupFuture = null;
+      rethrow;
+    }
   }
 
   Future<void> cleanupSelectedModels(List<String> modelRemotePaths) async {
     for (final remotePath in modelRemotePaths) {
       final localPath = await _getLocalPath(remotePath);
-      final hasArtifacts = await File(localPath).exists() ||
+      final hasArtifacts =
+          await File(localPath).exists() ||
           await File(_tempPath(localPath)).exists() ||
           await File(_resumeMetadataPath(_tempPath(localPath))).exists();
       if (hasArtifacts) {
@@ -187,10 +243,9 @@ class RemoteAssetsService {
     }
   }
 
-  Dio get _dio => NetworkClient.instance.getDio();
+  Dio get _dio => NetworkClient.instance.downloadDio;
 
-  bool get _resumableDownloadsEnabled =>
-      isLocalGalleryMode || flagService.internalUser;
+  bool get _resumableDownloadsEnabled => true;
 
   Lock _lockFor(String remotePath) =>
       _assetLocks.putIfAbsent(remotePath, Lock.new);
@@ -220,7 +275,7 @@ class RemoteAssetsService {
       if (_shouldLogProbeDiagnosticsFor(url)) {
         final contentLength =
             response.headers.value(HttpHeaders.contentLengthHeader) ??
-                "missing";
+            "missing";
         final acceptRanges =
             response.headers.value("accept-ranges")?.trim() ?? "missing";
         final etag = response.headers.value(HttpHeaders.etagHeader)?.trim();
@@ -259,9 +314,9 @@ class RemoteAssetsService {
         _logger.warning(
           _isConnectionFailure(e)
               ? "HEAD probe connection failed for $url without complete "
-                  "resume artifacts, falling back to single-shot download"
+                    "resume artifacts, falling back to single-shot download"
               : "HEAD probe failed for $url, falling back to single-shot "
-                  "download",
+                    "download",
           e,
           s,
         );
@@ -466,6 +521,46 @@ class RemoteAssetsService {
     }
   }
 
+  Future<void> _validateDownloadedFileSha256(
+    File file,
+    String url,
+    String? expectedSha256,
+  ) async {
+    if (expectedSha256 == null) {
+      return;
+    }
+
+    try {
+      await _validateExpectedSha256(file, url, expectedSha256);
+    } on _RemoteAssetHashMismatchException {
+      await _clearResumeArtifacts(file.path);
+      rethrow;
+    }
+  }
+
+  Future<void> _validateExpectedSha256(
+    File file,
+    String url,
+    String expectedSha256,
+  ) async {
+    final actualSha256 = await _sha256Hex(file);
+    if (!_hashesMatch(actualSha256, expectedSha256)) {
+      throw _RemoteAssetHashMismatchException(
+        url: url,
+        expectedSha256: expectedSha256,
+        actualSha256: actualSha256,
+      );
+    }
+  }
+
+  Future<String> _sha256Hex(File file) async {
+    final digest = await sha256.bind(file.openRead()).first;
+    return digest.toString();
+  }
+
+  bool _hashesMatch(String actualSha256, String expectedSha256) =>
+      actualSha256.toLowerCase() == expectedSha256.toLowerCase();
+
   void _validateResumedResponseHeaders(
     Headers headers, {
     required int expectedStart,
@@ -551,9 +646,7 @@ class RemoteAssetsService {
   }
 
   Future<void> _deleteFileIfExists(File file) async {
-    if (await file.exists()) {
-      await file.delete();
-    }
+    await deleteFileSystemEntityIfPresent(file);
   }
 
   void _emitProgress(String url, int received, int total) {
@@ -638,4 +731,22 @@ class _ResumeValidationException implements Exception {
 
   @override
   String toString() => "ResumeValidationException: $message";
+}
+
+class _RemoteAssetHashMismatchException implements Exception {
+  const _RemoteAssetHashMismatchException({
+    required this.url,
+    required this.expectedSha256,
+    required this.actualSha256,
+  });
+
+  final String url;
+  final String expectedSha256;
+  final String actualSha256;
+
+  @override
+  String toString() {
+    return "RemoteAssetHashMismatchException: Expected SHA-256 "
+        "$expectedSha256 for $url, found $actualSha256";
+  }
 }

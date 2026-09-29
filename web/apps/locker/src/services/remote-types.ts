@@ -1,7 +1,7 @@
 import type {
     LockerCollectionParticipant,
     LockerCollectionParticipantRole,
-} from "types";
+} from "@/types";
 import { z } from "zod";
 
 export const RemoteCollectionUserSchema = z.object({
@@ -10,7 +10,7 @@ export const RemoteCollectionUserSchema = z.object({
     role: z.string().nullish(),
 });
 
-export type RemoteCollectionUser = z.infer<typeof RemoteCollectionUserSchema>;
+type RemoteCollectionUser = z.infer<typeof RemoteCollectionUserSchema>;
 
 export const RemoteIDResponseSchema = z.object({ id: z.number() });
 

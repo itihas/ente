@@ -20,8 +20,7 @@ export const QuickLinkCreatedNotification: React.FC<
 
     useEffect(() => {
         if (open) {
-            // Reset only when opening so the check icon does not flicker back
-            // to copy during the close animation.
+            // Reset on open, not during the close animation.
             setCopied(false);
             return;
         }

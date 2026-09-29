@@ -1,3 +1,4 @@
+import { fileTimelineDateString, type SelectedState } from "@/utils/file";
 import CloseIcon from "@mui/icons-material/Close";
 import {
     Box,
@@ -11,17 +12,13 @@ import {
 import type { LocalUser } from "ente-accounts/services/user";
 import { LoadingButton } from "ente-base/components/mui/LoadingButton";
 import { useIsSmallWidth } from "ente-base/components/utils/hooks";
-import { isSameDay } from "ente-base/date";
 import { ut } from "ente-base/i18n";
-import { formattedDate } from "ente-base/i18n-date";
 import type { Collection } from "ente-media/collection";
 import type { EnteFile } from "ente-media/file";
-import { fileCreationPhotoDate } from "ente-media/file-metadata";
 import { FileType } from "ente-media/file-type";
 import { t } from "i18next";
 import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { type SelectedState } from "utils/file";
 import { FileList, type FileListAnnotatedFile } from "../FileList";
 
 interface PickCoverPhotoDialogProps {
@@ -37,9 +34,6 @@ interface PickCoverPhotoDialogProps {
 
 type SubmittingAction = "use-selected-photo" | "reset-to-default";
 
-/**
- * Picker dialog for selecting a single file to use as an album cover.
- */
 export const PickCoverPhotoDialog: React.FC<PickCoverPhotoDialogProps> = ({
     open,
     onClose,
@@ -300,20 +294,10 @@ const createSingleSelection = (
     file: EnteFile,
     collectionID: number,
     userID: number,
-): SelectedState =>
-    ({
-        [file.id]: true,
-        ownCount: file.ownerID === userID ? 1 : 0,
-        count: 1,
-        collectionID,
-        context: { mode: "albums", collectionID },
-    }) as SelectedState;
-
-const fileTimelineDateString = (file: EnteFile) => {
-    const date = fileCreationPhotoDate(file);
-    return isSameDay(date, new Date())
-        ? t("today")
-        : isSameDay(date, new Date(Date.now() - 24 * 60 * 60 * 1000))
-          ? t("yesterday")
-          : formattedDate(date);
-};
+): SelectedState => ({
+    [file.id]: true,
+    ownCount: file.ownerID === userID ? 1 : 0,
+    count: 1,
+    collectionID,
+    context: { mode: "albums", collectionID },
+});

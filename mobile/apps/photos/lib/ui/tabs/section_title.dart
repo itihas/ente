@@ -1,5 +1,5 @@
+import "package:ente_strings/ente_strings.dart";
 import 'package:flutter/material.dart';
-import "package:photos/generated/l10n.dart";
 import 'package:photos/theme/ente_theme.dart';
 import "package:styled_text/styled_text.dart";
 
@@ -92,12 +92,8 @@ Widget getOnEnteSection(BuildContext context) {
   );
 
   return StyledText(
-    text: AppLocalizations.of(context).onEnte,
+    text: context.strings.onEnte,
     style: style,
-    tags: {
-      'branding': StyledTextTag(
-        style: style,
-      ),
-    },
+    tags: {'branding': StyledTextTag(style: style)},
   );
 }

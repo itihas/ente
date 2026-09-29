@@ -7,10 +7,6 @@ import { apiURL } from "ente-base/origins";
 import type { PublicURL } from "ente-media/collection";
 import { z } from "zod";
 
-/**
- * Verify the password entered for a password-protected public album and return
- * the JWT token needed for subsequent authenticated public-album requests.
- */
 export const verifyPublicAlbumPassword = async (
     publicURL: PublicURL,
     password: string,

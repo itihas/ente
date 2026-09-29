@@ -13,7 +13,6 @@ interface TimelineLocationProps {
     onPhotoClick?: (cluster: JourneyPoint[], fileId: number) => void;
 }
 
-// Component for timeline location item
 export const TimelineLocation = memo<TimelineLocationProps>(
     ({
         cluster,
@@ -48,7 +47,6 @@ export const TimelineLocation = memo<TimelineLocationProps>(
         const diffTime = photoDateOnly.getTime() - firstDateOnly.getTime();
         const dayNumber = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-        // Show green only for the active location
         const currentLocationIndex = Math.round(
             scrollProgress * Math.max(0, photoClusters.length - 1),
         );
@@ -135,7 +133,6 @@ export const TimelineLocation = memo<TimelineLocationProps>(
     },
 );
 
-// Styled components
 const LocationContainer = styled(Box)({
     position: "relative",
     display: "flex",

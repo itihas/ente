@@ -1,13 +1,7 @@
-import { savedKeyAttributes } from "ente-accounts-rs/services/accounts-db";
-import { getUserRecoveryKey } from "ente-accounts-rs/services/recovery-key";
-import { masterKeyFromSession } from "ente-accounts-rs/services/session-storage";
-import { ensureLocalUser } from "ente-accounts-rs/services/user";
-import { clientPackageName, desktopAppVersion, isDesktop } from "ente-base/app";
+import { retryAsyncOperation } from "ente-base/http";
 import log from "ente-base/log";
 import { apiOrigin } from "ente-base/origins";
-import { savedAuthToken } from "ente-base/token";
-import type { ContactsCtxHandle } from "ente-wasm";
-import { loadEnteWasm } from "ente-wasm/load";
+import { ensureArrayBufferBacked } from "ente-utils/bytes";
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import {
     saveContactDisplayRecords,
@@ -26,10 +20,6 @@ import type {
     ContactDisplayRecord,
     ContactLookup,
     ContactsDisplaySnapshot,
-    LegacyContactState,
-    LegacyInfo,
-    LegacyRecoveryBundle,
-    LegacyRecoveryStatus,
     ResolvedContactAvatar,
     ResolvedContactDisplay,
     WrappedRootContactKey,
@@ -38,13 +28,6 @@ export type {
     ContactDisplayRecord,
     ContactLookup,
     ContactsDisplaySnapshot,
-    LegacyContactRecord,
-    LegacyContactState,
-    LegacyInfo,
-    LegacyRecoveryBundle,
-    LegacyRecoverySession,
-    LegacyRecoveryStatus,
-    LegacyUser,
     ResolvedContactAvatar,
     ResolvedContactDisplay,
     WrappedRootContactKey,
@@ -52,69 +35,49 @@ export type {
 
 const CONTACT_DIFF_LIMIT = 500;
 const AVATAR_FAILURE_TTL_MS = 60_000;
-const READY_RETRY_COOLDOWN_MS = 5_000;
 const CONTACTS_CACHE_SCHEMA_VERSION = 2;
 
-interface RemoteContactRecord {
+export interface RemoteContactRecord {
     id: string;
-    contactUserId: number | bigint;
-    email?: string | null;
-    name?: string | null;
-    profilePictureAttachmentID?: string | null;
-    profilePictureAttachmentId?: string | null;
+    contactUserId: number;
+    email?: string;
+    name?: string;
+    profilePictureAttachmentID?: string;
     isDeleted: boolean;
-    updatedAt: number | bigint;
+    updatedAt: number;
 }
 
-interface RemoteLegacyUser {
-    id: number | bigint;
-    email: string;
-}
-
-interface RemoteLegacyContactRecord {
-    user: RemoteLegacyUser;
-    emergencyContact: RemoteLegacyUser;
-    state: LegacyContactState;
-    recoveryNoticeInDays: number | bigint;
-}
-
-interface RemoteLegacyRecoverySession {
-    id: string;
-    user: RemoteLegacyUser;
-    emergencyContact: RemoteLegacyUser;
-    status: LegacyRecoveryStatus;
-    waitTill: number | bigint;
-    createdAt: number | bigint;
-}
-
-interface RemoteLegacyInfo {
-    contacts: RemoteLegacyContactRecord[];
-    recoverSessions: RemoteLegacyRecoverySession[];
-    othersEmergencyContact: RemoteLegacyContactRecord[];
-    othersRecoverySession: RemoteLegacyRecoverySession[];
-}
-
-interface ContactsReadyInput {
-    userID: number;
-    masterKeyB64: string;
-}
-
-type RootKeySource = "cache" | "unresolved";
-
-interface OpenedContactsCtx {
-    ctx: ContactsCtxHandle;
+interface ContactsDiffOutput {
+    records: RemoteContactRecord[];
     wrappedRootContactKey?: WrappedRootContactKey;
-    rootKeySource: RootKeySource;
 }
+
+interface ProfilePictureOutput {
+    bytes: Uint8Array;
+    wrappedRootContactKey?: WrappedRootContactKey;
+}
+
+type GetDiff<Session> = (
+    session: Session,
+    wrappedRootContactKey: WrappedRootContactKey | undefined,
+    sinceTime: number,
+    limit: number,
+) => Promise<ContactsDiffOutput>;
+
+type LoadProfilePicture = (
+    wrappedRootContactKey: WrappedRootContactKey | undefined,
+    contactID: string,
+) => Promise<ProfilePictureOutput>;
 
 interface ContactsState {
     snapshot: ContactsDisplaySnapshot;
     listeners: Set<() => void>;
     currentSessionKey: string | undefined;
     sessionGeneration: number;
-    currentAuthToken: string | undefined;
-    ctx: ContactsCtxHandle | undefined;
-    readyPromise: Promise<void> | undefined;
+    sync: (() => Promise<void>) | undefined;
+    getProfilePicture: LoadProfilePicture | undefined;
+    wrappedRootContactKey: WrappedRootContactKey | undefined;
+    pullPromise: Promise<void> | undefined;
     contactsByID: Map<string, ContactDisplayRecord>;
     contactIDByUserID: Map<number, string>;
     contactIDByEmail: Map<string, string>;
@@ -122,8 +85,6 @@ interface ContactsState {
     avatarLoadsByContactID: Map<string, Promise<void>>;
     avatarFailureUntilByContactID: Map<string, number>;
     avatarListenersByContactID: Map<string, Set<() => void>>;
-    lastReadyInput: ContactsReadyInput | undefined;
-    retryTimer: ReturnType<typeof setTimeout> | undefined;
 }
 
 const emptySnapshot = (): ContactsDisplaySnapshot => ({
@@ -138,9 +99,10 @@ const state: ContactsState = {
     listeners: new Set(),
     currentSessionKey: undefined,
     sessionGeneration: 0,
-    currentAuthToken: undefined,
-    ctx: undefined,
-    readyPromise: undefined,
+    sync: undefined,
+    getProfilePicture: undefined,
+    wrappedRootContactKey: undefined,
+    pullPromise: undefined,
     contactsByID: new Map(),
     contactIDByUserID: new Map(),
     contactIDByEmail: new Map(),
@@ -148,8 +110,6 @@ const state: ContactsState = {
     avatarLoadsByContactID: new Map(),
     avatarFailureUntilByContactID: new Map(),
     avatarListenersByContactID: new Map(),
-    lastReadyInput: undefined,
-    retryTimer: undefined,
 };
 
 const buildSessionKey = (baseURL: string, userID: number) =>
@@ -186,19 +146,16 @@ const clearInMemoryState = () => {
     for (const avatarURL of state.avatarURLByContactID.values()) {
         URL.revokeObjectURL(avatarURL);
     }
-    state.ctx = undefined;
-    state.currentAuthToken = undefined;
-    state.readyPromise = undefined;
+    state.sync = undefined;
+    state.getProfilePicture = undefined;
+    state.wrappedRootContactKey = undefined;
+    state.pullPromise = undefined;
     state.contactsByID = new Map();
     state.contactIDByUserID = new Map();
     state.contactIDByEmail = new Map();
     state.avatarURLByContactID = new Map();
     state.avatarLoadsByContactID = new Map();
     state.avatarFailureUntilByContactID = new Map();
-    if (state.retryTimer) {
-        clearTimeout(state.retryTimer);
-        state.retryTimer = undefined;
-    }
 };
 
 const emitSnapshot = (isHydrated = true) => {
@@ -279,13 +236,13 @@ const contactDisplayRecordFromRemote = (
     record: RemoteContactRecord,
 ): ContactDisplayRecord => ({
     contactId: record.id,
-    contactUserId: Number(record.contactUserId),
+    contactUserId: record.contactUserId,
     resolvedEmail: knownEmailOrUndefined(record.email),
     displayName: knownEmailOrUndefined(record.name),
     profilePictureAttachmentID: knownEmailOrUndefined(
-        record.profilePictureAttachmentID ?? record.profilePictureAttachmentId,
+        record.profilePictureAttachmentID,
     ),
-    updatedAt: Number(record.updatedAt),
+    updatedAt: record.updatedAt,
 });
 
 export const resolveContactDisplay = (
@@ -345,98 +302,49 @@ const loadLocalSessionState = async (sessionKey: string) => {
     }
 
     emitSnapshot(true);
+    return generation;
 };
 
-const ensureContactsCtxOpen = async ({
-    sessionKey,
-    baseURL,
-    authToken,
-    userID,
-    masterKeyB64,
-}: ContactsReadyInput & {
-    sessionKey: string;
-    baseURL: string;
-    authToken: string;
-}) => {
-    let ctx = state.ctx;
-    const generation = state.sessionGeneration;
+const ensureSessionLoaded = async (sessionKey: string) =>
+    state.currentSessionKey === sessionKey
+        ? state.sessionGeneration
+        : loadLocalSessionState(sessionKey);
 
-    if (!ctx) {
-        const cachedWrappedRootContactKey =
-            await savedWrappedRootContactKey(sessionKey);
-        if (!isCurrentSession(sessionKey, generation)) {
-            return;
-        }
-        const { contacts_open_ctx } = await loadEnteWasm();
-        const openedCtx = (await contacts_open_ctx({
-            baseUrl: baseURL,
-            authToken,
-            userId: userID,
-            masterKeyB64,
-            cachedWrappedRootContactKey,
-            clientPackage: clientPackageName,
-            clientVersion: isDesktop ? desktopAppVersion : undefined,
-        })) as OpenedContactsCtx;
-        if (!isCurrentSession(sessionKey, generation)) {
-            return;
-        }
-        state.ctx = openedCtx.ctx;
-        ctx = openedCtx.ctx;
-        if (openedCtx.wrappedRootContactKey) {
-            await saveWrappedRootContactKey(
-                sessionKey,
-                openedCtx.wrappedRootContactKey,
-            );
-            if (!isCurrentSession(sessionKey, generation)) {
-                return;
-            }
-        }
-    } else if (state.currentAuthToken !== authToken) {
-        ctx.update_auth_token(authToken);
-    }
-
+const syncContacts = async <Session>(
+    sessionKey: string,
+    generation: number,
+    getSession: () => Promise<Session>,
+    getDiff: GetDiff<Session>,
+) => {
     if (!isCurrentSession(sessionKey, generation)) {
         return;
     }
-
-    state.currentAuthToken = authToken;
-    return ctx;
-};
-
-const syncContacts = async ({
-    sessionKey,
-    baseURL,
-    authToken,
-    userID,
-    masterKeyB64,
-}: ContactsReadyInput & {
-    sessionKey: string;
-    baseURL: string;
-    authToken: string;
-}) => {
-    const ctx = await ensureContactsCtxOpen({
-        sessionKey,
-        baseURL,
-        authToken,
-        userID,
-        masterKeyB64,
-    });
-    if (!ctx) {
+    const session = await getSession();
+    const cachedWrappedRootContactKey =
+        state.wrappedRootContactKey ??
+        (await savedWrappedRootContactKey(sessionKey));
+    if (!isCurrentSession(sessionKey, generation)) {
         return;
     }
-    const generation = state.sessionGeneration;
+    state.wrappedRootContactKey = cachedWrappedRootContactKey;
 
     let sinceTime = (await savedContactsSinceTime(sessionKey)) ?? 0;
     let didChange = false;
 
     while (true) {
-        const diff = (await ctx.get_diff(
-            BigInt(sinceTime),
+        const output = await getDiff(
+            session,
+            state.wrappedRootContactKey,
+            sinceTime,
             CONTACT_DIFF_LIMIT,
-        )) as RemoteContactRecord[];
+        );
         if (!isCurrentSession(sessionKey, generation)) {
             return;
         }
+        if (output.wrappedRootContactKey) {
+            state.wrappedRootContactKey = output.wrappedRootContactKey;
+        }
+        const diff = output.records;
         if (diff.length === 0) {
             break;
         }
@@ -448,7 +356,7 @@ const syncContacts = async ({
             } else {
                 upsertContact(contactDisplayRecordFromRemote(record));
             }
-            sinceTime = Math.max(sinceTime, Number(record.updatedAt));
+            sinceTime = Math.max(sinceTime, record.updatedAt);
         }
     }
 
@@ -456,10 +364,7 @@ const syncContacts = async ({
         if (!isCurrentSession(sessionKey, generation)) {
             return;
         }
-        const wrappedRootContactKey =
-            (await ctx.current_wrapped_root_contact_key()) as
-                | WrappedRootContactKey
-                | undefined;
+        const wrappedRootContactKey = state.wrappedRootContactKey;
         if (wrappedRootContactKey) {
             await saveWrappedRootContactKey(sessionKey, wrappedRootContactKey);
             if (!isCurrentSession(sessionKey, generation)) {
@@ -474,270 +379,53 @@ const syncContacts = async ({
     }
 };
 
-export const ensureContactsReady = async ({
-    userID,
-    masterKeyB64,
-}: ContactsReadyInput) => {
-    state.lastReadyInput = { userID, masterKeyB64 };
-    const authToken = await savedAuthToken();
-    if (!authToken) {
-        state.sessionGeneration += 1;
-        state.currentSessionKey = undefined;
-        clearInMemoryState();
-        emitSnapshot(false);
-        return;
-    }
-
+export const initContacts = async <Session>(
+    userID: number,
+    getSession: () => Promise<Session>,
+    getDiff: GetDiff<Session>,
+    getProfilePicture: (
+        session: Session,
+        wrappedRootContactKey: WrappedRootContactKey | undefined,
+        contactID: string,
+    ) => Promise<ProfilePictureOutput>,
+) => {
     const baseURL = await apiOrigin();
     const sessionKey = buildSessionKey(baseURL, userID);
 
-    if (state.currentSessionKey !== sessionKey) {
-        await loadLocalSessionState(sessionKey);
+    const generation = await ensureSessionLoaded(sessionKey);
+    if (generation === undefined) {
+        return;
     }
 
-    if (state.readyPromise) {
-        return state.readyPromise;
-    }
-
-    const readyPromise = syncContacts({
-        sessionKey,
-        baseURL,
-        authToken,
-        userID,
-        masterKeyB64,
-    })
-        .then(() => {
-            if (state.retryTimer) {
-                clearTimeout(state.retryTimer);
-                state.retryTimer = undefined;
-            }
-        })
-        .catch((error: unknown) => {
-            if (state.retryTimer) {
-                clearTimeout(state.retryTimer);
-            }
-            const retryInput = state.lastReadyInput;
-            state.retryTimer = setTimeout(() => {
-                state.retryTimer = undefined;
-                if (retryInput) {
-                    void ensureContactsReady(retryInput).catch(() => undefined);
-                }
-            }, READY_RETRY_COOLDOWN_MS);
-            throw error;
-        })
-        .finally(() => {
-            if (state.readyPromise === readyPromise) {
-                state.readyPromise = undefined;
-            }
-        });
-
-    state.readyPromise = readyPromise;
-
-    return readyPromise;
+    state.sync = () =>
+        syncContacts(sessionKey, generation, getSession, getDiff);
+    state.getProfilePicture = async (key, contactID) =>
+        getProfilePicture(await getSession(), key, contactID);
 };
 
-const ensureCurrentLegacyCtx = async () => {
-    const masterKeyB64 = await masterKeyFromSession();
-    if (!masterKeyB64) {
-        throw new Error("Missing current master key");
-    }
-    const authToken = await savedAuthToken();
-    if (!authToken) {
-        throw new Error("Missing auth token");
-    }
-    const user = ensureLocalUser();
-    const baseURL = await apiOrigin();
-    const sessionKey = buildSessionKey(baseURL, user.id);
-    if (state.currentSessionKey !== sessionKey) {
-        await loadLocalSessionState(sessionKey);
-    }
-    const ctx = await ensureContactsCtxOpen({
-        sessionKey,
-        baseURL,
-        authToken,
-        userID: user.id,
-        masterKeyB64,
+export const pullContacts = async () => {
+    const sync = state.sync;
+    if (!sync) return;
+    if (state.pullPromise) return state.pullPromise;
+
+    const pullPromise = retryAsyncOperation(sync, {
+        retryProfile: "background",
+    }).finally(() => {
+        if (state.pullPromise === pullPromise) {
+            state.pullPromise = undefined;
+        }
     });
-    if (!ctx) {
-        throw new Error("Contacts context not available");
-    }
-    return ctx;
+
+    state.pullPromise = pullPromise;
+
+    return pullPromise;
 };
 
-const ensureCurrentLegacyKeyAttributes = () => {
-    const keyAttributes = savedKeyAttributes();
-    if (!keyAttributes) {
-        throw new Error("Missing current key attributes");
-    }
-    return keyAttributes as unknown as Record<string, unknown>;
-};
-
-const normalizeLegacyUser = (user: RemoteLegacyUser) => ({
-    id: Number(user.id),
-    email: user.email,
-});
-
-const normalizeLegacyContactRecord = (record: RemoteLegacyContactRecord) => ({
-    user: normalizeLegacyUser(record.user),
-    emergencyContact: normalizeLegacyUser(record.emergencyContact),
-    state: record.state,
-    recoveryNoticeInDays: Number(record.recoveryNoticeInDays),
-});
-
-const normalizeLegacyRecoverySession = (
-    session: RemoteLegacyRecoverySession,
-) => ({
-    id: session.id,
-    user: normalizeLegacyUser(session.user),
-    emergencyContact: normalizeLegacyUser(session.emergencyContact),
-    status: session.status,
-    waitTill: Number(session.waitTill),
-    createdAt: Number(session.createdAt),
-});
-
-const normalizeLegacyInfo = (info: RemoteLegacyInfo): LegacyInfo => ({
-    contacts: info.contacts.map(normalizeLegacyContactRecord),
-    recoverSessions: info.recoverSessions.map(normalizeLegacyRecoverySession),
-    othersEmergencyContact: info.othersEmergencyContact.map(
-        normalizeLegacyContactRecord,
-    ),
-    othersRecoverySession: info.othersRecoverySession.map(
-        normalizeLegacyRecoverySession,
-    ),
-});
-
-export const legacyGetInfo = async (): Promise<LegacyInfo> => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return normalizeLegacyInfo(
-        (await ctx.legacy_get_info()) as RemoteLegacyInfo,
-    );
-};
-
-export const legacyPublicKey = async (email: string) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    const publicKey = (await ctx.legacy_public_key(email)) as
-        | string
-        | null
-        | undefined;
-    return publicKey ?? undefined;
-};
-
-export const legacyVerificationID = async (email: string) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    const publicKey = (await ctx.legacy_public_key(email)) as
-        | string
-        | null
-        | undefined;
-    return publicKey ? ctx.legacy_verification_id(publicKey) : undefined;
-};
-
-export const legacyAddContact = async (
-    email: string,
-    recoveryNoticeInDays?: number,
-) => {
-    await getUserRecoveryKey();
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_add_contact(
-        email,
-        ensureCurrentLegacyKeyAttributes(),
-        recoveryNoticeInDays,
-    );
-};
-
-export const legacyUpdateContact = async (
-    userID: number,
-    emergencyContactID: number,
-    state: LegacyContactState,
-) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_update_contact(
-        BigInt(userID),
-        BigInt(emergencyContactID),
-        state,
-    );
-};
-
-export const legacyUpdateRecoveryNotice = async (
-    emergencyContactID: number,
-    recoveryNoticeInDays: number,
-) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_update_recovery_notice(
-        BigInt(emergencyContactID),
-        recoveryNoticeInDays,
-    );
-};
-
-export const legacyStartRecovery = async (
-    userID: number,
-    emergencyContactID: number,
-) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_start_recovery(
-        BigInt(userID),
-        BigInt(emergencyContactID),
-    );
-};
-
-export const legacyStopRecovery = async (
-    recoveryID: string,
-    userID: number,
-    emergencyContactID: number,
-) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_stop_recovery(
-        recoveryID,
-        BigInt(userID),
-        BigInt(emergencyContactID),
-    );
-};
-
-export const legacyRejectRecovery = async (
-    recoveryID: string,
-    userID: number,
-    emergencyContactID: number,
-) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_reject_recovery(
-        recoveryID,
-        BigInt(userID),
-        BigInt(emergencyContactID),
-    );
-};
-
-export const legacyApproveRecovery = async (
-    recoveryID: string,
-    userID: number,
-    emergencyContactID: number,
-) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_approve_recovery(
-        recoveryID,
-        BigInt(userID),
-        BigInt(emergencyContactID),
-    );
-};
-
-export const legacyRecoveryBundle = async (
-    recoveryID: string,
-): Promise<LegacyRecoveryBundle> => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return (await ctx.legacy_recovery_bundle(
-        recoveryID,
-        ensureCurrentLegacyKeyAttributes(),
-    )) as LegacyRecoveryBundle;
-};
-
-export const legacyChangePassword = async (
-    recoveryID: string,
-    newPassword: string,
-) => {
-    const ctx = await ensureCurrentLegacyCtx();
-    return ctx.legacy_change_password(
-        recoveryID,
-        ensureCurrentLegacyKeyAttributes(),
-        newPassword,
-    );
+export const logoutContacts = () => {
+    state.sessionGeneration += 1;
+    state.currentSessionKey = undefined;
+    clearInMemoryState();
+    emitSnapshot(false);
 };
 
 const inferImageMimeType = (bytes: Uint8Array) => {
@@ -789,10 +477,14 @@ const inferImageMimeType = (bytes: Uint8Array) => {
 
 const ensureProfilePictureLoaded = async (contactID: string) => {
     const contact = state.contactsByID.get(contactID);
-    const ctx = state.ctx;
+    const getProfilePicture = state.getProfilePicture;
     const sessionKey = state.currentSessionKey;
     const generation = state.sessionGeneration;
-    if (!contact?.profilePictureAttachmentID || !ctx || !sessionKey) {
+    if (
+        !contact?.profilePictureAttachmentID ||
+        !getProfilePicture ||
+        !sessionKey
+    ) {
         return;
     }
 
@@ -811,16 +503,21 @@ const ensureProfilePictureLoaded = async (contactID: string) => {
         return;
     }
 
-    const load = ctx
-        .get_profile_picture(contactID)
-        .then((bytes: Uint8Array) => {
+    const load = getProfilePicture(state.wrappedRootContactKey, contactID)
+        .then((output) => {
             if (
                 !isCurrentSession(sessionKey, generation) ||
-                state.ctx !== ctx
+                state.avatarLoadsByContactID.get(contactID) !== load
             ) {
                 return;
             }
-            const blob = new Blob([bytes], { type: inferImageMimeType(bytes) });
+            if (output.wrappedRootContactKey) {
+                state.wrappedRootContactKey = output.wrappedRootContactKey;
+            }
+            const bytes = output.bytes;
+            const blob = new Blob([ensureArrayBufferBacked(bytes)], {
+                type: inferImageMimeType(bytes),
+            });
             const url = URL.createObjectURL(blob);
             cleanupAvatarURL(contactID);
             state.avatarURLByContactID.set(contactID, url);
@@ -830,7 +527,7 @@ const ensureProfilePictureLoaded = async (contactID: string) => {
         .catch((error: unknown) => {
             if (
                 !isCurrentSession(sessionKey, generation) ||
-                state.ctx !== ctx
+                state.avatarLoadsByContactID.get(contactID) !== load
             ) {
                 return;
             }

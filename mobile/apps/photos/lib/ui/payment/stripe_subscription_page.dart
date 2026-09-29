@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import "package:ente_pure_utils/ente_pure_utils.dart";
+import "package:ente_strings/ente_strings.dart";
+import 'package:ente_ui/components/loading_widget.dart';
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/subscription_purchased_event.dart";
 import 'package:photos/gateways/billing/models/billing_plan.dart';
 import 'package:photos/gateways/billing/models/subscription.dart';
-import "package:photos/generated/l10n.dart";
 import 'package:photos/models/user_details.dart';
 import "package:photos/service_locator.dart";
 import 'package:photos/services/account/user_service.dart';
 import "package:photos/theme/colors.dart";
 import 'package:photos/theme/ente_theme.dart';
-import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
 import 'package:photos/ui/common/web_page.dart';
 import 'package:photos/ui/components/buttons/button_widget.dart';
@@ -25,17 +25,13 @@ import 'package:photos/ui/payment/payment_web_page.dart';
 import 'package:photos/ui/payment/subscription_common_widgets.dart';
 import 'package:photos/ui/payment/subscription_plan_widget.dart';
 import "package:photos/ui/payment/view_add_on_widget.dart";
-import "package:photos/ui/tabs/home_widget.dart";
 import 'package:photos/utils/dialog_util.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class StripeSubscriptionPage extends StatefulWidget {
   final bool isOnboarding;
 
-  const StripeSubscriptionPage({
-    this.isOnboarding = false,
-    super.key,
-  });
+  const StripeSubscriptionPage({this.isOnboarding = false, super.key});
 
   @override
   State<StripeSubscriptionPage> createState() => _StripeSubscriptionPageState();
@@ -48,7 +44,6 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   late ProgressDialog _dialog;
   late UserDetails _userDetails;
 
-  // indicates if user's subscription plan is still active
   late bool _hasActiveSubscription;
   bool _hideCurrentPlanSelection = false;
   late FreePlan _freePlan;
@@ -62,9 +57,9 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   String? _selectedPlanProductID;
 
   Future<void> _fetchSub() async {
-    return _userService
-        .getUserDetailsV2(memoryCount: false)
-        .then((userDetails) async {
+    return _userService.getUserDetailsV2(memoryCount: false).then((
+      userDetails,
+    ) async {
       _userDetails = userDetails;
       _currentSubscription = userDetails.subscription;
 
@@ -84,7 +79,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       _showYearlyPlan = _currentSubscription!.isYearlyPlan();
       _hideCurrentPlanSelection =
           (_currentSubscription?.attributes?.isCancelled ?? false) &&
-              userDetails.hasPaidAddon();
+          userDetails.hasPaidAddon();
       _hasActiveSubscription = _currentSubscription!.isValid();
       _isStripeSubscriber = _currentSubscription!.paymentProvider == stripe;
 
@@ -93,6 +88,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       }
 
       return _filterStripeForUI().then((value) {
+        if (!mounted) return;
         _syncOnboardingSelection();
         _hasLoadedData = true;
         setState(() {});
@@ -100,7 +96,6 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     });
   }
 
-  // _filterPlansForUI is used for initializing initState & plan toggle states
   Future<void> _filterStripeForUI() async {
     final billingPlans = await _billingService.getBillingPlans();
     _freePlan = billingPlans.freePlan;
@@ -118,23 +113,20 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   }
 
   FutureOr onWebPaymentGoBack(dynamic value) async {
-    // refresh subscription
     await _dialog.show();
     try {
       await _fetchSub();
     } catch (e) {
-      showToast(
-        context,
-        AppLocalizations.of(context).failedToRefreshStripeSubscription,
-      );
+      if (!mounted) return;
+      showToast(context, context.strings.failedToRefreshStripeSubscription);
     }
     await _dialog.hide();
 
-    // verify user has subscribed before redirecting to main page
     if (widget.isOnboarding &&
         _currentSubscription != null &&
         _currentSubscription!.isValid() &&
         _currentSubscription!.productID != freeProductID) {
+      if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
@@ -158,17 +150,15 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         ),
         title: Text(
           widget.isOnboarding
-              ? AppLocalizations.of(context).chooseYourPlan
-              : AppLocalizations.of(context).subscription,
+              ? context.strings.chooseYourPlan
+              : context.strings.subscription,
           style: textTheme.largeBold,
         ),
         centerTitle: true,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: _getBody()),
-        ],
+        children: [Expanded(child: _getBody())],
       ),
       bottomNavigationBar: widget.isOnboarding && _hasLoadedData
           ? Container(
@@ -179,7 +169,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
                   child: ButtonWidgetV2(
                     buttonType: ButtonTypeV2.primary,
-                    labelText: AppLocalizations.of(context).continueLabel,
+                    labelText: context.strings.continueLabel,
                     isDisabled: _selectedPlanProductID == null,
                     onTap: _selectedPlanProductID == null
                         ? null
@@ -195,10 +185,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   Widget _getBody() {
     if (!_isLoading) {
       _isLoading = true;
-      _dialog = createProgressDialog(
-        context,
-        AppLocalizations.of(context).pleaseWait,
-      );
+      _dialog = createProgressDialog(context, context.strings.pleaseWait);
       _fetchSub();
     }
     if (_hasLoadedData) {
@@ -229,7 +216,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
 
     final hasAddOnBonus =
         _userDetails.bonusData?.getAddOnBonuses().isNotEmpty ?? false;
-    final shouldShowValidity = _currentSubscription != null &&
+    final shouldShowValidity =
+        _currentSubscription != null &&
         (!_currentSubscription!.isFreePlan() || hasAddOnBonus);
     if (shouldShowValidity) {
       widgets.add(
@@ -242,9 +230,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     }
 
     if (_currentSubscription!.productID == freeProductID) {
-      widgets.add(
-        SubFaqWidget(isOnboarding: widget.isOnboarding),
-      );
+      widgets.add(SubFaqWidget(isOnboarding: widget.isOnboarding));
       if (!widget.isOnboarding) {
         widgets.add(const SizedBox(height: 8));
       }
@@ -255,7 +241,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: MenuItemWidgetNew(
-            title: AppLocalizations.of(context).manageFamily,
+            title: context.strings.manageFamily,
             menuItemColor: colorScheme.fillFaint,
             pressedColor: colorScheme.fillFaintPressed,
             trailingWidget: Icon(
@@ -265,18 +251,21 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
             onTap: () async {
               late final UserDetails userDetails;
               try {
-                userDetails =
-                    await _userService.getUserDetailsV2(memoryCount: false);
+                userDetails = await _userService.getUserDetailsV2(
+                  memoryCount: false,
+                );
               } catch (error) {
                 if (!context.mounted) {
                   return;
                 }
+                if (!mounted) return;
                 await showGenericErrorDialog(context: context, error: error);
                 return;
               }
               if (!context.mounted) {
                 return;
               }
+              if (!mounted) return;
               await _billingService.launchFamilyPortal(
                 context,
                 userDetails,
@@ -310,7 +299,6 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       );
     }
 
-    // only active subscription can be renewed/canceled
     if (_hasActiveSubscription && _isStripeSubscriber) {
       widgets.add(
         Padding(
@@ -330,8 +318,6 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     );
   }
 
-  // _redirectToPaymentPortal action allows the user to update
-  // their stripe payment details
   void _redirectToPaymentPortal() async {
     final String paymentProvider = _currentSubscription!.paymentProvider;
     switch (_currentSubscription!.paymentProvider) {
@@ -356,9 +342,10 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
             : '';
         await showErrorDialog(
           context,
-          AppLocalizations.of(context).sorry,
-          AppLocalizations.of(context)
-              .contactToManageSubscription(provider: capitalizedWord),
+          context.strings.sorry,
+          context.strings.contactToManageSubscription(
+            provider: capitalizedWord,
+          ),
         );
     }
   }
@@ -368,15 +355,19 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     try {
       final String url = await _billingService.getStripeCustomerPortalUrl();
       await _dialog.hide();
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (BuildContext context) {
-            return WebPage(AppLocalizations.of(context).paymentDetails, url);
-          },
-        ),
-      ).then((value) => onWebPaymentGoBack);
+      if (!mounted) return;
+      await Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return WebPage(context.strings.paymentDetails, url);
+              },
+            ),
+          )
+          .then((value) => onWebPaymentGoBack);
     } catch (e) {
       await _dialog.hide();
+      if (!mounted) return;
       await showGenericErrorDialog(context: context, error: e);
     }
   }
@@ -388,8 +379,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       return const SizedBox.shrink();
     }
     final String title = isRenewCancelled
-        ? AppLocalizations.of(context).renewSubscription
-        : AppLocalizations.of(context).cancelSubscription;
+        ? context.strings.renewSubscription
+        : context.strings.cancelSubscription;
     return MenuItemWidgetNew(
       title: title,
       alwaysShowSuccessState: false,
@@ -406,17 +397,17 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           final choice = await showChoiceDialog(
             context,
             title: title,
-            body: AppLocalizations.of(context).areYouSureYouWantToRenew,
-            firstButtonLabel: AppLocalizations.of(context).yesRenew,
+            body: context.strings.areYouSureYouWantToRenew,
+            firstButtonLabel: context.strings.yesRenew,
           );
           confirmAction = choice!.action == ButtonAction.first;
         } else {
           final choice = await showChoiceDialog(
             context,
             title: title,
-            body: AppLocalizations.of(context).areYouSureYouWantToCancel,
-            firstButtonLabel: AppLocalizations.of(context).yesCancel,
-            secondButtonLabel: AppLocalizations.of(context).no,
+            body: context.strings.areYouSureYouWantToCancel,
+            firstButtonLabel: context.strings.yesCancel,
+            secondButtonLabel: context.strings.no,
             isCritical: true,
           );
           confirmAction = choice!.action == ButtonAction.first;
@@ -428,8 +419,6 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     );
   }
 
-  // toggleStripeSubscription, based on current auto renew status, will
-  // toggle the auto renew status of the user's subscription
   Future<void> toggleStripeSubscription(bool isAutoRenewDisabled) async {
     await _dialog.show();
     try {
@@ -438,24 +427,24 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           : await _billingService.cancelStripeSubscription();
       await _fetchSub();
     } catch (e) {
+      if (!mounted) return;
       showShortToast(
         context,
         isAutoRenewDisabled
-            ? AppLocalizations.of(context).failedToRenew
-            : AppLocalizations.of(context).failedToCancel,
+            ? context.strings.failedToRenew
+            : context.strings.failedToCancel,
       );
     }
     await _dialog.hide();
     if (!isAutoRenewDisabled && mounted) {
       await showTextInputDialog(
         context,
-        title: AppLocalizations.of(context).askCancelReason,
-        submitButtonLabel: AppLocalizations.of(context).send,
-        hintText: AppLocalizations.of(context).optionalAsShortAsYouLike,
+        title: context.strings.askCancelReason,
+        submitButtonLabel: context.strings.send,
+        hintText: context.strings.optionalAsShortAsYouLike,
         alwaysShowSuccessState: true,
         textCapitalization: TextCapitalization.words,
         onSubmit: (String text) async {
-          // indicates user cancelled the rename request
           if (text == "" || text.trim().isEmpty) {
             return;
           }
@@ -485,7 +474,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           child: SubscriptionPlanWidget(
             storage: _freePlan.storage,
             price: "",
-            period: AppLocalizations.of(context).freeTrial,
+            period: context.strings.freeTrial,
             isActive: widget.isOnboarding
                 ? _selectedPlanProductID == freeProductID
                 : _isFreePlanUser(),
@@ -500,7 +489,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       if (productID.isEmpty) {
         continue;
       }
-      final isActive = _hasActiveSubscription &&
+      final isActive =
+          _hasActiveSubscription &&
           _currentSubscription!.productID == productID;
       planWidgets.add(
         GestureDetector(
@@ -514,15 +504,13 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
             if (isActive) {
               return;
             }
-            // prompt user to cancel their active subscription form other
-            // payment providers
             if (!_isStripeSubscriber &&
                 _hasActiveSubscription &&
                 _currentSubscription!.productID != freeProductID) {
               await showErrorDialog(
                 context,
-                AppLocalizations.of(context).sorry,
-                AppLocalizations.of(context).cancelOtherSubscription(
+                context.strings.sorry,
+                context.strings.cancelOtherSubscription(
                   paymentProvider: _currentSubscription!.paymentProvider,
                 ),
               );
@@ -540,27 +528,26 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
               );
               await showErrorDialog(
                 context,
-                AppLocalizations.of(context).sorry,
-                AppLocalizations.of(context).youCannotDowngradeToThisPlan,
+                context.strings.sorry,
+                context.strings.youCannotDowngradeToThisPlan,
               );
               return;
             }
             String stripPurChaseAction = 'buy';
             if (_isStripeSubscriber && _hasActiveSubscription) {
-              // confirm if user wants to change plan or not
               final result = await showChoiceDialog(
                 context,
-                title: AppLocalizations.of(context).confirmPlanChange,
-                body: AppLocalizations.of(context)
-                    .areYouSureYouWantToChangeYourPlan,
-                firstButtonLabel: AppLocalizations.of(context).yes,
+                title: context.strings.confirmPlanChange,
+                body: context.strings.areYouSureYouWantToChangeYourPlan,
+                firstButtonLabel: context.strings.yes,
               );
-              if (result!.action == ButtonAction.first) {
+              if (result?.action == ButtonAction.first) {
                 stripPurChaseAction = 'update';
               } else {
                 return;
               }
             }
+            if (!mounted) return;
             await Navigator.push(
               context,
               MaterialPageRoute(
@@ -629,8 +616,9 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       _selectedPlanProductID = freeProductID;
       return;
     }
-    _selectedPlanProductID =
-        visibleProductIDs.isNotEmpty ? visibleProductIDs.first : null;
+    _selectedPlanProductID = visibleProductIDs.isNotEmpty
+        ? visibleProductIDs.first
+        : null;
   }
 
   Future<void> _onOnboardingContinueTap() async {
@@ -640,16 +628,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     }
 
     if (selectedPlanProductID == freeProductID) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
       Bus.instance.fire(SubscriptionPurchasedEvent());
-      // ignore: unawaited_futures
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (BuildContext context) {
-            return const HomeWidget();
-          },
-        ),
-        (route) => false,
-      );
       unawaited(
         _billingService.verifySubscription(
           freeProductID,
@@ -667,7 +647,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       return;
     }
 
-    final isActive = _hasActiveSubscription &&
+    final isActive =
+        _hasActiveSubscription &&
         _currentSubscription!.productID == selectedPlanProductID;
     if (isActive) {
       return;
@@ -678,8 +659,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         _currentSubscription!.productID != freeProductID) {
       await showErrorDialog(
         context,
-        AppLocalizations.of(context).sorry,
-        AppLocalizations.of(context).cancelOtherSubscription(
+        context.strings.sorry,
+        context.strings.cancelOtherSubscription(
           paymentProvider: _currentSubscription!.paymentProvider,
         ),
       );
@@ -697,8 +678,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       );
       await showErrorDialog(
         context,
-        AppLocalizations.of(context).sorry,
-        AppLocalizations.of(context).youCannotDowngradeToThisPlan,
+        context.strings.sorry,
+        context.strings.youCannotDowngradeToThisPlan,
       );
       return;
     }
@@ -707,9 +688,9 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     if (_isStripeSubscriber && _hasActiveSubscription) {
       final result = await showChoiceDialog(
         context,
-        title: AppLocalizations.of(context).confirmPlanChange,
-        body: AppLocalizations.of(context).areYouSureYouWantToChangeYourPlan,
-        firstButtonLabel: AppLocalizations.of(context).yes,
+        title: context.strings.confirmPlanChange,
+        body: context.strings.areYouSureYouWantToChangeYourPlan,
+        firstButtonLabel: context.strings.yes,
       );
       if (result!.action == ButtonAction.first) {
         stripPurChaseAction = 'update';
@@ -717,6 +698,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         return;
       }
     }
+    if (!mounted) return;
     await Navigator.push(
       context,
       MaterialPageRoute(

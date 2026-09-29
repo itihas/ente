@@ -1,11 +1,15 @@
+import { authPageConfig } from "@/auth-page-config";
+import { LockerHead } from "@/components/LockerHead";
+import { lockerLogout } from "@/services/logout";
 import "@fontsource-variable/inter";
+import "@fontsource-variable/outfit";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import { LockerHead } from "components/LockerHead";
+import { AuthPageProvider } from "ente-accounts/components/auth/AuthPageProvider";
 import {
     isSavedUserTokenMismatch,
     savedLocalUser,
-} from "ente-accounts-rs/services/accounts-db";
+} from "ente-accounts/services/accounts-db";
 import {
     LoadingIndicator,
     TranslucentLoadingOverlay,
@@ -23,7 +27,6 @@ import log from "ente-base/log";
 import { logStartupBanner } from "ente-base/log-web";
 import type { AppProps } from "next/app";
 import React, { useCallback, useEffect, useMemo } from "react";
-import { lockerLogout } from "services/logout";
 
 const App: React.FC<AppProps> = ({ Component, pageProps }) => {
     useSetupLogs();
@@ -36,9 +39,7 @@ const App: React.FC<AppProps> = ({ Component, pageProps }) => {
         logStartupBanner(savedLocalUser()?.id);
     }, []);
 
-    const logout = useCallback(() => {
-        void lockerLogout().then(() => window.location.replace("/login"));
-    }, []);
+    const logout = useCallback(() => void lockerLogout(), []);
 
     useEffect(() => {
         void isSavedUserTokenMismatch()
@@ -70,14 +71,16 @@ const App: React.FC<AppProps> = ({ Component, pageProps }) => {
             <AttributedMiniDialog {...miniDialogProps} />
 
             <BaseContext value={baseContext}>
-                {!isI18nReady ? (
-                    <LoadingIndicator />
-                ) : (
-                    <>
-                        {isChangingRoute && <TranslucentLoadingOverlay />}
-                        <Component {...pageProps} />
-                    </>
-                )}
+                <AuthPageProvider value={authPageConfig}>
+                    {!isI18nReady ? (
+                        <LoadingIndicator />
+                    ) : (
+                        <>
+                            {isChangingRoute && <TranslucentLoadingOverlay />}
+                            <Component {...pageProps} />
+                        </>
+                    )}
+                </AuthPageProvider>
             </BaseContext>
         </ThemeProvider>
     );

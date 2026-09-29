@@ -1,23 +1,20 @@
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import PersonAddAltOutlinedIcon from "@mui/icons-material/PersonAddAltOutlined";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import { Box, CircularProgress, Stack, Typography } from "@mui/material";
 import { useBaseContext } from "ente-base/context";
+import { isNamedError } from "ente-base/error";
 import log from "ente-base/log";
+import { t } from "i18next";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    legacyChangePassword,
-    legacyGetInfo,
-    legacyRejectRecovery,
-    legacyStartRecovery,
-    legacyStopRecovery,
-    legacyUpdateContact,
-    legacyUpdateRecoveryNotice,
-    type LegacyContactRecord,
-    type LegacyInfo,
-    type LegacyRecoverySession,
-    type LegacySuggestedUser,
-} from "..";
 import { mergeLegacySuggestedUsers } from "../suggestions";
+import type {
+    LegacyContactRecord,
+    LegacyInfo,
+    LegacyModule,
+    LegacyRecoverySession,
+    LegacySuggestedUser,
+} from "../types";
 import { ActionButton } from "./ActionButton";
 import { LegacyActionSheet } from "./LegacyActionSheet";
 import { LegacyAddContactContent } from "./LegacyAddContactContent";
@@ -111,6 +108,16 @@ const recoveryAttemptMessage = (session: LegacyRecoverySession) => {
     return `${email} is trying to recover your account. ${formatWait(session)}.`;
 };
 
+const chevronAction = <ChevronRightIcon sx={{ color: "text.muted" }} />;
+
+const emptyCardSx = {
+    borderRadius: "20px",
+    bgcolor: "fill.faint",
+    p: "24px 20px",
+    textAlign: "left",
+    color: "text.muted",
+};
+
 const attentionIndicator = (
     <WarningAmberRoundedIcon
         sx={{ fontSize: 18, color: "warning.main", flexShrink: 0 }}
@@ -118,14 +125,16 @@ const attentionIndicator = (
 );
 
 const sectionTitleSx = {
-    color: "text.muted",
-    fontSize: 18,
-    lineHeight: "24px",
-    fontWeight: 500,
+    color: "text.base",
+    fontSize: 16,
+    lineHeight: "20px",
+    fontWeight: 600,
+    p: "6px 0 6px 8px",
 };
 
+// ponytail: retain the existing sheets here instead of splitting the stateful component.
 const groupedCardSx = {
-    p: 0.5,
+    gap: 1,
     borderRadius: "20px",
     backgroundColor: "fill.faint",
 };
@@ -133,15 +142,20 @@ const groupedCardSx = {
 const warningBannerSx = {
     p: 2,
     gap: 1.5,
-    borderRadius: "18px",
+    borderRadius: "20px",
     backgroundColor: "rgba(255, 82, 82, 0.14)",
 };
 
-const getErrorMessage = (error: unknown) =>
-    error instanceof Error ? error.message : "Something went wrong";
-
-interface LegacyDrawerContentProps {
+interface LegacyDrawerContentProps<Session> {
+    intro?: React.ReactNode;
+    renderAddContactButton?: (props: {
+        onClick: () => void;
+        disabled: boolean;
+        loading: boolean;
+    }) => React.ReactNode;
     open: boolean;
+    getSession: () => Promise<Session>;
+    legacy: LegacyModule<Session>;
     suggestedUsers?: LegacySuggestedUser[];
 }
 
@@ -153,10 +167,14 @@ interface ConfirmActionDialogInput {
     action: () => Promise<void>;
 }
 
-export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
+export const LegacyDrawerContent = <Session,>({
+    intro,
     open,
+    getSession,
+    legacy,
     suggestedUsers = [],
-}) => {
+    renderAddContactButton,
+}: LegacyDrawerContentProps<Session>) => {
     const { showMiniDialog, onGenericError } = useBaseContext();
     const [info, setInfo] = useState<LegacyInfo | undefined>();
     const [isLoading, setIsLoading] = useState(false);
@@ -169,7 +187,7 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
         async (reportErrors: boolean) => {
             setIsLoading(true);
             try {
-                setInfo(await legacyGetInfo());
+                setInfo(await legacy.getInfo(await getSession()));
                 return true;
             } catch (error) {
                 if (reportErrors) {
@@ -185,7 +203,7 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                 setIsLoading(false);
             }
         },
-        [onGenericError],
+        [getSession, legacy, onGenericError],
     );
 
     const refresh = useCallback(async () => {
@@ -263,12 +281,6 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
         );
     }, [activeRecoveriesByPair, selectedTrustedContact]);
 
-    const hasOverviewEntries = Boolean(
-        info?.recoverSessions.length ||
-            info?.contacts.length ||
-            info?.othersEmergencyContact.length,
-    );
-
     const refreshAfterMutation = useCallback(async () => {
         await loadInfo(false);
     }, [loadInfo]);
@@ -326,15 +338,15 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
         }
         setIsSubmitting(true);
         try {
-            await legacyUpdateRecoveryNotice(
+            await legacy.updateRecoveryNotice(
+                await getSession(),
                 selectedOwnerContact.emergencyContact.id,
                 selectedOwnerDays,
             );
             setActiveSheet(undefined);
             await refreshAfterMutation();
         } catch (error) {
-            const message = getErrorMessage(error);
-            if (message.includes("active recovery session")) {
+            if (isNamedError(error, "active_recovery_session")) {
                 showMiniDialog({
                     title: "Recovery in progress",
                     message:
@@ -347,6 +359,8 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
             setIsSubmitting(false);
         }
     }, [
+        getSession,
+        legacy,
         onGenericError,
         refreshAfterMutation,
         selectedOwnerContact,
@@ -376,7 +390,8 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                             continueText: "Start recovery",
                             continueColor: "accent",
                             action: async () => {
-                                await legacyStartRecovery(
+                                await legacy.startRecovery(
+                                    await getSession(),
                                     selectedTrustedContact.user.id,
                                     selectedTrustedContact.emergencyContact.id,
                                 );
@@ -402,7 +417,8 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                             message: `Are you sure you want to cancel recovery of ${selectedTrustedContact.user.email}'s account?`,
                             continueText: "Cancel recovery",
                             action: async () => {
-                                await legacyStopRecovery(
+                                await legacy.stopRecovery(
+                                    await getSession(),
                                     selectedTrustedRecovery.id,
                                     selectedTrustedRecovery.user.id,
                                     selectedTrustedRecovery.emergencyContact.id,
@@ -416,7 +432,8 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                             message: `If you remove yourself as a trusted contact, you'll lose access to ${selectedTrustedContact.user.email}'s account after their inactivity period.`,
                             continueText: "Remove contact",
                             action: async () => {
-                                await legacyUpdateContact(
+                                await legacy.updateContact(
+                                    await getSession(),
                                     selectedTrustedContact.user.id,
                                     selectedTrustedContact.emergencyContact.id,
                                     "CONTACT_LEFT",
@@ -439,7 +456,8 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                     onSubmit={async (password) => {
                         setIsSubmitting(true);
                         try {
-                            await legacyChangePassword(
+                            await legacy.changePassword(
+                                await getSession(),
                                 resetPasswordPage.session.id,
                                 password,
                             );
@@ -456,7 +474,12 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                     }}
                 />
             ) : (
-                <Stack sx={{ px: 2, pt: 2, pb: 2, gap: 2.5 }}>
+                <Stack>
+                    {intro && (
+                        <Typography variant="body" sx={{ color: "text.muted" }}>
+                            {intro}
+                        </Typography>
+                    )}
                     {isLoading && !info ? (
                         <Stack
                             sx={{
@@ -475,7 +498,7 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                     ) : (
                         <>
                             {!!info?.recoverSessions.length && (
-                                <Stack sx={{ gap: 2 }}>
+                                <Stack sx={{ gap: 2, mt: 3 }}>
                                     <Stack direction="row" sx={warningBannerSx}>
                                         <WarningAmberRoundedIcon
                                             sx={{
@@ -498,228 +521,223 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                                         </Typography>
                                     </Stack>
                                     <Stack sx={groupedCardSx}>
-                                        {info.recoverSessions.map(
-                                            (session, index) => (
-                                                <Box
-                                                    key={session.id}
-                                                    sx={{
-                                                        pt:
-                                                            index === 0
-                                                                ? 0
-                                                                : 0.75,
-                                                        borderTop:
-                                                            index === 0
-                                                                ? undefined
-                                                                : "1px solid",
-                                                        borderColor: "divider",
-                                                    }}
-                                                >
-                                                    <LegacyIdentityRow
-                                                        email={
-                                                            session
-                                                                .emergencyContact
-                                                                .email
-                                                        }
-                                                        userID={
-                                                            session
-                                                                .emergencyContact
-                                                                .id
-                                                        }
-                                                        primaryColor="warning.main"
-                                                        action={
-                                                            <ChevronRightIcon
-                                                                sx={{
-                                                                    color: "text.muted",
-                                                                }}
-                                                            />
-                                                        }
-                                                        onClick={() =>
-                                                            setActiveSheet({
-                                                                kind: "recovery",
-                                                                session,
-                                                            })
-                                                        }
-                                                    />
-                                                </Box>
-                                            ),
-                                        )}
-                                    </Stack>
-                                </Stack>
-                            )}
-
-                            {!!info?.contacts.length && (
-                                <Stack sx={{ gap: 1 }}>
-                                    <Typography sx={sectionTitleSx}>
-                                        Trusted contacts
-                                    </Typography>
-                                    <Stack sx={groupedCardSx}>
-                                        {info.contacts.map((contact, index) => (
-                                            <Box
-                                                key={pairKey(
-                                                    contact.user.id,
-                                                    contact.emergencyContact.id,
-                                                )}
-                                                sx={{
-                                                    pt: index === 0 ? 0 : 0.75,
-                                                    borderTop:
-                                                        index === 0
-                                                            ? undefined
-                                                            : "1px solid",
-                                                    borderColor: "divider",
-                                                }}
-                                            >
-                                                <LegacyIdentityRow
-                                                    email={
-                                                        contact.emergencyContact
-                                                            .email
-                                                    }
-                                                    userID={
-                                                        contact.emergencyContact
-                                                            .id
-                                                    }
-                                                    statusIndicator={
-                                                        contact.state ===
-                                                        "ACCEPTED"
-                                                            ? undefined
-                                                            : attentionIndicator
-                                                    }
-                                                    action={
-                                                        <ChevronRightIcon
-                                                            sx={{
-                                                                color: "text.muted",
-                                                            }}
-                                                        />
-                                                    }
-                                                    onClick={() =>
-                                                        setActiveSheet({
-                                                            kind: "owner",
-                                                            contact,
-                                                        })
-                                                    }
-                                                />
-                                            </Box>
+                                        {info.recoverSessions.map((session) => (
+                                            <LegacyIdentityRow
+                                                action={chevronAction}
+                                                key={session.id}
+                                                email={
+                                                    session.emergencyContact
+                                                        .email
+                                                }
+                                                userID={
+                                                    session.emergencyContact.id
+                                                }
+                                                primaryColor="warning.main"
+                                                onClick={() =>
+                                                    setActiveSheet({
+                                                        kind: "recovery",
+                                                        session,
+                                                    })
+                                                }
+                                            />
                                         ))}
                                     </Stack>
                                 </Stack>
                             )}
 
-                            <ActionButton
-                                fullWidth
-                                buttonType="primary"
-                                loading={isLoading}
-                                disabled={!info || isSubmitting}
-                                onClick={() => setActiveSheet({ kind: "add" })}
-                            >
-                                Add trusted contact
-                            </ActionButton>
-
-                            {!!info?.othersEmergencyContact.length && (
-                                <>
-                                    <Box
-                                        sx={{
-                                            mt: 0.5,
-                                            borderTop: "1px solid",
-                                            borderColor: "divider",
-                                        }}
-                                    />
-                                    <Stack sx={{ gap: 1 }}>
-                                        <Typography sx={sectionTitleSx}>
-                                            Legacy accounts
-                                        </Typography>
-                                        <Stack sx={groupedCardSx}>
-                                            {info.othersEmergencyContact.map(
-                                                (contact, index) => {
-                                                    const activeRecovery =
-                                                        activeRecoveriesByPair.get(
-                                                            pairKey(
-                                                                contact.user.id,
-                                                                contact
-                                                                    .emergencyContact
-                                                                    .id,
-                                                            ),
-                                                        );
-                                                    return (
-                                                        <Box
-                                                            key={pairKey(
-                                                                contact.user.id,
-                                                                contact
-                                                                    .emergencyContact
-                                                                    .id,
-                                                            )}
-                                                            sx={{
-                                                                pt:
-                                                                    index === 0
-                                                                        ? 0
-                                                                        : 0.75,
-                                                                borderTop:
-                                                                    index === 0
-                                                                        ? undefined
-                                                                        : "1px solid",
-                                                                borderColor:
-                                                                    "divider",
-                                                            }}
-                                                        >
-                                                            <LegacyIdentityRow
-                                                                email={
-                                                                    contact.user
-                                                                        .email
-                                                                }
-                                                                userID={
-                                                                    contact.user
-                                                                        .id
-                                                                }
-                                                                statusIndicator={
-                                                                    contact.state !==
-                                                                        "ACCEPTED" ||
-                                                                    !!activeRecovery
-                                                                        ? attentionIndicator
-                                                                        : undefined
-                                                                }
-                                                                action={
-                                                                    <ChevronRightIcon
-                                                                        sx={{
-                                                                            color: "text.muted",
-                                                                        }}
-                                                                    />
-                                                                }
-                                                                onClick={() =>
-                                                                    contact.state ===
-                                                                    "INVITED"
-                                                                        ? setActiveSheet(
-                                                                              {
-                                                                                  kind: "trustedInvite",
-                                                                                  contact,
-                                                                              },
-                                                                          )
-                                                                        : setActivePage(
-                                                                              {
-                                                                                  kind: "trusted",
-                                                                                  contact,
-                                                                              },
-                                                                          )
-                                                                }
-                                                            />
-                                                        </Box>
-                                                    );
-                                                },
-                                            )}
-                                        </Stack>
-                                    </Stack>
-                                </>
-                            )}
-
-                            {!hasOverviewEntries && !!info && (
-                                <Typography
-                                    variant="small"
-                                    sx={{
-                                        color: "text.muted",
-                                        textAlign: "center",
-                                        py: 1,
-                                    }}
-                                >
-                                    No Legacy activity yet.
+                            <Stack sx={{ mt: 3, gap: 1 }}>
+                                <Typography sx={sectionTitleSx}>
+                                    {t("trusted_contacts")}
                                 </Typography>
-                            )}
+                                {info?.contacts.length ? (
+                                    <Stack sx={groupedCardSx}>
+                                        {info.contacts.map((contact) => (
+                                            <LegacyIdentityRow
+                                                action={chevronAction}
+                                                key={pairKey(
+                                                    contact.user.id,
+                                                    contact.emergencyContact.id,
+                                                )}
+                                                email={
+                                                    contact.emergencyContact
+                                                        .email
+                                                }
+                                                userID={
+                                                    contact.emergencyContact.id
+                                                }
+                                                statusIndicator={
+                                                    contact.state === "ACCEPTED"
+                                                        ? undefined
+                                                        : attentionIndicator
+                                                }
+                                                onClick={() =>
+                                                    setActiveSheet({
+                                                        kind: "owner",
+                                                        contact,
+                                                    })
+                                                }
+                                            />
+                                        ))}
+                                    </Stack>
+                                ) : (
+                                    !!info && (
+                                        <Typography
+                                            variant="mini"
+                                            sx={emptyCardSx}
+                                        >
+                                            {t("trusted_contacts_empty")}
+                                        </Typography>
+                                    )
+                                )}
+                                {renderAddContactButton ? (
+                                    renderAddContactButton({
+                                        onClick: () =>
+                                            setActiveSheet({ kind: "add" }),
+                                        disabled:
+                                            !info || isSubmitting || isLoading,
+                                        loading: isLoading,
+                                    })
+                                ) : (
+                                    <Box
+                                        component="button"
+                                        type="button"
+                                        disabled={
+                                            !info || isSubmitting || isLoading
+                                        }
+                                        onClick={() =>
+                                            setActiveSheet({ kind: "add" })
+                                        }
+                                        sx={{
+                                            minHeight: 54,
+                                            width: "100%",
+                                            border: 0,
+                                            borderRadius: "20px",
+                                            bgcolor: "fill.faint",
+                                            "&:hover": {
+                                                bgcolor: "fill.faintHover",
+                                            },
+                                            p: "9px 12px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1.5,
+                                            color: "accent.main",
+                                            textAlign: "left",
+                                            cursor: "pointer",
+                                            "&:disabled": {
+                                                cursor: "default",
+                                                color: "text.muted",
+                                            },
+                                            "&:focus-visible": {
+                                                outline: "2px solid",
+                                                outlineColor: "accent.main",
+                                                outlineOffset: 2,
+                                            },
+                                        }}
+                                    >
+                                        {isLoading ? (
+                                            <CircularProgress
+                                                size={20}
+                                                sx={{
+                                                    color: "inherit",
+                                                    mx: "auto",
+                                                }}
+                                            />
+                                        ) : (
+                                            <>
+                                                <Box
+                                                    sx={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        flexShrink: 0,
+                                                        display: "grid",
+                                                        placeItems: "center",
+                                                    }}
+                                                >
+                                                    <PersonAddAltOutlinedIcon
+                                                        sx={{ fontSize: 20 }}
+                                                    />
+                                                </Box>
+                                                <Typography
+                                                    variant="body"
+                                                    sx={{ fontWeight: 500 }}
+                                                >
+                                                    {t("add_trusted_contact")}
+                                                </Typography>
+                                            </>
+                                        )}
+                                    </Box>
+                                )}
+                            </Stack>
+
+                            <Stack sx={{ mt: 3, gap: 1 }}>
+                                <Typography sx={sectionTitleSx}>
+                                    {t("legacy_accounts")}
+                                </Typography>
+                                {info?.othersEmergencyContact.length ? (
+                                    <Stack sx={groupedCardSx}>
+                                        {info.othersEmergencyContact.map(
+                                            (contact) => {
+                                                const activeRecovery =
+                                                    activeRecoveriesByPair.get(
+                                                        pairKey(
+                                                            contact.user.id,
+                                                            contact
+                                                                .emergencyContact
+                                                                .id,
+                                                        ),
+                                                    );
+                                                return (
+                                                    <LegacyIdentityRow
+                                                        action={chevronAction}
+                                                        key={pairKey(
+                                                            contact.user.id,
+                                                            contact
+                                                                .emergencyContact
+                                                                .id,
+                                                        )}
+                                                        email={
+                                                            contact.user.email
+                                                        }
+                                                        userID={contact.user.id}
+                                                        statusIndicator={
+                                                            contact.state !==
+                                                                "ACCEPTED" ||
+                                                            !!activeRecovery
+                                                                ? attentionIndicator
+                                                                : undefined
+                                                        }
+                                                        onClick={() =>
+                                                            contact.state ===
+                                                            "INVITED"
+                                                                ? setActiveSheet(
+                                                                      {
+                                                                          kind: "trustedInvite",
+                                                                          contact,
+                                                                      },
+                                                                  )
+                                                                : setActivePage(
+                                                                      {
+                                                                          kind: "trusted",
+                                                                          contact,
+                                                                      },
+                                                                  )
+                                                        }
+                                                    />
+                                                );
+                                            },
+                                        )}
+                                    </Stack>
+                                ) : (
+                                    !!info && (
+                                        <Typography
+                                            variant="mini"
+                                            sx={emptyCardSx}
+                                        >
+                                            {t("legacy_accounts_empty")}
+                                        </Typography>
+                                    )
+                                )}
+                            </Stack>
                         </>
                     )}
                 </Stack>
@@ -728,9 +746,12 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
             <LegacyActionSheet
                 open={isAddSheetOpen}
                 title="Add trusted contact"
+                subtitle="Search an email, verify the identity if needed, and choose how long recovery should wait."
                 onClose={() => setActiveSheet(undefined)}
             >
                 <LegacyAddContactContent
+                    getSession={getSession}
+                    legacy={legacy}
                     variant="sheet"
                     suggestedUsers={addScreenSuggestedUsers}
                     existingEmails={existingEmails}
@@ -792,7 +813,8 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                                                 ? "Revoke invite"
                                                 : "Remove contact",
                                         action: async () => {
-                                            await legacyUpdateContact(
+                                            await legacy.updateContact(
+                                                await getSession(),
                                                 selectedOwnerContact.user.id,
                                                 selectedOwnerContact
                                                     .emergencyContact.id,
@@ -830,8 +852,9 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                             loading={isSubmitting}
                             onClick={() =>
                                 void runAction(
-                                    () =>
-                                        legacyUpdateContact(
+                                    async () =>
+                                        legacy.updateContact(
+                                            await getSession(),
                                             selectedTrustedInvite.user.id,
                                             selectedTrustedInvite
                                                 .emergencyContact.id,
@@ -847,8 +870,9 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                             buttonType="tertiaryCritical"
                             onClick={() =>
                                 void runAction(
-                                    () =>
-                                        legacyUpdateContact(
+                                    async () =>
+                                        legacy.updateContact(
+                                            await getSession(),
                                             selectedTrustedInvite.user.id,
                                             selectedTrustedInvite
                                                 .emergencyContact.id,
@@ -887,7 +911,8 @@ export const LegacyDrawerContent: React.FC<LegacyDrawerContentProps> = ({
                                 ),
                                 continueText: "Reject recovery",
                                 action: async () => {
-                                    await legacyRejectRecovery(
+                                    await legacy.rejectRecovery(
+                                        await getSession(),
                                         selectedRecoveryAttempt.id,
                                         selectedRecoveryAttempt.user.id,
                                         selectedRecoveryAttempt.emergencyContact

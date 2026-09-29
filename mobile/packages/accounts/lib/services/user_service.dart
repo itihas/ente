@@ -5,7 +5,6 @@ import "dart:math";
 
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:dio/dio.dart';
-import 'package:ente_accounts/models/delete_account.dart';
 import 'package:ente_accounts/models/errors.dart';
 import 'package:ente_accounts/models/sessions.dart';
 import 'package:ente_accounts/models/set_keys_request.dart';
@@ -21,6 +20,7 @@ import 'package:ente_accounts/pages/password_reentry_page.dart';
 import 'package:ente_accounts/pages/recovery_page.dart';
 import 'package:ente_accounts/pages/two_factor_authentication_page.dart';
 import 'package:ente_accounts/pages/two_factor_recovery_page.dart';
+import 'package:ente_accounts/services/install_source_handler.dart';
 import 'package:ente_base/models/key_attributes.dart';
 import 'package:ente_base/models/key_gen_result.dart';
 import 'package:ente_configuration/base_configuration.dart';
@@ -60,8 +60,7 @@ class UserService {
   late ValueNotifier<String?> emailValueNotifier;
   late BaseConfiguration _config;
   late BaseHomePage _homePage;
-  late String _clientPackageName;
-  late String _passkeyRedirectUrl;
+  InstallSourceHandler? _installSourceHandler;
 
   UserService._privateConstructor();
 
@@ -70,27 +69,27 @@ class UserService {
   Future<void> init(
     BaseConfiguration config,
     BaseHomePage homePage, {
-    required String clientPackageName,
-    required String passkeyRedirectUrl,
+    InstallSourceHandler? installSourceHandler,
   }) async {
     _config = config;
     _homePage = homePage;
-    _clientPackageName = clientPackageName;
-    _passkeyRedirectUrl = passkeyRedirectUrl;
+    _installSourceHandler = installSourceHandler;
     emailValueNotifier = ValueNotifier<String?>(config.getEmail());
     _preferences = await SharedPreferences.getInstance();
   }
 
   Future<void> sendOtt(
-    BuildContext context,
+    BuildContext? context,
     String email, {
     bool isChangeEmail = false,
     bool isCreateAccountScreen = false,
     bool isResetPasswordScreen = false,
     String? purpose,
   }) async {
-    final dialog = createProgressDialog(context, context.strings.pleaseWait);
-    await dialog.show();
+    final dialog = context != null && context.mounted
+        ? createProgressDialog(context, context.strings.pleaseWait)
+        : null;
+    await dialog?.show();
     try {
       final response = await _dio.post(
         "${_config.getHttpEndpoint()}/users/ott",
@@ -100,7 +99,10 @@ class UserService {
           "mobile": Platform.isIOS || Platform.isAndroid,
         },
       );
-      await dialog.hide();
+      await dialog?.hide();
+      if (context == null || !context.mounted) {
+        return;
+      }
       if (response.statusCode == 200) {
         unawaited(
           Navigator.of(context).push(
@@ -120,9 +122,15 @@ class UserService {
       }
       unawaited(showGenericErrorDialog(context: context, error: null));
     } on DioException catch (e) {
-      await dialog.hide();
+      await dialog?.hide();
       _logger.info(e);
-      final String? enteErrCode = e.response?.data["code"];
+      if (context == null || !context.mounted) {
+        return;
+      }
+      final responseData = e.response?.data;
+      final Object? enteErrCode = responseData is Map
+          ? responseData["code"]
+          : null;
       if (enteErrCode != null && enteErrCode == "USER_ALREADY_REGISTERED") {
         unawaited(
           showAlertBottomSheet(
@@ -163,9 +171,11 @@ class UserService {
         unawaited(showGenericErrorDialog(context: context, error: e));
       }
     } catch (e) {
-      await dialog.hide();
+      await dialog?.hide();
       _logger.severe(e);
-      unawaited(showGenericErrorDialog(context: context, error: e));
+      if (context != null && context.mounted) {
+        unawaited(showGenericErrorDialog(context: context, error: e));
+      }
     }
   }
 
@@ -180,8 +190,6 @@ class UserService {
     );
   }
 
-  // getPublicKey returns null value if email id is not
-  // associated with another ente account
   Future<String?> getPublicKey(String email) async {
     try {
       final response = await _enteDio.get(
@@ -205,9 +213,7 @@ class UserService {
     try {
       final response = await _enteDio.get(
         "/users/details/v2",
-        queryParameters: {
-          "memoryCount": memoryCount,
-        },
+        queryParameters: {"memoryCount": memoryCount},
       );
       final userDetails = UserDetails.fromMap(response.data);
       if (shouldCache) {
@@ -222,7 +228,6 @@ class UserService {
             userDetails.profileData!.canDisableEmailMFA,
           );
         }
-        // handle email change from different client
         if (userDetails.email != _config.getEmail()) {
           await setEmail(userDetails.email);
         }
@@ -259,9 +264,7 @@ class UserService {
     try {
       await _enteDio.delete(
         "/users/session",
-        queryParameters: {
-          "token": token,
-        },
+        queryParameters: {"token": token},
       );
     } on DioException catch (e) {
       _logger.info(e);
@@ -282,86 +285,53 @@ class UserService {
     try {
       final response = await _enteDio.post("/users/logout");
       if (response.statusCode == 200) {
-        await _config.logout();
-        unawaited(
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
-        );
+        await _logoutLocally(context.mounted ? context : null);
       } else {
         throw Exception("Log out action failed");
       }
     } catch (e) {
-      _logger.severe(e);
-      // check if token is already invalid
-      if (e is DioException && e.response?.statusCode == 401) {
-        await _config.logout();
-        unawaited(
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
-        );
+      final bool shouldLogoutLocally =
+          (e is DioException && e.response?.statusCode == 401) ||
+          !_config.isEnteProduction();
+
+      if (shouldLogoutLocally) {
+        if (!_config.isEnteProduction()) {
+          _logger.info(
+            "Custom endpoint detected, proceeding with local logout despite server error",
+          );
+        } else {
+          _logger.info("Token already invalid, proceeding with local logout");
+        }
+        await _logoutLocally(context.mounted ? context : null);
         return;
       }
-      //This future is for waiting for the dialog from which logout() is called
-      //to close and only then to show the error dialog.
-      Future.delayed(
-        const Duration(milliseconds: 150),
-        () => showGenericErrorDialog(context: context, error: e),
-      );
+
+      _logger.severe(e);
+      // Let the logout dialog close before showing the error.
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (context.mounted) {
+          unawaited(showGenericErrorDialog(context: context, error: e));
+        }
+      });
       rethrow;
     }
   }
 
-  Future<DeleteChallengeResponse?> getDeleteChallenge(
-    BuildContext context,
-  ) async {
-    try {
-      final response = await _enteDio.get("/users/delete-challenge");
-      if (response.statusCode == 200) {
-        return DeleteChallengeResponse(
-          allowDelete: response.data["allowDelete"] as bool,
-          encryptedChallenge: response.data["encryptedChallenge"],
-        );
-      } else {
-        throw Exception("delete action failed");
-      }
-    } catch (e) {
-      _logger.severe(e);
-      await showGenericErrorDialog(
-        context: context,
-        error: e,
-      );
-      return null;
+  Future<void> _logoutLocally(BuildContext? context) async {
+    await _config.logout();
+    if (context == null || !context.mounted) {
+      return;
     }
-  }
-
-  Future<void> deleteAccount(
-    BuildContext context,
-    String challengeResponse,
-  ) async {
-    try {
-      final response = await _enteDio.delete(
-        "/users/delete",
-        data: {
-          "challenge": challengeResponse,
-        },
-      );
-      if (response.statusCode == 200) {
-        // clear data
-        await _config.logout();
-      } else {
-        throw Exception("delete action failed");
-      }
-    } catch (e) {
-      _logger.severe(e);
-      rethrow;
-    }
+    unawaited(
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
+    );
   }
 
   Future<dynamic> getTokenForPasskeySession(String sessionID) async {
     try {
       final response = await _dio.get(
         "${_config.getHttpEndpoint()}/users/two-factor/passkeys/get-token",
-        queryParameters: {
-          "sessionID": sessionID,
-        },
+        queryParameters: {"sessionID": sessionID},
       );
       return response.data;
     } on DioException catch (e) {
@@ -380,31 +350,24 @@ class UserService {
     }
   }
 
-  Future<void> onPassKeyVerified(BuildContext context, Map response) async {
-    final ProgressDialog dialog =
-        createProgressDialog(context, context.strings.pleaseWait);
-    await dialog.show();
+  Future<void> onPassKeyVerified(BuildContext? context, Map response) async {
+    final ProgressDialog? dialog = context != null && context.mounted
+        ? createProgressDialog(context, context.strings.pleaseWait)
+        : null;
+    await dialog?.show();
     try {
       final userPassword = _config.getVolatilePassword();
       await _saveConfiguration(response);
-      if (!context.mounted) {
-        await dialog.hide();
-        return;
-      }
-      final navigator = Navigator.of(context);
       if (userPassword == null) {
-        await dialog.hide();
-        if (!context.mounted) {
+        await dialog?.hide();
+        if (context == null || !context.mounted) {
           return;
         }
         // ignore: unawaited_futures
-        navigator.pushAndRemoveUntil(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext _) {
-              return PasswordReentryPage(
-                _config,
-                _homePage,
-              );
+              return PasswordReentryPage(_config, _homePage);
             },
           ),
           (route) => false,
@@ -417,18 +380,19 @@ class UserService {
             userPassword,
             _config.getKeyAttributes()!,
           );
+          unawaited(autoAttributePendingSource());
           _config.resetVolatilePassword();
           page = _homePage;
         } else {
           throw Exception("unexpected response during passkey verification");
         }
-        await dialog.hide();
-        if (!context.mounted) {
+        await dialog?.hide();
+        if (context == null || !context.mounted) {
           return;
         }
 
         // ignore: unawaited_futures
-        navigator.pushAndRemoveUntil(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext _) {
               return page;
@@ -440,7 +404,7 @@ class UserService {
       }
     } catch (e) {
       _logger.severe(e);
-      await dialog.hide();
+      await dialog?.hide();
       rethrow;
     }
   }
@@ -452,12 +416,10 @@ class UserService {
   }) async {
     final dialog = createProgressDialog(context, context.strings.pleaseWait);
     await dialog.show();
-    final verifyData = {
-      "email": _config.getEmail(),
-      "ott": ott,
-    };
+    final verifyData = {"email": _config.getEmail(), "ott": ott};
     if (!_config.isLoggedIn()) {
-      verifyData["source"] = 'auth:${_getRefSource()}';
+      verifyData["source"] =
+          '${_config.appIdentity.referralSourcePrefix}:${_getRefSource()}';
     }
     try {
       final response = await _dio.post(
@@ -481,8 +443,8 @@ class UserService {
             passkeySessionID,
             totp2FASessionID: twoFASessionID,
             accountsUrl: accountsUrl,
-            redirectUrl: _passkeyRedirectUrl,
-            clientPackage: _clientPackageName,
+            redirectUrl: _config.appIdentity.passkeyRedirectUrl,
+            clientPackage: _config.appIdentity.clientPackageName,
           );
         } else if (twoFASessionID.isNotEmpty) {
           page = TwoFactorAuthenticationPage(twoFASessionID);
@@ -490,23 +452,16 @@ class UserService {
           await _saveConfiguration(response);
           if (_config.getEncryptedToken() != null) {
             if (isResettingPasswordScreen) {
-              page = RecoveryPage(
-                _config,
-                _homePage,
-              );
+              page = RecoveryPage(_config, _homePage);
             } else {
-              page = PasswordReentryPage(
-                _config,
-                _homePage,
-              );
+              page = PasswordReentryPage(_config, _homePage);
             }
           } else {
-            page = PasswordEntryPage(
-              _config,
-              PasswordEntryMode.set,
-              _homePage,
-            );
+            page = PasswordEntryPage(_config, PasswordEntryMode.set, _homePage);
           }
+        }
+        if (!context.mounted) {
+          return;
         }
         // ignore: unawaited_futures
         Navigator.of(context).pushAndRemoveUntil(
@@ -518,12 +473,14 @@ class UserService {
           (route) => route.isFirst,
         );
       } else {
-        // should never reach here
         throw Exception("unexpected response during email verification");
       }
     } on DioException catch (e) {
       _logger.info(e);
       await dialog.hide();
+      if (!context.mounted) {
+        return;
+      }
       if (e.response != null && e.response!.statusCode == 410) {
         await showAlertBottomSheet(
           context,
@@ -531,7 +488,9 @@ class UserService {
           message: context.strings.yourVerificationCodeHasExpired,
           assetPath: 'assets/warning-grey.png',
         );
-        Navigator.of(context).pop();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
       } else {
         // ignore: unawaited_futures
         showAlertBottomSheet(
@@ -544,13 +503,15 @@ class UserService {
     } catch (e) {
       await dialog.hide();
       _logger.severe(e);
-      // ignore: unawaited_futures
-      showAlertBottomSheet(
-        context,
-        title: context.strings.oops,
-        message: context.strings.verificationFailedPleaseTryAgain,
-        assetPath: 'assets/warning-grey.png',
-      );
+      if (context.mounted) {
+        // ignore: unawaited_futures
+        showAlertBottomSheet(
+          context,
+          title: context.strings.oops,
+          message: context.strings.verificationFailedPleaseTryAgain,
+          assetPath: 'assets/warning-grey.png',
+        );
+      }
     }
   }
 
@@ -569,17 +530,22 @@ class UserService {
     try {
       final response = await _enteDio.post(
         "/users/change-email",
-        data: {
-          "email": email,
-          "ott": ott,
-        },
+        data: {"email": email, "ott": ott},
       );
       await dialog.hide();
       if (response.statusCode == 200) {
-        showShortToast(context, context.strings.emailChangedTo(email));
         await setEmail(email);
-        Navigator.of(context).popUntil((route) => route.isFirst);
         Bus.instance.fire(UserDetailsChangedEvent());
+        if (context.mounted) {
+          showShortToast(
+            context,
+            context.strings.emailChangedTo(newEmail: email),
+          );
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+        return;
+      }
+      if (!context.mounted) {
         return;
       }
       // ignore: unawaited_futures
@@ -590,6 +556,9 @@ class UserService {
       );
     } on DioException catch (e) {
       await dialog.hide();
+      if (!context.mounted) {
+        return;
+      }
       if (e.response != null && e.response!.statusCode == 403) {
         // ignore: unawaited_futures
         showErrorDialog(
@@ -608,27 +577,32 @@ class UserService {
     } catch (e) {
       await dialog.hide();
       _logger.severe(e);
-      // ignore: unawaited_futures
-      showErrorDialog(
-        context,
-        context.strings.oops,
-        context.strings.verificationFailedPleaseTryAgain,
-      );
+      if (context.mounted) {
+        // ignore: unawaited_futures
+        showErrorDialog(
+          context,
+          context.strings.oops,
+          context.strings.verificationFailedPleaseTryAgain,
+        );
+      }
     }
   }
 
   Future<void> setAttributes(KeyGenResult result) async {
     try {
-      await registerOrUpdateSrp(result.loginKey);
       await _enteDio.put(
         "/users/attributes",
-        data: {
-          "keyAttributes": result.keyAttributes.toMap(),
-        },
+        data: {"keyAttributes": result.keyAttributes.toMap()},
       );
       await _config.setKey(result.privateKeyAttributes.key);
       await _config.setSecretKey(result.privateKeyAttributes.secretKey);
       await _config.setKeyAttributes(result.keyAttributes);
+      try {
+        await registerOrUpdateSrp(result.loginKey);
+      } catch (_) {
+        // Keys are stored; password reentry after OTT login retries SRP setup.
+        _logger.warning("Continuing signup after SRP setup failure");
+      }
     } catch (e) {
       _logger.severe(e);
       rethrow;
@@ -639,9 +613,7 @@ class UserService {
     try {
       final response = await _dio.get(
         "${_config.getHttpEndpoint()}/users/srp/attributes",
-        queryParameters: {
-          "email": email,
-        },
+        queryParameters: {"email": email},
       );
       if (response.statusCode == 200) {
         return SrpAttributes.fromMap(response.data);
@@ -686,7 +658,7 @@ class UserService {
         srpUserID: username,
         srpSalt: base64Encode(salt),
         srpVerifier: base64Encode(SRP6Util.encodeBigInt(v)),
-        srpA: base64Encode(SRP6Util.encodeBigInt(A!)),
+        srpA: base64Encode(SRP6Util.getPadded(A!, 512)),
         isUpdate: false,
       );
       final response = await _enteDio.post(
@@ -694,10 +666,12 @@ class UserService {
         data: request.toMap(),
       );
       if (response.statusCode == 200) {
-        final SetupSRPResponse setupSRPResponse =
-            SetupSRPResponse.fromJson(response.data);
-        final serverB =
-            SRP6Util.decodeBigInt(base64Decode(setupSRPResponse.srpB));
+        final SetupSRPResponse setupSRPResponse = SetupSRPResponse.fromJson(
+          response.data,
+        );
+        final serverB = SRP6Util.decodeBigInt(
+          base64Decode(setupSRPResponse.srpB),
+        );
         // ignore: unused_local_variable
         final clientS = client.calculateSecret(serverB);
         final clientM = client.calculateClientEvidenceMessage();
@@ -707,7 +681,7 @@ class UserService {
             "/users/srp/complete",
             data: {
               'setupID': setupSRPResponse.setupID,
-              'srpM1': base64Encode(SRP6Util.encodeBigInt(clientM!)),
+              'srpM1': base64Encode(SRP6Util.getPadded(clientM!, 32)),
             },
           );
         } else {
@@ -715,7 +689,7 @@ class UserService {
             "/users/srp/update",
             data: {
               'setupID': setupSRPResponse.setupID,
-              'srpM1': base64Encode(SRP6Util.encodeBigInt(clientM!)),
+              'srpM1': base64Encode(SRP6Util.getPadded(clientM!, 32)),
               'updatedKeyAttr': setKeysRequest.toMap(),
               'logOutOtherDevices': logOutOtherDevices,
             },
@@ -742,7 +716,7 @@ class UserService {
   }
 
   Future<void> verifyEmailViaPassword(
-    BuildContext context,
+    BuildContext? context,
     SrpAttributes srpAttributes,
     String userPassword,
     ProgressDialog dialog,
@@ -812,8 +786,8 @@ class UserService {
           passkeySessionID,
           totp2FASessionID: twoFASessionID,
           accountsUrl: accountsUrl,
-          redirectUrl: _passkeyRedirectUrl,
-          clientPackage: _clientPackageName,
+          redirectUrl: _config.appIdentity.passkeyRedirectUrl,
+          clientPackage: _config.appIdentity.clientPackageName,
         );
       } else if (twoFASessionID.isNotEmpty) {
         page = TwoFactorAuthenticationPage(twoFASessionID);
@@ -825,6 +799,7 @@ class UserService {
             _config.getKeyAttributes()!,
             keyEncryptionKey: keyEncryptionKey,
           );
+          unawaited(autoAttributePendingSource());
           _config.resetVolatilePassword();
           page = _homePage;
         } else {
@@ -832,19 +807,20 @@ class UserService {
         }
       }
       await dialog.hide();
-      // ignore: unawaited_futures
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (BuildContext context) {
-            return page!;
-          },
-        ),
-        identical(page, _homePage)
-            ? (route) => false
-            : (route) => route.isFirst,
-      );
+      if (context != null && context.mounted) {
+        // ignore: unawaited_futures
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (BuildContext context) {
+              return page!;
+            },
+          ),
+          identical(page, _homePage)
+              ? (route) => false
+              : (route) => route.isFirst,
+        );
+      }
     } else {
-      // should never reach here
       throw Exception("unexpected response during email verification");
     }
   }
@@ -903,31 +879,30 @@ class UserService {
     try {
       final response = await _dio.post(
         "${_config.getHttpEndpoint()}/users/two-factor/verify",
-        data: {
-          "sessionID": sessionID,
-          "code": code,
-        },
+        data: {"sessionID": sessionID, "code": code},
       );
       await dialog.hide();
       if (response.statusCode == 200) {
-        showShortToast(context, context.strings.authenticationSuccessful);
         await _saveConfiguration(response);
-        // ignore: unawaited_futures
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (BuildContext context) {
-              return PasswordReentryPage(
-                _config,
-                _homePage,
-              );
-            },
-          ),
-          (route) => route.isFirst,
-        );
+        if (context.mounted) {
+          showShortToast(context, context.strings.authenticationSuccessful);
+          // ignore: unawaited_futures
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return PasswordReentryPage(_config, _homePage);
+              },
+            ),
+            (route) => route.isFirst,
+          );
+        }
       }
     } on DioException catch (e) {
       await dialog.hide();
       _logger.severe(e);
+      if (!context.mounted) {
+        return;
+      }
       if (e.response != null && e.response!.statusCode == 404) {
         showToast(context, "Session expired");
         // ignore: unawaited_futures
@@ -951,13 +926,15 @@ class UserService {
     } catch (e) {
       await dialog.hide();
       _logger.severe(e);
-      // ignore: unawaited_futures
-      showAlertBottomSheet(
-        context,
-        title: context.strings.oops,
-        message: context.strings.authenticationFailedPleaseTryAgain,
-        assetPath: 'assets/warning-grey.png',
-      );
+      if (context.mounted) {
+        // ignore: unawaited_futures
+        showAlertBottomSheet(
+          context,
+          title: context.strings.oops,
+          message: context.strings.authenticationFailedPleaseTryAgain,
+          assetPath: 'assets/warning-grey.png',
+        );
+      }
     }
   }
 
@@ -978,24 +955,29 @@ class UserService {
       );
       await dialog.hide();
       if (response.statusCode == 200) {
-        // ignore: unawaited_futures
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (BuildContext context) {
-              return TwoFactorRecoveryPage(
-                type,
-                sessionID,
-                response.data["encryptedSecret"],
-                response.data["secretDecryptionNonce"],
-              );
-            },
-          ),
-          (route) => route.isFirst,
-        );
+        if (context.mounted) {
+          // ignore: unawaited_futures
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return TwoFactorRecoveryPage(
+                  type,
+                  sessionID,
+                  response.data["encryptedSecret"],
+                  response.data["secretDecryptionNonce"],
+                );
+              },
+            ),
+            (route) => route.isFirst,
+          );
+        }
       }
     } on DioException catch (e) {
       await dialog.hide();
       _logger.severe(e);
+      if (!context.mounted) {
+        return;
+      }
       if (e.response != null && e.response!.statusCode == 404) {
         showToast(context, context.strings.sessionExpired);
         // ignore: unawaited_futures
@@ -1019,13 +1001,15 @@ class UserService {
     } catch (e) {
       await dialog.hide();
       _logger.severe(e);
-      // ignore: unawaited_futures
-      showAlertBottomSheet(
-        context,
-        title: context.strings.oops,
-        message: context.strings.somethingWentWrongPleaseTryAgain,
-        assetPath: 'assets/warning-grey.png',
-      );
+      if (context.mounted) {
+        // ignore: unawaited_futures
+        showAlertBottomSheet(
+          context,
+          title: context.strings.oops,
+          message: context.strings.somethingWentWrongPleaseTryAgain,
+          assetPath: 'assets/warning-grey.png',
+        );
+      }
     } finally {
       await dialog.hide();
     }
@@ -1060,6 +1044,9 @@ class UserService {
       );
     } catch (e) {
       await dialog.hide();
+      if (!context.mounted) {
+        return;
+      }
       await showAlertBottomSheet(
         context,
         title: context.strings.incorrectRecoveryKey,
@@ -1079,27 +1066,29 @@ class UserService {
       );
       await dialog.hide();
       if (response.statusCode == 200) {
-        showShortToast(
-          context,
-          context.strings.twofactorAuthenticationSuccessfullyReset,
-        );
         await _saveConfiguration(response);
-        // ignore: unawaited_futures
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (BuildContext context) {
-              return PasswordReentryPage(
-                _config,
-                _homePage,
-              );
-            },
-          ),
-          (route) => route.isFirst,
-        );
+        if (context.mounted) {
+          showShortToast(
+            context,
+            context.strings.twofactorAuthenticationSuccessfullyReset,
+          );
+          // ignore: unawaited_futures
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return PasswordReentryPage(_config, _homePage);
+              },
+            ),
+            (route) => route.isFirst,
+          );
+        }
       }
     } on DioException catch (e) {
       await dialog.hide();
       _logger.severe(e);
+      if (!context.mounted) {
+        return;
+      }
       if (e.response != null && e.response!.statusCode == 404) {
         showToast(context, "Session expired");
         // ignore: unawaited_futures
@@ -1123,13 +1112,15 @@ class UserService {
     } catch (e) {
       await dialog.hide();
       _logger.severe(e);
-      // ignore: unawaited_futures
-      showAlertBottomSheet(
-        context,
-        title: context.strings.oops,
-        message: context.strings.somethingWentWrongPleaseTryAgain,
-        assetPath: 'assets/warning-grey.png',
-      );
+      if (context.mounted) {
+        // ignore: unawaited_futures
+        showAlertBottomSheet(
+          context,
+          title: context.strings.oops,
+          message: context.strings.somethingWentWrongPleaseTryAgain,
+          assetPath: 'assets/warning-grey.png',
+        );
+      }
     } finally {
       await dialog.hide();
     }
@@ -1148,6 +1139,20 @@ class UserService {
     } else {
       await _config.setToken(responseData["token"]);
     }
+    final isSignUp = responseData["encryptedToken"] == null;
+    unawaited(autoAttributeSource(isSignUp: isSignUp));
+  }
+
+  Future<bool> hasInstallSource() async {
+    return await _installSourceHandler?.hasInstallSource() ?? false;
+  }
+
+  Future<void> autoAttributeSource({required bool isSignUp}) async {
+    await _installSourceHandler?.autoAttributeSource(isSignUp: isSignUp);
+  }
+
+  Future<void> autoAttributePendingSource() async {
+    await _installSourceHandler?.autoAttributePendingSource();
   }
 
   bool? canDisableEmailMFA() {
@@ -1160,12 +1165,7 @@ class UserService {
 
   Future<void> updateEmailMFA(bool isEnabled) async {
     try {
-      await _enteDio.put(
-        "/users/email-mfa",
-        data: {
-          "isEnabled": isEnabled,
-        },
-      );
+      await _enteDio.put("/users/email-mfa", data: {"isEnabled": isEnabled});
       await _preferences.setBool(kIsEmailMFAEnabled, isEnabled);
     } catch (e) {
       _logger.severe("Failed to update email mfa", e);

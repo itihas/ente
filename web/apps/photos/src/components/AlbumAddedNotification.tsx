@@ -17,20 +17,15 @@ interface AlbumAddedNotificationProps {
     open: boolean;
     onClose: () => void;
     phase: AddToAlbumPhase;
-    /** The destination album name to show as subtitle (truncated). */
     albumName?: string;
 }
 
-/**
- * Success notification shown after files are added to an album.
- */
 export const AlbumAddedNotification: React.FC<AlbumAddedNotificationProps> = ({
     open,
     onClose,
     phase,
     albumName,
 }) => {
-    // Only show the toast once the operation completes successfully.
     const shouldShow = open && phase === "done";
 
     return (
@@ -49,7 +44,6 @@ export const AlbumAddedNotification: React.FC<AlbumAddedNotificationProps> = ({
                     >
                         <Box>
                             <Typography variant="h3">
-                                {/* Intentionally using a simple title for clarity */}
                                 {t("added_to_album")}
                             </Typography>
                             {albumName && (

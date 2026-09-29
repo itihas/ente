@@ -3,19 +3,19 @@ import 'dart:io' as io;
 
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:dots_indicator/dots_indicator.dart';
+import 'package:ente_accounts/widgets/account_app_bar_logo.dart';
+import 'package:ente_components/ente_components.dart';
 import 'package:ente_configuration/base_configuration.dart';
 import 'package:ente_configuration/constants.dart';
 import 'package:ente_pure_utils/ente_pure_utils.dart';
 import 'package:ente_strings/ente_strings.dart';
-import 'package:ente_ui/components/buttons/gradient_button.dart';
 import 'package:ente_ui/theme/ente_theme.dart';
 import 'package:ente_ui/utils/toast_util.dart';
 import 'package:ente_utils/ente_utils.dart';
-import 'package:ente_utils/share_utils.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:share_plus/share_plus.dart';
 
 class RecoveryKeyPage extends StatefulWidget {
@@ -72,18 +72,13 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
     final textTheme = getEnteTextTheme(context);
 
     Future<void> copy() async {
-      await Clipboard.setData(
-        ClipboardData(
-          text: recoveryKey,
-        ),
-      );
-      showShortToast(
-        context,
-        context.strings.recoveryKeyCopiedToClipboard,
-      );
-      setState(() {
-        _hasTriedToSave = true;
-      });
+      await Clipboard.setData(ClipboardData(text: recoveryKey));
+      if (context.mounted) {
+        showShortToast(context, context.strings.recoveryKeyCopiedToClipboard);
+        setState(() {
+          _hasTriedToSave = true;
+        });
+      }
     }
 
     return Scaffold(
@@ -93,13 +88,7 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
         scrolledUnderElevation: 0,
         backgroundColor: colorScheme.backgroundBase,
         centerTitle: true,
-        title: SvgPicture.asset(
-          'assets/svg/app-logo.svg',
-          colorFilter: ColorFilter.mode(
-            colorScheme.primary700,
-            BlendMode.srcIn,
-          ),
-        ),
+        title: const AccountAppBarLogo(),
         leading: widget.showAppBar == false
             ? const SizedBox.shrink()
             : IconButton(
@@ -107,7 +96,7 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                color: colorScheme.primary700,
+                color: getAccountAppBarColor(context),
               ),
       ),
       body: SafeArea(
@@ -136,36 +125,54 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
                         ),
                         child: Builder(
                           builder: (context) {
-                            final content = Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
-                                vertical: 24,
-                              ),
-                              child: Text(
-                                recoveryKey,
-                                textAlign: TextAlign.justify,
-                                style: textTheme.body.copyWith(
-                                  color: Colors.white,
-                                  fontFamily: 'monospace',
-                                  letterSpacing: 0.5,
-                                  height: 1.5,
-                                ),
+                            final text = Text(
+                              recoveryKey,
+                              textAlign: TextAlign.justify,
+                              style: textTheme.body.copyWith(
+                                color: Colors.white,
+                                fontFamily: 'monospace',
+                                letterSpacing: 0.5,
+                                height: 1.5,
                               ),
                             );
 
-                            if (PlatformDetector.isMobile()) {
-                              return GestureDetector(
-                                onTap: () async => await copy(),
-                                child: content,
-                              );
-                            } else {
-                              return SelectableRegion(
-                                focusNode: FocusNode(),
-                                selectionControls:
-                                    PlatformUtil.selectionControls,
-                                child: content,
-                              );
-                            }
+                            final keyContent = PlatformDetector.isMobile()
+                                ? GestureDetector(
+                                    onTap: () async => await copy(),
+                                    child: text,
+                                  )
+                                : SelectableRegion(
+                                    focusNode: FocusNode(),
+                                    selectionControls:
+                                        PlatformUtil.selectionControls,
+                                    child: text,
+                                  );
+
+                            return Stack(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    22,
+                                    24,
+                                    64,
+                                    24,
+                                  ),
+                                  child: keyContent,
+                                ),
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: IconButton(
+                                    onPressed: () async => await copy(),
+                                    icon: const HugeIcon(
+                                      icon: HugeIcons.strokeRoundedCopy01,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
                           },
                         ),
                       ),
@@ -227,7 +234,7 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
     }
 
     childrens.add(
-      GradientButton(
+      ButtonComponent(
         onTap: () async {
           await showShareSheet(
             context,
@@ -240,7 +247,8 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
             },
           );
         },
-        text: context.strings.saveKey,
+        label: context.strings.saveKey,
+        shouldSurfaceExecutionStates: false,
       ),
     );
 
@@ -251,9 +259,7 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
         },
         child: Text(
           _hasTriedToSave ? widget.doneText : context.strings.continueLabel,
-          style: textTheme.bodyBold.copyWith(
-            color: colorScheme.primary700,
-          ),
+          style: textTheme.bodyBold.copyWith(color: colorScheme.primary700),
         ),
       ),
     );
@@ -273,10 +279,7 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
     );
 
     if (mounted) {
-      showToast(
-        context,
-        context.strings.recoveryKeySaved,
-      );
+      showToast(context, context.strings.recoveryKeySaved);
       setState(() {
         _hasTriedToSave = true;
       });
@@ -288,15 +291,9 @@ class _RecoveryKeyPageState extends State<RecoveryKeyPage> {
       await _recoveryKeyFile.delete();
     }
     _recoveryKeyFile.writeAsStringSync(recoveryKey);
-    await shareFiles(
-      [
-        XFile(
-          _recoveryKeyFile.path,
-          mimeType: 'text/plain',
-        ),
-      ],
-      context: context,
-    );
+    await shareFiles([
+      XFile(_recoveryKeyFile.path, mimeType: 'text/plain'),
+    ], context: mounted ? context : null);
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {

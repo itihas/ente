@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ente_configuration/base_configuration.dart';
@@ -9,8 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   late ContactsDisplayService displayService;
 
   setUp(() async {
@@ -25,21 +24,18 @@ void main() {
   testWidgets('user avatar prefers saved contact photo over initials', (
     tester,
   ) async {
-    displayService.debugHydrateContacts(
-      const [
-        ContactRecord(
-          id: 'ct_1',
-          contactUserId: 7,
-          email: 'z@test.test',
-          data: ContactData(contactUserId: 7, name: 'Alice'),
-          profilePictureAttachmentId: 'att_1',
-          isDeleted: false,
-          createdAt: 1,
-          updatedAt: 2,
-        ),
-      ],
-      notify: false,
-    );
+    displayService.debugHydrateContacts(const [
+      ContactRecord(
+        id: 'ct_1',
+        contactUserId: 7,
+        email: 'z@test.test',
+        name: 'Alice',
+        profilePictureAttachmentId: 'att_1',
+        isDeleted: false,
+        createdAt: 1,
+        updatedAt: 2,
+      ),
+    ], notify: false);
     displayService.debugSetProfilePictureBytes(
       contactUserId: 7,
       bytes: _validPngBytes(),
@@ -82,7 +78,7 @@ void main() {
         id: 'ct_1',
         contactUserId: 7,
         email: 'z@test.test',
-        data: ContactData(contactUserId: 7, name: 'Alice'),
+        name: 'Alice',
         profilePictureAttachmentId: null,
         isDeleted: false,
         createdAt: 1,
@@ -97,82 +93,25 @@ void main() {
 
 class _TestConfiguration extends BaseConfiguration {
   @override
+  EnteAppIdentity get appIdentity => const EnteAppIdentity(
+    app: 'test',
+    clientPackageName: 'io.ente.test',
+    passkeyRedirectUrl: 'entetest://passkey',
+    referralSourcePrefix: 'test',
+  );
+
+  @override
+  List<String> get secureStorageKeys =>
+      BaseConfiguration.accountSecureStorageKeys;
+
+  @override
   String? getEmail() => 'me@test.test';
 
   @override
   int? getUserID() => 1;
 }
 
-Uint8List _validPngBytes() {
-  return Uint8List.fromList(const [
-    137,
-    80,
-    78,
-    71,
-    13,
-    10,
-    26,
-    10,
-    0,
-    0,
-    0,
-    13,
-    73,
-    72,
-    68,
-    82,
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    1,
-    8,
-    6,
-    0,
-    0,
-    0,
-    31,
-    21,
-    196,
-    137,
-    0,
-    0,
-    0,
-    13,
-    73,
-    68,
-    65,
-    84,
-    120,
-    156,
-    99,
-    248,
-    255,
-    255,
-    63,
-    0,
-    5,
-    254,
-    2,
-    254,
-    167,
-    53,
-    129,
-    132,
-    0,
-    0,
-    0,
-    0,
-    73,
-    69,
-    78,
-    68,
-    174,
-    66,
-    96,
-    130,
-  ]);
-}
+Uint8List _validPngBytes() => base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4//8/'
+  'AAX+Av6nNYGEAAAAAElFTkSuQmCC',
+);

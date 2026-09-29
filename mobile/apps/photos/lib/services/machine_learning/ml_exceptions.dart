@@ -1,14 +1,5 @@
 import "package:photos/core/exceptions.dart";
 
-class GeneralFaceMlException implements Exception {
-  final String message;
-
-  GeneralFaceMlException(this.message);
-
-  @override
-  String toString() => 'GeneralFaceMlException: $message';
-}
-
 class ThumbnailRetrievalException implements Exception {
   final String message;
   final StackTrace stackTrace;
@@ -23,8 +14,4 @@ class ThumbnailRetrievalException implements Exception {
 
 class CouldNotRetrieveAnyFileData implements Exception, LocallyHandledError {}
 
-class CouldNotRunFaceDetector implements Exception {}
-
-class CouldNotWarpAffine implements Exception {}
-
-class CouldNotRunFaceEmbeddor implements Exception {}
+class RepeatedFileDecryptionError implements Exception, LocallyHandledError {}

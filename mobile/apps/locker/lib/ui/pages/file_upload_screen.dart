@@ -1,18 +1,30 @@
+import 'dart:convert';
 import 'dart:io';
 
-import "package:ente_ui/components/title_bar_title_widget.dart";
-import "package:ente_ui/theme/colors.dart";
-import 'package:ente_ui/theme/ente_theme.dart';
-import "package:ente_ui/theme/text_style.dart";
+import "package:ente_components/ente_components.dart";
+import 'package:ente_strings/ente_strings.dart';
 import 'package:flutter/material.dart';
 import "package:hugeicons/hugeicons.dart";
-import 'package:locker/l10n/l10n.dart';
 import 'package:locker/services/collections/models/collection.dart';
+import 'package:locker/services/configuration.dart';
 import 'package:locker/ui/components/collection_selection_widget.dart';
-import 'package:locker/ui/components/file_upload_sheet.dart';
-import "package:locker/ui/components/gradient_button.dart";
+import 'package:locker/ui/components/text_input_sheet.dart';
 import "package:locker/utils/file_icon_utils.dart";
 import 'package:path/path.dart' as path;
+
+class FileUploadScreenResult {
+  final List<File> files;
+  final Map<String, String> fileNames;
+  final String note;
+  final List<Collection> selectedCollections;
+
+  FileUploadScreenResult({
+    required this.files,
+    required this.fileNames,
+    required this.note,
+    required this.selectedCollections,
+  });
+}
 
 class FileUploadScreen extends StatefulWidget {
   final List<File> files;
@@ -32,6 +44,7 @@ class FileUploadScreen extends StatefulWidget {
 
 class _FileUploadScreenState extends State<FileUploadScreen> {
   List<File> _files = [];
+  final Map<String, String> _fileNames = {};
   List<Collection> _availableCollections = [];
   final Set<int> _selectedCollectionIds = {};
 
@@ -41,9 +54,11 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
     _files = List.from(widget.files);
     _availableCollections = List.from(widget.collections);
 
-    if (widget.selectedCollection != null &&
-        widget.selectedCollection!.type != CollectionType.uncategorized) {
-      _selectedCollectionIds.add(widget.selectedCollection!.id);
+    final selectedCollection = widget.selectedCollection;
+    if (selectedCollection != null &&
+        (selectedCollection.type != CollectionType.uncategorized ||
+            !selectedCollection.isOwner(Configuration.instance.getUserID()!))) {
+      _selectedCollectionIds.add(selectedCollection.id);
     }
   }
 
@@ -68,20 +83,63 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
     });
   }
 
+  Future<void> _renameFile(File file) async {
+    final currentName = _fileNames[file.path] ?? path.basename(file.path);
+    final extension = path.extension(file.path);
+    final baseName = currentName.substring(
+      0,
+      currentName.length - extension.length,
+    );
+    final l10n = context.strings;
+
+    String? nameForUpload(String name) {
+      if (name == baseName) return currentName;
+      var cleaned = name.replaceAll(RegExp(r'[/\\\x00-\x1f]'), '').trim();
+      if (extension.isNotEmpty &&
+          cleaned.toLowerCase().endsWith(extension.toLowerCase())) {
+        cleaned = cleaned
+            .substring(0, cleaned.length - extension.length)
+            .trim();
+      }
+      if (cleaned.isEmpty || cleaned == '.' || cleaned == '..') return null;
+      return '$cleaned$extension';
+    }
+
+    await showTextInputSheet(
+      context,
+      title: l10n.renameFile,
+      initialValue: baseName,
+      hintText: l10n.enterFileName,
+      submitButtonLabel: l10n.save,
+      validator: (name) {
+        final fileName = nameForUpload(name);
+        if (fileName == null) return l10n.enterFileName;
+        // The title is also used as a filesystem name when opening the upload.
+        if (utf8.encode(fileName).length > 255) return l10n.fileNameTooLong;
+        return null;
+      },
+      onSubmit: (name) async {
+        if (!mounted) return;
+        final fileName = nameForUpload(name);
+        if (fileName == null) return;
+        setState(() => _fileNames[file.path] = fileName);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
-    final textTheme = getEnteTextTheme(context);
+    final colors = context.componentColors;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: colorScheme.backgroundBase,
+        backgroundColor: colors.backgroundBase,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
         toolbarHeight: 0,
         elevation: 0,
       ),
-      backgroundColor: colorScheme.backgroundBase,
+      backgroundColor: colors.backgroundBase,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -96,12 +154,19 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TitleBarTitleWidget(
-                        title: context.l10n.uploadFiles,
+                      Text(
+                        context.strings.uploadFiles,
+                        style: TextStyles.display2.copyWith(
+                          color: colors.textBase,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       Text(
-                        context.l10n.filesSelected(_files.length),
-                        style: textTheme.smallMuted,
+                        context.strings.filesSelected(count: _files.length),
+                        style: TextStyles.body.copyWith(
+                          color: colors.textLight,
+                        ),
                       ),
                     ],
                   ),
@@ -112,13 +177,13 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(50),
-                        color: colorScheme.fillFaint,
+                        color: colors.strokeDark,
                       ),
                       padding: const EdgeInsets.all(8),
                       child: Icon(
                         Icons.close,
                         size: 24,
-                        color: colorScheme.textBase,
+                        color: colors.textBase,
                       ),
                     ),
                   ),
@@ -135,7 +200,7 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                       if (_files.isNotEmpty) ...[
                         Container(
                           decoration: BoxDecoration(
-                            color: colorScheme.strokeFainter,
+                            color: colors.fillDark,
                             borderRadius: BorderRadius.circular(24),
                           ),
                           padding: const EdgeInsets.all(12),
@@ -145,7 +210,7 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                               constraints: BoxConstraints(
                                 maxHeight: _files.length > 5
                                     ? 360
-                                    : _files.length * 84.0,
+                                    : _files.length * 72.0,
                               ),
                               child: ListView.separated(
                                 shrinkWrap: true,
@@ -157,11 +222,7 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                                 separatorBuilder: (context, index) =>
                                     const SizedBox(height: 8),
                                 itemBuilder: (context, index) {
-                                  return _buildFileItem(
-                                    _files[index],
-                                    colorScheme,
-                                    textTheme,
-                                  );
+                                  return _buildFileItem(_files[index], colors);
                                 },
                               ),
                             ),
@@ -169,8 +230,13 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                         ),
                         const SizedBox(height: 24),
                       ],
-                      TitleBarTitleWidget(
-                        title: context.l10n.collectionLabel,
+                      Text(
+                        context.strings.collectionLabel,
+                        style: TextStyles.display2.copyWith(
+                          color: colors.textBase,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       const SizedBox(height: 16),
                       CollectionSelectionWidget(
@@ -186,25 +252,24 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
               ),
               const SizedBox(height: 12),
               SafeArea(
-                child: SizedBox(
-                  width: double.infinity,
-                  child: GradientButton(
-                    onTap: _selectedCollectionIds.isEmpty
-                        ? null
-                        : () async {
-                            final selectedCollections = _availableCollections
-                                .where(
-                                  (c) => _selectedCollectionIds.contains(c.id),
-                                )
-                                .toList();
-                            final result = FileUploadSheetResult(
-                              note: '',
-                              selectedCollections: selectedCollections,
-                            );
-                            Navigator.of(context).pop(result);
-                          },
-                    text: context.l10n.save,
-                  ),
+                child: ButtonComponent(
+                  label: context.strings.save,
+                  onTap: () async {
+                    final selectedCollections = _availableCollections
+                        .where((c) => _selectedCollectionIds.contains(c.id))
+                        .toList();
+                    final result = FileUploadScreenResult(
+                      files: List<File>.of(_files),
+                      fileNames: {
+                        for (final file in _files)
+                          file.path:
+                              _fileNames[file.path] ?? path.basename(file.path),
+                      },
+                      note: '',
+                      selectedCollections: selectedCollections,
+                    );
+                    Navigator.of(context).pop(result);
+                  },
                 ),
               ),
             ],
@@ -214,70 +279,58 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
     );
   }
 
-  Widget _buildFileItem(
-    File file,
-    EnteColorScheme colorScheme,
-    EnteTextTheme textTheme,
-  ) {
-    final fileName = path.basename(file.path);
+  Widget _buildFileItem(File file, ColorTokens colors) {
+    final fileName = _fileNames[file.path] ?? path.basename(file.path);
 
-    final widget = Flexible(
-      flex: 6,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.fillLight,
+        borderRadius: const BorderRadius.all(Radius.circular(20)),
+      ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10.0),
-            width: 60,
-            height: 60,
-            child: _buildFileIcon(fileName),
-          ),
-          const SizedBox(width: 6),
-          Flexible(
+          SizedBox(height: 40, width: 40, child: _buildFileIcon(fileName)),
+          const SizedBox(width: 12),
+          Expanded(
             child: Text(
               fileName,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
-              style: textTheme.body,
+              style: TextStyles.body,
             ),
           ),
-        ],
-      ),
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.backdropBase,
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          widget,
-          Flexible(
-            flex: 1,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _files.remove(file);
-                  if (_files.isEmpty) {
-                    Navigator.of(context).pop();
-                  }
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorScheme.backgroundElevated,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: HugeIcon(
-                    icon: HugeIcons.strokeRoundedCancel01,
-                    color: colorScheme.textBase,
-                    size: 20,
-                  ),
-                ),
+          const SizedBox(width: 12),
+          IconButtonComponent(
+            tooltip: context.strings.renameFile,
+            shouldSurfaceExecutionStates: false,
+            onTap: () => _renameFile(file),
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedEdit02,
+              color: colors.textBase,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _files.remove(file);
+                if (_files.isEmpty) {
+                  Navigator.of(context).pop();
+                }
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.strokeDark,
+              ),
+              padding: const EdgeInsets.all(6),
+              child: HugeIcon(
+                icon: HugeIcons.strokeRoundedCancel01,
+                color: colors.textBase,
+                size: 16,
               ),
             ),
           ),
@@ -287,6 +340,10 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
   }
 
   Widget _buildFileIcon(String fileName) {
-    return FileIconUtils.getFileIcon(fileName, showBackground: true);
+    return FileIconUtils.getFileIcon(
+      context,
+      fileName,
+      backgroundColor: context.componentColors.backgroundBase,
+    );
   }
 }

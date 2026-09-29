@@ -3,12 +3,14 @@ import Flutter
 import UIKit
 import UserNotifications
 import app_links
+import ente_background_manager
 import workmanager_apple
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   private static let workmanagerDebugThreadIdentifier =
     "io.ente.frame.workmanager.debug"
+  private let foregroundHeartbeat = ForegroundHeartbeat()
 
   override func application(
     _ application: UIApplication,
@@ -32,22 +34,28 @@ import workmanager_apple
     }
 
     GeneratedPluginRegistrant.register(with: self)
+    BackgroundManagerPlugin.install(
+      isEnabled: { Self.shouldUseNativeBackgroundManager() },
+      registrant: { registry in GeneratedPluginRegistrant.register(with: registry) }
+    )
+    BackgroundManagerPlugin.registerTask(
+      identifier: "io.ente.photos.nativeBackgroundRefresh", processing: false)
+    BackgroundManagerPlugin.registerTask(
+      identifier: "io.ente.photos.nativeBackgroundProcessing", processing: true)
     WorkmanagerPlugin.setPluginRegistrantCallback { registry in
       GeneratedPluginRegistrant.register(with: registry)
     }
     var freqInMinutes = 30 * 60
-    // Register a periodic task in iOS 13+
     WorkmanagerPlugin.registerPeriodicTask(
       withIdentifier: "io.ente.frame.iOSBackgroundAppRefresh",
       frequency: NSNumber(value: freqInMinutes))
+    WorkmanagerPlugin.registerBGProcessingTask(
+      withIdentifier: "io.ente.frame.iOSBackgroundProcessing")
 
-    // Retrieve the link from parameters
     if let url = AppLinks.shared.getLink(launchOptions: launchOptions) {
       // only accept non-homewidget urls for AppLinks
-      if !url.absoluteString.contains("&homeWidget") {
+      if !url.absoluteString.contains("homeWidget") {
         AppLinks.shared.handleLink(url: url)
-        // link is handled, stop propagation
-        return true
       }
     }
 
@@ -62,6 +70,20 @@ import workmanager_apple
     WorkmanagerDebug.setCurrent(
       NotificationDebugHandler(threadIdentifier: Self.workmanagerDebugThreadIdentifier)
     )
+  }
+
+  private static func shouldUseNativeBackgroundManager() -> Bool {
+    let defaults = UserDefaults.standard
+    guard !defaults.bool(forKey: "flutter.ls.internal_user_disabled") else {
+      return false
+    }
+    guard let remoteFlags = defaults.string(forKey: "flutter.remote_flags"),
+      let data = remoteFlags.data(using: .utf8),
+      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else {
+      return false
+    }
+    return json["internalUser"] as? Bool ?? false
   }
 
   private func shouldEnableWorkmanagerDebugNotifications() -> Bool {
@@ -85,11 +107,18 @@ import workmanager_apple
   }
 
   override func applicationDidBecomeActive(_ application: UIApplication) {
+    foregroundHeartbeat.start()
     signal(SIGPIPE, SIG_IGN)
   }
 
   override func applicationWillEnterForeground(_ application: UIApplication) {
+    foregroundHeartbeat.start()
     signal(SIGPIPE, SIG_IGN)
+  }
+
+  override func applicationDidEnterBackground(_ application: UIApplication) {
+    foregroundHeartbeat.stop()
+    super.applicationDidEnterBackground(application)
   }
 
   override func userNotificationCenter(

@@ -1,9 +1,9 @@
 import "dart:async";
 
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:hugeicons/hugeicons.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/services/memory_share_service.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/alert_bottom_sheet.dart";
@@ -16,8 +16,9 @@ Future<bool?> showMemoryLinkDetailsSheet(
   BuildContext context, {
   required String shareUrl,
   required int shareId,
+  required String title,
 }) {
-  final l10n = AppLocalizations.of(context);
+  final l10n = context.strings;
   return showBaseBottomSheet<bool>(
     context,
     title: l10n.shareLink,
@@ -31,8 +32,9 @@ Future<bool?> showMemoryLinkDetailsSheet(
           children: [
             Text(
               l10n.memoryShareLinkDescription,
-              style: textTheme.smallMuted
-                  .copyWith(color: colorScheme.contentLight),
+              style: textTheme.smallMuted.copyWith(
+                color: colorScheme.contentLight,
+              ),
             ),
             const SizedBox(height: 14),
             Container(
@@ -79,7 +81,12 @@ Future<bool?> showMemoryLinkDetailsSheet(
               labelText: l10n.shareLink,
               shouldSurfaceExecutionStates: false,
               onTap: () async {
-                unawaited(shareText(shareUrl, context: context));
+                unawaited(
+                  shareText(
+                    formatMemoryShareText(title, shareUrl),
+                    context: context,
+                  ),
+                );
               },
             ),
             const SizedBox(height: 12),

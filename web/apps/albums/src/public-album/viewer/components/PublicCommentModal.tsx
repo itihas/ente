@@ -7,13 +7,9 @@ import {
     styled,
     Typography,
 } from "@mui/material";
-import { type ModalVisibilityProps } from "ente-base/components/utils/modal";
+import type { ModalVisibilityProps } from "ente-base/components/utils/modal";
 import { t } from "i18next";
 import React from "react";
-
-// =============================================================================
-// Icons
-// =============================================================================
 
 const CommentIllustration: React.FC = () => (
     <svg
@@ -90,30 +86,12 @@ const CommentIllustration: React.FC = () => (
     </svg>
 );
 
-// =============================================================================
-// Types
-// =============================================================================
-
 export interface PublicCommentModalProps extends ModalVisibilityProps {
-    /**
-     * Called when user clicks "Comment anonymously".
-     */
     onCommentAnonymously: () => void;
-    /**
-     * Called when user clicks "Join album and comment".
-     */
     onJoinAlbumToComment: () => void;
-    /**
-     * Whether the "Join album" option is enabled for this public link.
-     * When false, the "Join album and comment" button will be hidden.
-     */
     enableJoin?: boolean;
 }
 
-/**
- * Modal dialog for commenting on a photo in a public album.
- * Shows options to comment anonymously or sign in to comment.
- */
 export const PublicCommentModal: React.FC<PublicCommentModalProps> = ({
     open,
     onClose,
@@ -173,10 +151,6 @@ export const PublicCommentModal: React.FC<PublicCommentModalProps> = ({
         </StyledDialog>
     );
 };
-
-// =============================================================================
-// Styled Components
-// =============================================================================
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
     "& .MuiDialog-paper": {

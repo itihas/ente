@@ -5,26 +5,14 @@ import { uploadStatusStore } from "../stores/upload-status";
 import { userPreferences } from "../stores/user-preferences";
 import { watchStore } from "../stores/watch";
 
-/**
- * Clear all stores except user preferences.
- *
- * This function is useful to reset state when the user logs out. User
- * preferences are preserved since they contain things tied to the person using
- * the app or other machine specific state not tied to the account they were
- * using inside the app.
- */
+// User preferences belong to the person or device, not the signed-in account.
 export const clearStores = () => {
     safeStorageStore.clear();
     uploadStatusStore.clear();
     watchStore.clear();
 };
 
-/**
- * [Note: Safe storage keys]
- *
- * On macOS, `safeStorage` stores our data under a Keychain entry named
- * "<app-name> Safe Storage". In our case, "ente Safe Storage".
- */
+// macOS Keychain entry: "ente Safe Storage".
 export const saveMasterKeyInSafeStorage = (masterKey: string) => {
     const encryptedKeyBuffer = safeStorage.encryptString(masterKey);
     const encryptedKey = Buffer.from(encryptedKeyBuffer).toString("base64");
@@ -87,11 +75,6 @@ export const appLockConfigFromSafeStorage = ():
     | undefined => {
     const config = appLockConfigStringFromSafeStorage();
 
-    /*
-     * if a key is not found then it will naturally return undefined, so
-     * therefore if the config is not present returning undefined
-     */
-
     if (!config) return undefined;
 
     return parsePersistedAppLockConfig(config);
@@ -107,27 +90,7 @@ export const lastShownChangelogVersion = (): number | undefined =>
 export const setLastShownChangelogVersion = (version: number) =>
     userPreferences.set("lastShownChangelogVersion", version);
 
-/**
- * Return true if the dock icon should be hidden when the window is closed
- * [macOS only].
- *
- * On macOS, if this function returns true then when the user closes the window
- * using the x traffic light we also hide the app's icon in the dock. The user
- * can modify their preference using the Menu bar > ente > Settings > Hide dock
- * icon checkbox.
- *
- * If the user has not set a value for this preference (i.e., the value is
- * `undefined`), we use the default `true`. This is confusing, but this way we
- * can retain the preexisting preference key instead of doing a migration.
- *
- *     Value     | Behaviour
- *     ----------|--------------
- *     undefined |  default (hide)
- *     false     |  show
- *     true      |  hide
- *
- * On non-macOS platforms, it always returns false.
- */
+// A missing value preserves the legacy default without migrating the store.
 export const shouldHideDockIcon = (): boolean =>
     process.platform == "darwin" &&
     userPreferences.get("hideDockIcon") !== false;

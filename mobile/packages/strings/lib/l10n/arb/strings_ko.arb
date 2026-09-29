@@ -1,61 +1,247 @@
 {
-  "networkHostLookUpErr": "Ente에 접속할 수 없습니다, 네트워크 설정을 확인해주시고 에러가 반복되는 경우 저희 지원 팀에 문의해주세요.",
-  "@networkHostLookUpErr": {
-    "description": "Error message shown when the app cannot connect to Ente due to network host lookup failure"
+  "about": "소개",
+  "acceptTrustInvite": "초대 수락",
+  "account": "계정",
+  "accountCredentials": "비밀",
+  "accountCredentialsDescription": "계정 자격 증명을 보관하세요.",
+  "accountIsAlreadyConfigured": "계정이 이미 설정되어 있어요.",
+  "accountOwnerPersonAppbarTitle": "{title} (나)",
+  "@accountOwnerPersonAppbarTitle": {
+    "description": "Title of appbar for account owner person",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
-  "networkConnectionRefusedErr": "Ente에 접속할 수 없습니다, 잠시 후에 다시 시도해주세요. 에러가 반복되는 경우, 저희 지원 팀에 문의해주세요.",
-  "@networkConnectionRefusedErr": {
-    "description": "Error message shown when the app cannot connect to Ente due to connection refused"
+  "accountRecovery": "계정 복구",
+  "accountSetupIncompleteCreateAccount": "계정 설정이 완료되지 않았습니다. 설정 완료를 위해 계정을 생성해주세요.",
+  "@accountSetupIncompleteCreateAccount": {
+    "description": "Error shown when account exists but signup is incomplete"
   },
-  "itLooksLikeSomethingWentWrongPleaseRetryAfterSome": "뭔가 잘못된 것 같습니다. 잠시 후에 다시 시도해주세요. 에러가 반복되는 경우, 저희 지원 팀에 문의해주세요.",
-  "@itLooksLikeSomethingWentWrongPleaseRetryAfterSome": {
-    "description": "Generic error message for temporary issues"
+  "add": "추가",
+  "addAdmin": "관리자 추가",
+  "addANameAndPhoto": "이름과 사진 추가",
+  "addANewEmail": "새 이메일 추가",
+  "addCode": "코드 추가하기",
+  "addCollaborator": "협업자 추가",
+  "addEmail": "이메일 추가",
+  "addingToFavorites": "즐겨 찾기에 추가 중...",
+  "addMore": "더 추가",
+  "addNew": "새로 추가",
+  "@addNew": {
+    "description": "Text to add a new item (location tag, album, caption etc)"
   },
-  "error": "에러",
-  "@error": {
-    "description": "Generic error title"
+  "addNewEmail": "새 이메일 추가",
+  "addParticipants": "참여자 추가",
+  "addTag": "태그 추가",
+  "addToCollection": "컬렉션에 추가",
+  "addViewer": "뷰어 추가",
+  "advanced": "고급",
+  "albumLayout": "앨범 레이아웃",
+  "albumOwner": "소유자",
+  "@albumOwner": {
+    "description": "Role of the album owner"
   },
-  "ok": "확인",
-  "@ok": {
-    "description": "Generic OK button label"
+  "albumUpdated": "앨범 업데이트 됨",
+  "algorithm": "알고리즘",
+  "all": "모든 항목",
+  "allFilesAlreadyMarkedAsImportant": "모든 항목이 이미 중요로 표시되어 있습니다",
+  "allowAddingPhotos": "사진 추가 허용",
+  "@allowAddingPhotos": {
+    "description": "Switch button to enable uploading photos to a public link"
   },
-  "faq": "FAQ",
-  "@faq": {
-    "description": "FAQ link label"
+  "allowDownloads": "다운로드 허용",
+  "allowJoiningAlbum": "앨범에 참여 허용",
+  "allTabEmptyHint": "아직 텅 비었습니다. +를 눌러 코드를 추가하거나 휴지통을 열어 하나를 복원하세요.",
+  "@allTabEmptyHint": {
+    "description": "Shown when the All tab has no active codes but Trash contains codes"
   },
+  "androidBiometricHint": "신원 확인",
+  "@androidBiometricHint": {
+    "description": "Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters."
+  },
+  "androidCancelButton": "취소",
+  "@androidCancelButton": {
+    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
+  },
+  "androidSignInTitle": "인증 필요",
+  "@androidSignInTitle": {
+    "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
+  },
+  "appIcon": "앱 아이콘",
+  "appLock": "어플 잠금",
+  "@appLock": {
+    "description": "App lock setting title"
+  },
+  "appLockDescription": "기본 잠금 화면이나, PIN 번호나 암호를 사용한 사용자 설정 잠금 화면 중에 선택하세요.",
+  "@appLockDescription": {
+    "description": "Description of app lock feature"
+  },
+  "appLockNotEnabled": "App 잠금 설정되지 않음",
+  "appLockNotEnabledDescription": "설정 > App 잠금에서 App 잠금을 활성화해주세요",
+  "appLockOfflineModeWarning": "백업 없이 진행하는 것을 선택하셨습니다. App 잠금 방법을 잊어버리신 경우, 데이터에 접근하실 수 없게 됩니다.",
+  "areYouSure": "확실하십니까?",
+  "@areYouSure": {
+    "description": "Confirmation dialog title"
+  },
+  "areYouSureThatYouWantToLeaveTheFamily": "가족 요금제에서 떠나시겠습니까?",
+  "areYouSureYouWantToLogout": "로그아웃 하시겠습니까?",
+  "@areYouSureYouWantToLogout": {
+    "description": "Confirmation message before logout"
+  },
+  "authenticateGeneric": "인증 절차를 거쳐주세요",
+  "authenticationFailedPleaseTryAgain": "인증절차 실패, 다시 시도해주세요",
+  "@authenticationFailedPleaseTryAgain": {
+    "description": "Error message when authentication fails"
+  },
+  "authenticationSuccessful": "인증 성공!",
+  "@authenticationSuccessful": {
+    "description": "Success message when authentication is successful"
+  },
+  "authToChangeEmailVerificationSetting": "이메일 검증을 변경하시려면 인증 절차를 거쳐주세요",
+  "authToChangeLockscreenSetting": "화면 잠금 설정을 변경하시려면 인증 절차를 거쳐주세요",
+  "authToChangeYourEmail": "이메일을 변경하려면 인증 절차를 거쳐주세요",
+  "authToChangeYourPassword": "암호를 변경하려면 인증 절차를 거쳐주세요",
+  "authToExportCodes": "코드를 내보내려면 인증 절차를 거쳐주세요",
+  "authToInitiateSignIn": "백업을 위해 로그인 상태를 초기화하려면 인증 절차를 거쳐주세요",
+  "authToManageLegacy": "신뢰할 수 있는 연락처를 관리하려면 인증해 주세요",
+  "authToSetBackupPassword": "백업 비밀번호를 설정하려면 인증하세요",
+  "authToUpdateBackupPassword": "백업 비밀번호를 변경하려면 인증하세요",
+  "authToViewPasskeyGeneric": "패스키를 보려면 인증 절차를 거쳐주세요",
+  "authToViewSecrets": "비밀 부분을 확인하려면 인증 절차를 거쳐주세요",
+  "@authToViewSecrets": {
+    "description": "Message prompting authentication to view secrets"
+  },
+  "authToViewYourActiveSessions": "활성화된 Session을 확인하시려면 인증 절차를 거쳐주세요",
+  "authToViewYourRecoveryKey": "당신의 복구 키를 확인하려면 인증 절차를 거쳐주세요",
+  "autoLock": "자동 잠금",
+  "@autoLock": {
+    "description": "Auto lock setting title"
+  },
+  "autoLockFeatureDescription": "Background로 App 넘어가고 잠기기까지 걸리는 시간",
+  "@autoLockFeatureDescription": {
+    "description": "Description of auto lock feature"
+  },
+  "backupCreated": "백업을 생성했습니다!",
+  "backupFolderLabel": "백업 폴더:",
+  "backupLocationChoiceDescription": "백업을 어디에 저장하고 싶으십니까?",
+  "backupPasswordCleared": "백업 비밀번호를 지웠습니다",
+  "backupPasswordHint": "백업을 이 비밀번호로 암호화합니다.",
+  "blog": "블로그",
+  "bothIssuerAndAccountCanNotBeEmpty": "발행인과 계정을 모두 비워둘 수 없습니다",
+  "cannotAddMoreFilesAfterBecomingViewer": "{name}님은 뷰어가 된 후에는 더 이상 컬렉션에 항목을 추가할 수 없습니다.",
+  "@cannotAddMoreFilesAfterBecomingViewer": {
+    "description": "Warning message when changing a collaborator to viewer",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "John"
+      }
+    }
+  },
+  "cannotMoveToSharedAlbums": "공유 앨범으로 이동 할 수 없습니다",
+  "canNotOpenBody": "죄송합니다, 이 앨범은 여기서 열 수 없습니다.",
+  "canNotOpenTitle": "이 앨범을 열 수 없습니다",
+  "canOnlyRemoveFilesOwnedByYou": "당신이 소유한 사진만 제거 할 수 있습니다",
+  "changeEmail": "이메일 변경",
+  "@changeEmail": {
+    "description": "Change email button label"
+  },
+  "changePassword": "비밀번호 변경",
+  "changePermissions": "권한 변경",
+  "changePermissionsQuestion": "권한 변경?",
+  "checkForUpdates": "업데이트 확인",
+  "checkInboxAndSpamFolder": "검증을 위해 메일 보관함을 (또는 스팸 메일 보관함) 확인해주세요",
+  "@checkInboxAndSpamFolder": {
+    "description": "Message asking user to check inbox and spam folder"
+  },
+  "checking": "확인 중...",
+  "checkStatus": "상태 확인",
+  "@checkStatus": {
+    "description": "Check status button label"
+  },
+  "chooseBackupLocation": "백업 위치 선택",
+  "chooseFromAnExistingContact": "기존 연락처에서 선택",
+  "chooseIcon": "아이콘 선택",
+  "clearAllFilters": "모든 필터 지우기",
+  "clearBackupFolder": "백업 폴더 비우게",
+  "clearBackupPassword": "백업 비밀번호 지우기",
+  "clearingTrash": "휴지통 비우는 중...",
+  "close": "닫기",
+  "codeIssuerHint": "발행인",
+  "collabLinkSectionDescription": "Ente 계정이 없는 사람도 사진을 추가 할 수 있게 허용",
+  "collaborator": "협업자",
+  "collectionCannotBeDeleted": "이 컬렉션은 삭제할 수 없습니다",
+  "collectionCannotBeEdited": "이 컬렉션은 편집할 수 없습니다",
+  "collectionCannotBeShared": "이 컬렉션은 공유할 수 없습니다",
+  "collectionDeletedSuccessfully": "컬렉션이 성공적으로 삭제되었습니다",
+  "collectionEmptyStateSubtitle": "이 컬렉션에는 항목이 없습니다",
+  "collectionLabel": "컬렉션",
+  "collectionRenamedSuccessfully": "컬렉션 이름이 성공적으로 변경되었습니다",
+  "collections": "컬렉션",
+  "collectPhotos": "사진을 모으다",
+  "compactMode": "조밀하게 보기",
+  "confirm": "확인",
+  "@confirm": {
+    "description": "Confirm button label"
+  },
+  "confirmPassword": "암호 확인",
+  "@confirmPassword": {
+    "description": "Confirm password field label"
+  },
+  "confirmRecoveryKey": "복구 키 확인",
+  "confirmUpdatingkey": "비밀 키를 업데이트하시겠어요?",
+  "confirmYourRecoveryKey": "복구 키 확인",
+  "contactDetails": "연락처 정보",
+  "contactDetailsHint": "전화번호, 이메일 또는 기타 연락처 정보",
+  "contactName": "연락처 이름",
+  "contactNameHint": "긴급 연락처의 전체 이름",
+  "contactNotes": "연락처에 대한 메시지",
+  "contactNotesHint": "이 사람에게 연락할 때 공유할 중요한 정보",
   "contactSupport": "지원 문의",
   "@contactSupport": {
     "description": "Contact support button label"
   },
-  "emailYourLogs": "로그를 이메일로 보내기",
-  "@emailYourLogs": {
-    "description": "Title for emailing logs dialog"
+  "continueLabel": "계속",
+  "@continueLabel": {
+    "description": "Continue button label"
   },
-  "pleaseSendTheLogsTo": "이 로그를 {toEmail} 쪽으로 보내주세요",
-  "@pleaseSendTheLogsTo": {
-    "description": "Message asking user to send logs to email address",
-    "placeholders": {
-      "toEmail": {
-        "type": "String",
-        "description": "Email address to send logs to"
-      }
-    }
-  },
+  "copied": "복사 됨",
+  "copiedNextToClipboard": "클립보드에 다음번 코드 복사 됨",
+  "copiedToClipboard": "클립보드에 복사 됨",
   "copyEmailAddress": "이메일 주소 복사",
   "@copyEmailAddress": {
     "description": "Button to copy email address to clipboard"
   },
-  "exportLogs": "로그 내보내기",
-  "@exportLogs": {
-    "description": "Button to export logs"
+  "copyLink": "링크 복사",
+  "couldNotOpenFile": "항목을 열 수 없습니다: {error}",
+  "@couldNotOpenFile": {
+    "description": "Error message when item cannot be opened",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Permission denied"
+      }
+    }
   },
-  "cancel": "취소",
-  "@cancel": {
-    "description": "Cancel button label"
-  },
-  "reportABug": "버그 제보",
-  "@reportABug": {
-    "description": "Label for reporting a bug"
+  "crashAndErrorReporting": "충돌 & 에러 보고",
+  "create": "만들기",
+  "createAccountTitle": "계정 생성",
+  "createBackupNow": "지금 백업 생성",
+  "createCollection": "컬렉션 만들기",
+  "createNewTag": "새 태그 만들기",
+  "createPublicLink": "공개 링크 만들기",
+  "creatingLink": "링크 생성 중...",
+  "credentialName": "계정",
+  "credentialNameHint": "서비스 이름",
+  "credentialNotes": "추가 메모",
+  "credentialNotesHint": "복구 방법, 보안 질문 등",
+  "criticalUpdateAvailable": "중요 업데이트 있음",
+  "currentBackupFolder": "현재 백업 폴더:",
+  "custom": "사용자 정의",
+  "@custom": {
+    "description": "Label for setting custom value for link expiry"
   },
   "customEndpoint": "{endpoint}에 접속됨",
   "@customEndpoint": {
@@ -67,468 +253,283 @@
       }
     }
   },
-  "save": "저장",
-  "@save": {
-    "description": "Label for save button"
-  },
-  "send": "보내기",
-  "@send": {
-    "description": "Label for send button"
-  },
-  "saveOrSendDescription": "이것을 당신의 스토리지 (일반적으로 다운로드 폴더) 에 저장하시겠습니까, 아니면 다른 App으로 전송하시겠습니까?",
-  "@saveOrSendDescription": {
-    "description": "Description text asking user if they want to save to storage or share with other apps"
-  },
-  "saveOnlyDescription": "이것을 당신의 스토리지 (일반적으로 다운로드 폴더) 에 저장하시겠습니까?",
-  "@saveOnlyDescription": {
-    "description": "Description text asking user if they want to save to storage (for platforms that don't support sharing)"
-  },
-  "email": "이메일",
-  "@email": {
-    "description": "Email field label"
-  },
-  "verify": "인증",
-  "@verify": {
-    "description": "Verify button label"
-  },
-  "invalidEmailTitle": "잘못 된 이메일 주소",
-  "@invalidEmailTitle": {
-    "description": "Title for invalid email error dialog"
-  },
-  "invalidEmailMessage": "유효한 이메일 주소를 입력해주세요",
-  "@invalidEmailMessage": {
-    "description": "Message for invalid email error dialog"
-  },
-  "pleaseWait": "잠시만 기다려주세요...",
-  "@pleaseWait": {
-    "description": "Please wait message"
-  },
-  "verifyPassword": "비밀번호 확인",
-  "@verifyPassword": {
-    "description": "Verify password button label"
-  },
-  "incorrectPasswordTitle": "올바르지 않은 비밀번호",
-  "@incorrectPasswordTitle": {
-    "description": "Title for incorrect password error"
-  },
-  "pleaseTryAgain": "다시 시도해주세요",
-  "@pleaseTryAgain": {
-    "description": "Message asking user to try again"
-  },
-  "enterPassword": "암호 입력",
-  "@enterPassword": {
-    "description": "Enter password field label"
-  },
-  "enterYourPasswordHint": "암호 입력",
-  "@enterYourPasswordHint": {
-    "description": "Hint for password field"
-  },
-  "activeSessions": "활성화된 Session",
-  "@activeSessions": {
-    "description": "Title for active sessions page"
-  },
-  "oops": "이런!",
-  "@oops": {
-    "description": "Oops error title"
-  },
-  "somethingWentWrongPleaseTryAgain": "뭔가 잘못됐습니다, 다시 시도해주세요",
-  "@somethingWentWrongPleaseTryAgain": {
-    "description": "Generic error message"
-  },
-  "thisWillLogYouOutOfThisDevice": "이 작업을 하시면 기기에서 로그아웃하게 됩니다!",
-  "@thisWillLogYouOutOfThisDevice": {
-    "description": "Warning message for logging out of current device"
-  },
-  "thisWillLogYouOutOfTheFollowingDevice": "이 작업을 하시면 다음 기기에서 로그아웃하게 됩니다:",
-  "@thisWillLogYouOutOfTheFollowingDevice": {
-    "description": "Warning message for logging out of another device"
-  },
-  "terminateSession": "세션을 종결하시겠습니까?",
-  "@terminateSession": {
-    "description": "Title for terminate session dialog"
-  },
-  "terminate": "종결",
-  "@terminate": {
-    "description": "Terminate button label"
-  },
-  "thisDevice": "이 기기",
-  "@thisDevice": {
-    "description": "Label for current device"
-  },
-  "createAccount": "계정 만들기",
-  "@createAccount": {
-    "description": "Create account button label"
-  },
-  "weakStrength": "약함",
-  "@weakStrength": {
-    "description": "Weak password strength label"
-  },
-  "moderateStrength": "보통",
-  "@moderateStrength": {
-    "description": "Moderate password strength label"
-  },
-  "strongStrength": "강함",
-  "@strongStrength": {
-    "description": "Strong password strength label"
-  },
-  "deleteAccount": "계정 삭제하기",
-  "@deleteAccount": {
-    "description": "Delete account button label"
-  },
-  "deleteAccountQuery": "떠나신다니 아쉽습니다. 뭔가 문제가 있으셨나요?",
-  "@deleteAccountQuery": {
-    "description": "Message asking user why they want to delete account"
-  },
-  "yesSendFeedbackAction": "네, 피드백을 보냅니다",
-  "@yesSendFeedbackAction": {
-    "description": "Button to confirm sending feedback"
-  },
-  "noDeleteAccountAction": "아니오, 계정을 지웁니다",
-  "@noDeleteAccountAction": {
-    "description": "Button to proceed with account deletion"
-  },
-  "initiateAccountDeleteTitle": "계정 삭제 절차를 시작하려면 인증 절차를 거쳐주세요",
-  "@initiateAccountDeleteTitle": {
-    "description": "Title for authentication dialog before account deletion"
-  },
-  "confirmAccountDeleteTitle": "계정 삭제 확인",
-  "@confirmAccountDeleteTitle": {
-    "description": "Title for account deletion confirmation dialog"
-  },
-  "confirmAccountDeleteMessage": "다른 Ente의 서비스를 이용하고 계시다면, 해당 계정은 모두 연결이 되어있습니다.\n\n모든 Ente 서비스에 업로드 된 당신의 데이터는 삭제 수순에 들어가며, 계정은 불가역적으로 삭제됩니다.",
-  "@confirmAccountDeleteMessage": {
-    "description": "Message warning about account deletion consequences"
-  },
+  "customOrder": "사용자 정의 순서",
+  "darkTheme": "어두운",
+  "data": "데이터",
+  "dayYesterday": "어제",
+  "decrypting": "해독 중...",
+  "deduplicateCodes": "중복된 코드 제거",
   "delete": "삭제",
   "@delete": {
     "description": "Delete button label"
   },
-  "createNewAccount": "새 계정 만들기",
-  "@createNewAccount": {
-    "description": "Create new account button label"
-  },
-  "password": "암호",
-  "@password": {
-    "description": "Password field label"
-  },
-  "confirmPassword": "암호 확인",
-  "@confirmPassword": {
-    "description": "Confirm password field label"
-  },
-  "passwordStrength": "암호 보안 강도: {passwordStrengthValue}",
-  "@passwordStrength": {
-    "description": "Text to indicate the password strength",
+  "deleteCodeAuthMessage": "코드 삭제를 위해 인증절차를 거쳐주세요",
+  "deleteCodeMessage": "정말 이 코드를 삭제하시겠습니까? 이 동작은 되돌릴 수 없습니다.",
+  "deleteCodeTitle": "코드를 삭제할까요?",
+  "deleteCollectionDialogBody": "{collectionName}이(가) 영구적으로 삭제됩니다.",
+  "@deleteCollectionDialogBody": {
+    "description": "Confirmation message body for deleting a single collection",
     "placeholders": {
-      "passwordStrengthValue": {
-        "description": "The strength of the password as a string",
+      "collectionName": {
         "type": "String",
-        "example": "Weak or Moderate or Strong"
+        "example": "My Documents"
       }
     }
   },
-  "hearUsWhereTitle": "Ente에 대해 어떻게 알게 되셨나요? (선택사항)",
-  "@hearUsWhereTitle": {
-    "description": "Title asking how user heard about Ente"
-  },
-  "hearUsExplanation": "저희는 어플 설치 과정을 관찰하지 않습니다. 어디에서 저희를 발견하셨는지 알려주신다면 도움이 될 겁니다!",
-  "@hearUsExplanation": {
-    "description": "Explanation for asking how user heard about Ente"
-  },
-  "signUpTerms": "나는 <u-terms>사용자 약관</u-terms>과 <u-policy>개인정보 취급방침</u-policy>에 동의합니다.",
-  "@signUpTerms": {
-    "description": "Terms agreement text for sign up"
-  },
-  "termsOfServicesTitle": "약관",
-  "@termsOfServicesTitle": {
-    "description": "Terms of service title"
-  },
-  "privacyPolicyTitle": "개인정보 취급 방침",
-  "@privacyPolicyTitle": {
-    "description": "Privacy policy title"
-  },
-  "ackPasswordLostWarning": "나는 암호를 분실한 경우, 데이터가 <underline>종단 간 암호화</underline>되어있기에 데이터를 손실할 수 있음을 이해합니다.",
-  "@ackPasswordLostWarning": {
-    "description": "Warning about password loss"
-  },
-  "encryption": "암호화",
-  "@encryption": {
-    "description": "Encryption label"
-  },
-  "logInLabel": "로그인",
-  "@logInLabel": {
-    "description": "Log in button label"
-  },
-  "welcomeBack": "돌아오신 것을 환영합니다!",
-  "@welcomeBack": {
-    "description": "Welcome back message"
-  },
-  "loginTerms": "로그인을 누름으로써, 나는 <u-terms>사용자 약관</u-terms>과 <u-policy>개인정보 취급방침</u-policy>에 동의합니다.",
-  "@loginTerms": {
-    "description": "Terms agreement text for login"
-  },
-  "noInternetConnection": "인터넷 연결 없음",
-  "@noInternetConnection": {
-    "description": "No internet connection error message"
-  },
-  "pleaseCheckYourInternetConnectionAndTryAgain": "인터넷 연결을 확인하시고 다시 시도해주세요.",
-  "@pleaseCheckYourInternetConnectionAndTryAgain": {
-    "description": "Message asking user to check internet connection"
-  },
-  "verificationFailedPleaseTryAgain": "검증 실패, 다시 시도해주세요",
-  "@verificationFailedPleaseTryAgain": {
-    "description": "Verification failed error message"
-  },
-  "recreatePasswordTitle": "암호 다시 생성",
-  "@recreatePasswordTitle": {
-    "description": "Title for recreate password dialog"
-  },
-  "recreatePasswordBody": "현재 사용 중인 기기는 암호를 확인하기에 적합하지 않으나, 모든 기기에서 작동하는 방식으로 비밀번호를 다시 생성할 수 있습니다.\n\n복구 키를 사용하여 로그인하고 암호를 다시 생성해주세요. (원하시면 현재 사용 중인 암호와 같은 암호를 다시 사용하실 수 있습니다.)",
-  "@recreatePasswordBody": {
-    "description": "Body text for recreate password dialog"
-  },
-  "useRecoveryKey": "복구 키 사용",
-  "@useRecoveryKey": {
-    "description": "Use recovery key button label"
-  },
-  "forgotPassword": "암호 분실",
-  "@forgotPassword": {
-    "description": "Forgot password link label"
-  },
-  "changeEmail": "이메일 변경",
-  "@changeEmail": {
-    "description": "Change email button label"
-  },
-  "verifyEmail": "이메일 인증하기",
-  "@verifyEmail": {
-    "description": "Verify email title"
-  },
-  "weHaveSendEmailTo": "<green>{email}</green> 쪽으로 메일을 보냈습니다",
-  "@weHaveSendEmailTo": {
-    "description": "Text to indicate that we have sent a mail to the user",
-    "placeholders": {
-      "email": {
-        "description": "The email address of the user",
-        "type": "String",
-        "example": "example@ente.com"
-      }
-    }
-  },
-  "toResetVerifyEmail": "암호를 재설정하시려면, 먼저 이메일을 인증해주세요.",
-  "@toResetVerifyEmail": {
-    "description": "Message asking user to verify email before password reset"
-  },
-  "checkInboxAndSpamFolder": "검증을 위해 메일 보관함을 (또는 스팸 메일 보관함) 확인해주세요",
-  "@checkInboxAndSpamFolder": {
-    "description": "Message asking user to check inbox and spam folder"
-  },
-  "tapToEnterCode": "눌러서 코드 입력하기",
-  "@tapToEnterCode": {
-    "description": "Hint for entering verification code"
-  },
-  "sendEmail": "이메일 보내기",
-  "resendEmail": "이메일 다시 보내기",
-  "@resendEmail": {
-    "description": "Resend email button label"
-  },
-  "passKeyPendingVerification": "검증 절차가 마무리되지 않았습니다",
-  "@passKeyPendingVerification": {
-    "description": "Message when passkey verification is pending"
-  },
-  "loginSessionExpired": "세션 만료됨",
-  "@loginSessionExpired": {
-    "description": "Login session expired title"
-  },
-  "loginSessionExpiredDetails": "세션이 만료되었습니다. 다시 로그인해주세요.",
-  "@loginSessionExpiredDetails": {
-    "description": "Login session expired details"
-  },
-  "passkeyAuthTitle": "패스키 검증",
-  "@passkeyAuthTitle": {
-    "description": "Passkey authentication title"
-  },
-  "waitingForVerification": "검증 대기 중...",
-  "@waitingForVerification": {
-    "description": "Waiting for verification message"
-  },
-  "tryAgain": "다시 시도해주세요",
-  "@tryAgain": {
-    "description": "Try again button label"
-  },
-  "checkStatus": "상태 확인",
-  "@checkStatus": {
-    "description": "Check status button label"
-  },
-  "loginWithTOTP": "TOTP로 로그인 하기",
-  "@loginWithTOTP": {
-    "description": "Login with TOTP button label"
-  },
-  "recoverAccount": "계정 복구",
-  "@recoverAccount": {
-    "description": "Recover account button label"
-  },
-  "setPasswordTitle": "암호 지정",
-  "@setPasswordTitle": {
-    "description": "Set password title"
-  },
-  "changePasswordTitle": "암호 변경",
-  "@changePasswordTitle": {
-    "description": "Change password title"
-  },
-  "resetPasswordTitle": "암호 초기화",
-  "@resetPasswordTitle": {
-    "description": "Reset password title"
-  },
-  "encryptionKeys": "암호화 키",
-  "@encryptionKeys": {
-    "description": "Encryption keys title"
-  },
-  "enterPasswordToEncrypt": "데이터 암호화를 위한 암호 입력",
-  "@enterPasswordToEncrypt": {
-    "description": "Prompt to enter password for encryption"
-  },
-  "enterNewPasswordToEncrypt": "데이터 암호화를 위한 새로운 암호 입력",
-  "@enterNewPasswordToEncrypt": {
-    "description": "Prompt to enter new password for encryption"
-  },
-  "passwordWarning": "저희는 이 암호를 저장하지 않으니, 만약 잊어버리시게 되면, <underline>데이터를 복호화 해드릴 수 없습니다</underline>",
-  "@passwordWarning": {
-    "description": "Warning about password storage"
-  },
-  "howItWorks": "작동 원리",
-  "@howItWorks": {
-    "description": "How it works button label"
-  },
-  "generatingEncryptionKeys": "암호화 키 생성 중...",
-  "@generatingEncryptionKeys": {
-    "description": "Generating encryption keys message"
-  },
-  "passwordChangedSuccessfully": "암호가 성공적으로 변경되었습니다",
-  "@passwordChangedSuccessfully": {
-    "description": "Password changed successfully message"
-  },
-  "signOutFromOtherDevices": "다른 기기들에서 로그아웃하기",
-  "@signOutFromOtherDevices": {
-    "description": "Sign out from other devices title"
-  },
-  "signOutOtherBody": "다른 사람이 내 암호를 알 수도 있을 거란 의심이 드신다면, 당신의 계정을 사용 중인 다른 모든 기기에서 로그아웃할 수 있습니다.",
-  "@signOutOtherBody": {
-    "description": "Sign out other devices explanation"
-  },
-  "signOutOtherDevices": "다른 기기들을 로그아웃시키기",
-  "@signOutOtherDevices": {
-    "description": "Sign out other devices button label"
-  },
-  "doNotSignOut": "로그아웃 하지 않기",
-  "@doNotSignOut": {
-    "description": "Do not sign out button label"
-  },
-  "generatingEncryptionKeysTitle": "암호화 키를 생성하는 중...",
-  "@generatingEncryptionKeysTitle": {
-    "description": "Generating encryption keys title"
-  },
-  "continueLabel": "계속",
-  "@continueLabel": {
-    "description": "Continue button label"
-  },
-  "insecureDevice": "보안이 허술한 기기",
-  "@insecureDevice": {
-    "description": "Insecure device warning title"
-  },
-  "sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": "죄송합니다, 이 기기에서 보안 키를 생성할 수 없습니다.\n\n다른 기기에서 계정을 생성해주세요.",
-  "@sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": {
-    "description": "Error message for insecure device"
-  },
-  "recoveryKeyCopiedToClipboard": "클립보드에 복구 키 복사 됨",
-  "@recoveryKeyCopiedToClipboard": {
-    "description": "Recovery key copied message"
-  },
-  "recoveryKey": "복구 키",
-  "@recoveryKey": {
-    "description": "Recovery key label"
-  },
-  "recoveryKeyOnForgotPassword": "암호를 잊어버린 경우, 데이터를 복구하려면 이 키를 이용하는 방법 뿐입니다.",
-  "@recoveryKeyOnForgotPassword": {
-    "description": "Recovery key importance explanation"
-  },
-  "recoveryKeySaveDescription": "저희는 이 키를 보관하지 않으니, 여기에 있는 24 단어로 구성된 키를 안전하게 보관해주세요.",
-  "@recoveryKeySaveDescription": {
-    "description": "Recovery key save description"
-  },
-  "doThisLater": "나중에 하기",
-  "@doThisLater": {
-    "description": "Do this later button label"
-  },
-  "saveKey": "키 저장하기",
-  "@saveKey": {
-    "description": "Save key button label"
-  },
-  "recoveryKeySaved": "다운로드 폴더에 복구 키가 저장되었습니다!",
-  "@recoveryKeySaved": {
-    "description": "Recovery key saved confirmation message"
-  },
-  "noRecoveryKeyTitle": "복구 키가 없으세요?",
-  "@noRecoveryKeyTitle": {
-    "description": "No recovery key title"
-  },
-  "twoFactorAuthTitle": "2단계 인증",
-  "@twoFactorAuthTitle": {
-    "description": "Two-factor authentication title"
-  },
-  "enterCodeHint": "Authenticator에 적힌 6 자리 코드를 입력해주세요",
-  "@enterCodeHint": {
-    "description": "Hint for entering 2FA code"
-  },
-  "lostDeviceTitle": "기기를 잃어버리셨나요?",
-  "@lostDeviceTitle": {
-    "description": "Lost device title"
-  },
-  "enterRecoveryKeyHint": "복구 키를 입력하세요",
-  "@enterRecoveryKeyHint": {
-    "description": "Hint for entering recovery key"
-  },
-  "recover": "복구",
-  "@recover": {
-    "description": "Recover button label"
-  },
-  "loggingOut": "로그아웃하는 중...",
-  "@loggingOut": {
-    "description": "Message shown while logging out"
-  },
-  "immediately": "즉시",
-  "@immediately": {
-    "description": "Immediately option for auto lock timing"
-  },
-  "appLock": "어플 잠금",
-  "@appLock": {
-    "description": "App lock setting title"
-  },
-  "autoLock": "자동 잠금",
-  "@autoLock": {
-    "description": "Auto lock setting title"
-  },
-  "noSystemLockFound": "시스템 잠금 찾을 수 없음",
-  "@noSystemLockFound": {
-    "description": "Error when no system lock is found"
+  "deleteCollectionFromEverywhere": "항목도 모든 곳에서 삭제",
+  "@deleteCollectionFromEverywhere": {
+    "description": "Checkbox label asking whether to delete collection items everywhere"
+  },
+  "deleteDuplicates": "중복 제거",
+  "deleteLink": "링크 삭제",
+  "deleteLinkQuestion": "링크를 삭제하시겠습니까?",
+  "deleteSharedAlbum": "공유 앨범을 제거 하시겠습니까?",
+  "deleteShareLinkConfirmation": "이 링크를 가진 사람들은 더 이상 항목에 접근할 수 없게 됩니다.",
+  "deleteTagMessage": "태그를 지우시겠습니까? 되돌리실 수 없습니다.",
+  "deleteTagTitle": "태그를 지우시겠습니까?",
+  "deletingFile": "항목 삭제 중...",
+  "deletingShareLink": "링크 삭제 중...",
+  "deselectAll": "모두 선택 해제",
+  "developerSettings": "개발자 설정",
+  "@developerSettings": {
+    "description": "Label for developer settings"
+  },
+  "developerSettingsWarning": "정말로 개발자 설정을 수정하시겠습니까?",
+  "deviceLock": "기기 잠금",
+  "@deviceLock": {
+    "description": "Device lock option title"
   },
   "deviceLockEnablePreSteps": "기기 잠금을 활성화하시려면, 기기의 암호를 만들거나 시스템 설정에서 화면 잠금을 설정해주세요.",
   "@deviceLockEnablePreSteps": {
     "description": "Instructions for enabling device lock"
   },
-  "appLockDescription": "기본 잠금 화면이나, PIN 번호나 암호를 사용한 사용자 설정 잠금 화면 중에 선택하세요.",
-  "@appLockDescription": {
-    "description": "Description of app lock feature"
+  "digits": "자릿수",
+  "disableDownloadWarningBody": "뷰어는 외부 도구를 사용해서 사진을 복사하거나 Capture 할 수 있습니다",
+  "discardChanges": "취소",
+  "discover": "발견",
+  "@discover": {
+    "description": "The text to display for the discover section under which we show receipts, screenshots, sunsets, greenery, etc."
   },
-  "deviceLock": "기기 잠금",
-  "@deviceLock": {
-    "description": "Device lock option title"
+  "discover_pets": "반려 동물",
+  "discover_qr_codes": "QR 코드",
+  "documentsHint": "문서",
+  "done": "완료",
+  "doNotSignOut": "로그아웃 하지 않기",
+  "@doNotSignOut": {
+    "description": "Do not sign out button label"
   },
-  "pinLock": "Pin 잠금",
-  "@pinLock": {
-    "description": "PIN lock option title"
+  "dontHaveAnAccount": "계정이 없으신가요?",
+  "doThisLater": "나중에 하기",
+  "@doThisLater": {
+    "description": "Do this later button label"
   },
-  "autoLockFeatureDescription": "Background로 App 넘어가고 잠기기까지 걸리는 시간",
-  "@autoLockFeatureDescription": {
-    "description": "Description of auto lock feature"
+  "doubleTapToViewHiddenCode": "코드를 보시려면 해당 란을 더블탭해주세요",
+  "downloadFailed": "다운로드 실패",
+  "downloading": "다운로드 중...",
+  "downloadingProgress": "다운로드 중... {percentage}%",
+  "@downloadingProgress": {
+    "description": "Download progress message",
+    "placeholders": {
+      "percentage": {
+        "type": "int",
+        "example": "75"
+      }
+    }
+  },
+  "downloadUpdate": "다운로드",
+  "duplicateCodes": "중복된 코드",
+  "earnMoreSpace": "공간을 확보하다!",
+  "edit": "수정",
+  "editCodeAuthMessage": "코드 수정을 위해 인증절차를 거쳐주세요",
+  "editItem": "항목 편집",
+  "editLocation": "위치 편집",
+  "editOrder": "순서 변경",
+  "editSecret": "비밀 편집",
+  "@editSecret": {
+    "description": "Title shown when editing an existing secret"
+  },
+  "editTag": "태그 수정하기",
+  "eligible": "가능하다",
+  "email": "이메일",
+  "@email": {
+    "description": "Email field label"
+  },
+  "emailAlreadyRegistered": "이미 등록된 이메일입니다.",
+  "@emailAlreadyRegistered": {
+    "description": "Error message when email is already registered"
+  },
+  "emailChangedTo": "{newEmail}로 메일이 변경되었습니다",
+  "@emailChangedTo": {
+    "description": "Message when email has been changed",
+    "placeholders": {
+      "newEmail": {
+        "description": "The new email address",
+        "type": "String",
+        "example": "new@example.com"
+      }
+    }
+  },
+  "emailHint": "이메일을 입력하세요",
+  "emailNoEnteAccount": "{email}은(는) Ente 계정이 없습니다.\n\n항목을 공유하려면 초대장을 보내세요.",
+  "@emailNoEnteAccount": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "emailUsMessage": "{email}로 이메일을 보내주세요.",
+  "@emailUsMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "emailVerificationEnableWarning": "계정이 잠겨 손을 쓸 수 없는 상황에 대비하여, 이메일을 검증하기 전 메일로 전송된 Ente Auth의 2차 인증을 별도로 보관해두세요.",
+  "emailVerificationToggle": "이메일 검증",
+  "emailYourLogs": "로그를 이메일로 보내기",
+  "@emailYourLogs": {
+    "description": "Title for emailing logs dialog"
+  },
+  "emergencyContact": "긴급 연락처",
+  "emptyTrash": "휴지통 비우기",
+  "emptyTrashConfirmation": "휴지통의 모든 항목을 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+  "enableAutomaticBackups": "자동 백업",
+  "enableBackupsIosInstruction": "iOS에서 백업을 켜려면, 파일 앱에서 폴더를 고릅니다 (예를 들어 \"내 iPhone\").",
+  "enableComment": "댓글 및 반응",
+  "encrypted": "암호화됨",
+  "encryptionKeys": "암호화 키",
+  "@encryptionKeys": {
+    "description": "Encryption keys title"
+  },
+  "endpointUpdatedMessage": "엔드포인트가 성공적으로 업데이트됨",
+  "@endpointUpdatedMessage": {
+    "description": "Success message when endpoint is updated"
+  },
+  "enterCodeHint": "Authenticator에 적힌 6 자리 코드를 입력해주세요",
+  "@enterCodeHint": {
+    "description": "Hint for entering 2FA code"
+  },
+  "enterCollectionName": "컬렉션 이름을 입력하세요",
+  "enterDetailsManually": "속성을 수동으로 입력하기",
+  "enterEmail": "이메일 입력",
+  "enterNameOrEmailToShareWith": "공유할 이름 또는 이메일을 입력하세요",
+  "enterNewEmailHint": "새 이메일 주소를 입력하세요",
+  "@enterNewEmailHint": {
+    "description": "Hint text for entering new email address"
+  },
+  "enterNewPasswordToEncrypt": "데이터 암호화를 위한 새로운 암호 입력",
+  "@enterNewPasswordToEncrypt": {
+    "description": "Prompt to enter new password for encryption"
+  },
+  "enterNewTitle": "새 제목을 입력하세요",
+  "enterPassword": "암호 입력",
+  "@enterPassword": {
+    "description": "Enter password field label"
+  },
+  "enterPasswordToAegisVault": "Aegis 저장소의 비밀번호 입력",
+  "enterPasswordToDecrypt2FASBackup": "비밀번호를 입력하여 2FAS 백업 복호화",
+  "enterPasswordToDecryptAndOTP": "비밀번호를 입력하여 andOTP 백업 복호화",
+  "enterPasswordToEncrypt": "데이터 암호화를 위한 암호 입력",
+  "@enterPasswordToEncrypt": {
+    "description": "Prompt to enter password for encryption"
+  },
+  "enterRecoveryKeyHint": "복구 키를 입력하세요",
+  "@enterRecoveryKeyHint": {
+    "description": "Hint for entering recovery key"
+  },
+  "enterValidEmail": "올바른 이메일 주소를 입력하세요.",
+  "enterYourPassword": "암호 입력",
+  "enterYourPasswordHint": "암호 입력",
+  "@enterYourPasswordHint": {
+    "description": "Hint for password field"
+  },
+  "enterYourRecoveryKey": "복구 키를 입력하세요",
+  "error": "에러",
+  "@error": {
+    "description": "Generic error title"
+  },
+  "errorGenericBody": "가져오는 중 예상치 못한 오류가 발생했습니다.",
+  "errorGenericTitle": "오류 발생",
+  "errorInvalidQRCodeBody": "스캔한 QR코드가 유효한 2단계 인증 계정이 아닙니다.",
+  "errorNoQRCode": "QR 코드를 찾을 수 없음",
+  "errorOpeningFile": "항목을 여는 중 오류 발생",
+  "expiredLinkInfo": "이 링크가 만료되었습니다. 새 만료 시간을 선택하거나 링크 만료를 비활성화해 주세요.",
+  "export": "내보내기",
+  "exportCodes": "코드 내보내기",
+  "exportDialogDesc": "내보낸 파일은 선택하신 암호로 암호화됩니다.",
+  "exportLogs": "로그 내보내기",
+  "@exportLogs": {
+    "description": "Button to export logs"
+  },
+  "exportWarningDesc": "내보낸 파일은 민감한 정보들을 담고 있습니다. 안전하게 보관해주세요.",
+  "failedToDecrypt2FASExport": "2FAS 파일을 복호화할 수 없습니다",
+  "failedToDecryptAegisVault": "Aegis 저장소를 복호화할 수 없습니다",
+  "failedToDecryptAndOTPBackup": "andOTP 백업 복호화 실패",
+  "failedToDownloadOrDecrypt": "항목을 다운로드하지 못했습니다",
+  "failedToLoadCollections": "컬렉션 로드 실패: {error}",
+  "@failedToLoadCollections": {
+    "description": "Error message when loading collections fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+  "failedToUpdateFile": "항목 업데이트 실패: {error}",
+  "@failedToUpdateFile": {
+    "description": "Error message when item update fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+  "faq": "FAQ",
+  "@faq": {
+    "description": "FAQ link label"
+  },
+  "featureBackupCodes": "종단간 암호화\n백업 및 동기화",
+  "featureOpenSource": "보안 전문가들이 검사한\n오픈 소스",
+  "featurePassAutomatically": "긴급 상황 시 자동으로 전달하세요",
+  "featureSaveImportant": "중요한 문서와 자격 증명을 저장하세요",
+  "featureSearchEtc": "검색, 태그, 공유\n다음 코드 등 수많은 기능",
+  "featureShareAnytime": "언제든지 공유하세요",
+  "fieldCopiedToClipboard": "{fieldName}이(가) 클립보드에 복사되었습니다",
+  "@fieldCopiedToClipboard": {
+    "description": "Message when a field is copied to clipboard",
+    "placeholders": {
+      "fieldName": {
+        "type": "String",
+        "example": "Password"
+      }
+    }
+  },
+  "fileDeletedSuccessfully": "항목이 성공적으로 삭제되었습니다",
+  "fileMarkedAsImportant": "항목이 중요로 표시되었습니다",
+  "fileRemovedFromImportant": "항목이 중요에서 제거되었습니다",
+  "filesAddedByYouWillBeRemovedFromTheCollection": "귀하가 추가한 항목이 컬렉션에서 제거됩니다",
+  "fileUpdatedSuccessfully": "항목이 성공적으로 업데이트되었습니다!",
+  "filters": "필터",
+  "focusOnSearchBar": "앱 구동시 곧바로 검색하기",
+  "forgotRecoveryKey": "복구키를 잊었나요?",
+  "free10GB": "<bold-green>ente</bold-green> Photos에서 10GB 무료로 이용",
+  "freeStorageOffer": "<bold-green>ente</bold-green> Photos에서 10% 할인받기",
+  "general": "일반 설정",
+  "generatingEncryptionKeys": "암호화 키 생성 중...",
+  "@generatingEncryptionKeys": {
+    "description": "Generating encryption keys message"
+  },
+  "generatingEncryptionKeysTitle": "암호화 키를 생성하는 중...",
+  "@generatingEncryptionKeysTitle": {
+    "description": "Generating encryption keys title"
+  },
+  "getStarted": "시작하기",
+  "giveUsAStarOnGithub": "GitHub에서 별을 찍어주세요",
+  "hearUsWhereOptionalTitle": "Ente에 대해 어떻게 알게 되셨나요? (선택사항)",
+  "@hearUsWhereOptionalTitle": {
+    "description": "Title asking how user heard about Ente"
   },
   "hideContent": "내용 숨기기",
   "@hideContent": {
@@ -542,179 +543,820 @@
   "@hideContentDescriptioniOS": {
     "description": "Description of hide content feature on iOS"
   },
-  "tooManyIncorrectAttempts": "잘못된 시도 횟수가 너무 많습니다",
-  "@tooManyIncorrectAttempts": {
-    "description": "Message shown when too many incorrect attempts are made"
+  "hintForDesktop": "수정이나 삭제를 원하시면 코드를 오른 클릭 해주세요.",
+  "hintForMobile": "수정이나 삭제를 원하시면 코드를 길게 눌러주세요.",
+  "howItWorks": "작동 원리",
+  "@howItWorks": {
+    "description": "How it works button label"
   },
-  "tapToUnlock": "잠금을 해제하려면 누르세요",
-  "@tapToUnlock": {
-    "description": "Message prompting user to tap to unlock"
+  "howToViewShareeVerificationID": "설정 화면에서 이메일 주소를 길게 누르고 두 기기의 ID가 일치하는지 확인하도록 요청해 주세요.",
+  "immediately": "즉시",
+  "@immediately": {
+    "description": "Immediately option for auto lock timing"
   },
-  "areYouSureYouWantToLogout": "로그아웃 하시겠습니까?",
-  "@areYouSureYouWantToLogout": {
-    "description": "Confirmation message before logout"
-  },
-  "yesLogout": "네, 로그아웃하기",
-  "@yesLogout": {
-    "description": "Confirmation button for logout"
-  },
-  "authToViewSecrets": "비밀 부분을 확인하려면 인증 절차를 거쳐주세요",
-  "@authToViewSecrets": {
-    "description": "Message prompting authentication to view secrets"
-  },
-  "next": "다음",
-  "@next": {
-    "description": "Next button label"
-  },
-  "setNewPassword": "새 비밀번호 설정",
-  "@setNewPassword": {
-    "description": "Set new password title"
-  },
-  "enterPin": "PIN 번호 입력",
-  "@enterPin": {
-    "description": "Enter PIN prompt"
-  },
-  "setNewPin": "새 PIN 번호 설정",
-  "@setNewPin": {
-    "description": "Set new PIN title"
-  },
-  "confirm": "확인",
-  "@confirm": {
-    "description": "Confirm button label"
-  },
-  "reEnterPassword": "암호 다시 입력",
-  "@reEnterPassword": {
-    "description": "Re-enter password prompt"
-  },
-  "reEnterPin": "핀 다시 입력",
-  "@reEnterPin": {
-    "description": "Re-enter PIN prompt"
-  },
-  "androidBiometricHint": "신원 확인",
-  "@androidBiometricHint": {
-    "description": "Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricNotRecognized": "식별할 수 없습니다. 다시 시도해주세요.",
-  "@androidBiometricNotRecognized": {
-    "description": "Message to let the user know that authentication was failed. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricSuccess": "성공",
-  "@androidBiometricSuccess": {
-    "description": "Message to let the user know that authentication was successful. It is used on Android side. Maximum 60 characters."
-  },
-  "androidCancelButton": "취소",
-  "@androidCancelButton": {
-    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
-  },
-  "androidSignInTitle": "인증 필요",
-  "@androidSignInTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricRequiredTitle": "생체인증 필요",
-  "@androidBiometricRequiredTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user has not set up biometric authentication on their device. It is used on Android side. Maximum 60 characters."
-  },
-  "androidDeviceCredentialsRequiredTitle": "장치 자격 증명 필요",
-  "@androidDeviceCredentialsRequiredTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user has not set up credentials authentication on their device. It is used on Android side. Maximum 60 characters."
-  },
-  "androidDeviceCredentialsSetupDescription": "장치 자격 증명 필요",
-  "@androidDeviceCredentialsSetupDescription": {
-    "description": "Message advising the user to go to the settings and configure device credentials on their device. It shows in a dialog on Android side."
-  },
-  "goToSettings": "설정으로 가기",
-  "@goToSettings": {
-    "description": "Message showed on a button that the user can click to go to settings pages from the current dialog. It is used on both Android and iOS side. Maximum 30 characters."
-  },
-  "androidGoToSettingsDescription": "기기에 생체인증이 설정되어있지 않습니다. '설정 > 보안'으로 가셔서 생체인증을 설정해주세요.",
-  "@androidGoToSettingsDescription": {
-    "description": "Message advising the user to go to the settings and configure biometric on their device. It shows in a dialog on Android side."
-  },
-  "iOSLockOut": "생체인증에 문제가 있습니다. 활성화하시려면 기기를 잠궜다가 다시 풀어주세요.",
-  "@iOSLockOut": {
-    "description": "Message advising the user to re-enable biometrics on their device. It shows in a dialog on iOS side."
-  },
-  "iOSOkButton": "확인",
-  "@iOSOkButton": {
-    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters."
-  },
-  "emailAlreadyRegistered": "이미 등록된 이메일입니다.",
-  "@emailAlreadyRegistered": {
-    "description": "Error message when email is already registered"
-  },
-  "emailNotRegistered": "등록되지 않은 이메일입니다.",
-  "@emailNotRegistered": {
-    "description": "Error message when email is not registered"
-  },
-  "thisEmailIsAlreadyInUse": "이 이메일은 이미 사용 중입니다",
-  "@thisEmailIsAlreadyInUse": {
-    "description": "Error message when email is already in use"
-  },
-  "emailChangedTo": "{newEmail}로 메일이 변경되었습니다",
-  "@emailChangedTo": {
-    "description": "Message when email has been changed",
+  "import2FasGuide": "2FAS의 옵션에서 \"설정 -> 백업 -> 내보내기\"를 이용하세요.\n\n백업이 암호화되었다면, 백업의 복호화를 위해 암호를 입력해야 할 수도 있습니다.",
+  "importAccountPageTitle": "계정 상세정보 입력",
+  "importAegisGuide": "Aegis의 설정에서 \"보관함 내보내기\"를 이용하세요.\n\n보관함이 암호화된 경우, 보관함의 복호화를 위해 보관함 비밀번호를 입력해야 할 수도 있습니다.",
+  "importAndOTPGuide": "andOTP 설정에서 \"백업\"을 이용해 백업을 내보냅니다.\n\n백업이 암호화된 경우, 복호화를 위해 백업 비밀번호를 입력해야 합니다.",
+  "important": "중요",
+  "importBitwardenGuide": "Bitwarden의 도구에서 \"보관함 내보내기\"를 선택하여 암호화되지 않은 JSON 파일을 불러오세요.",
+  "importCodeDelimiterInfo": "코드는 쉼표 혹은 줄 단위로 구분할 수 있습니다",
+  "importCodes": "코드 가져오기",
+  "importEnteEncGuide": "Ente에서 내보낸 암호화된 JSON 파일 선택하기",
+  "importEnterSetupKey": "설정 키 입력",
+  "importFailureDesc": "선택하신 파일을 분석할 수 없습니다.",
+  "importFromGallery": "갤러리에서 가져오기",
+  "importInstruction": "다음의 포맷에 맞춰 여러분의 코드가 들어있는 파일을 선택해주세요",
+  "importLabel": "불러오기",
+  "importLastpassGuide": "Lastpass Authenticator의 설정에서 \"계정 이전하기\" 옵션 중 \"파일로 계정 내보내기\"를 이용하세요. 다운로드 된 JSON 파일을 불러오세요.",
+  "importRaivoGuide": "Raivo의 설정에서 \"Zip 파일로 OTP 내보내기\"를 이용해주세요.\n\nZip 파일의 압축을 풀고 JSON 파일을 가져오세요.",
+  "importSelectAppExport": "{appName} 의 내보낸 파일 선택하기",
+  "@importSelectAppExport": {
     "placeholders": {
-      "newEmail": {
-        "description": "The new email address",
-        "type": "String",
-        "example": "new@example.com"
+      "appName": {}
+    }
+  },
+  "importSelectJsonFile": "JSON 파일 선택",
+  "importSuccessDesc": "코드 {count} 개를 내보내셨습니다!",
+  "@importSuccessDesc": {
+    "placeholders": {
+      "count": {
+        "description": "The number of codes imported",
+        "type": "int",
+        "example": "1"
       }
     }
   },
-  "authenticationFailedPleaseTryAgain": "인증절차 실패, 다시 시도해주세요",
-  "@authenticationFailedPleaseTryAgain": {
-    "description": "Error message when authentication fails"
+  "importSuccessTitle": "야호!",
+  "importTypeEnteEncrypted": "Ente로 암호화된 내보내기",
+  "incorrectCode": "잘못된 코드",
+  "@incorrectCode": {
+    "description": "Error message when code is incorrect"
   },
-  "authenticationSuccessful": "인증 성공!",
-  "@authenticationSuccessful": {
-    "description": "Success message when authentication is successful"
-  },
-  "sessionExpired": "세션 만료",
-  "@sessionExpired": {
-    "description": "Error message when session has expired"
+  "incorrectDetails": "세부 정보가 잘못 됨",
+  "incorrectPasswordTitle": "올바르지 않은 비밀번호",
+  "@incorrectPasswordTitle": {
+    "description": "Title for incorrect password error"
   },
   "incorrectRecoveryKey": "잘못 된 복구 키",
   "@incorrectRecoveryKey": {
     "description": "Error message when recovery key is incorrect"
   },
+  "incorrectRecoveryKeyBody": "입력한 복구 키가 틀립니다",
+  "incorrectRecoveryKeyTitle": "잘못 된 복구 키",
+  "informationDescription": "사랑하는 사람들과 정보를 저장하고 공유하세요.",
+  "initialBackupCreated": "초기 백업을 생성했습니다!",
+  "insecureDevice": "보안이 허술한 기기",
+  "@insecureDevice": {
+    "description": "Insecure device warning title"
+  },
+  "invalidEmailAddress": "잘못된 이메일 주소",
+  "invalidEmailMessage": "유효한 이메일 주소를 입력해주세요",
+  "@invalidEmailMessage": {
+    "description": "Message for invalid email error dialog"
+  },
+  "invalidEmailTitle": "잘못 된 이메일 주소",
+  "@invalidEmailTitle": {
+    "description": "Title for invalid email error dialog"
+  },
+  "invalidEndpoint": "유효하지 않은 엔드포인트",
+  "@invalidEndpoint": {
+    "description": "Error message when endpoint is invalid"
+  },
+  "invalidEndpointMessage": "죄송합니다, 입력하신 엔드포인트가 유효하지 않습니다. 유효한 엔드포인트를 입력하시고 다시 시도해주세요.",
+  "@invalidEndpointMessage": {
+    "description": "Detailed error message when endpoint is invalid"
+  },
+  "invalidKey": "유효하지 않은 키",
+  "invalidQRCode": "맞지 않는 QR 코드",
+  "invalidRecoveryKey": "입력하신 복구 키가 유효하지 않습니다. 24 단어가 입력됐는지, 그리고 철자가 모두 정확한지 확인해주세요.\n\n구형 복구 코드를 입력하신 경우, 64 자가 맞는지, 그리고 문자가 각각 맞는지 확인해주세요.",
+  "inviteToEnte": "Ente에 초대",
+  "ok": "확인",
+  "@ok": {
+    "description": "Generic OK button label"
+  },
+  "iosOnMyDeviceNotSupported": "\"내 iPhone\"을 곧바로 이용할 수 없습니다. 그 안에 있는 폴더를 선택하거나 만드세요.",
+  "items": "{count}개 항목",
+  "@items": {
+    "description": "Number of items in a collection",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "itemsWillBeRemovedFromAlbum": "선택 된 항목들은 이 앨범으로부터 삭제 됩니다",
+  "itLooksLikeSomethingWentWrongPleaseRetryAfterSome": "뭔가 잘못된 것 같습니다. 잠시 후에 다시 시도해주세요. 에러가 반복되는 경우, 저희 지원 팀에 문의해주세요.",
+  "@itLooksLikeSomethingWentWrongPleaseRetryAfterSome": {
+    "description": "Generic error message for temporary issues"
+  },
+  "iUnderStand": "알겠습니다",
+  "@iUnderStand": {
+    "description": "Text for the button to confirm the user understands the warning"
+  },
+  "language": "언어",
+  "layoutGrouped": "그룹",
+  "layoutTrip": "여행",
+  "leaveCollection": "컬렉션 나가기",
+  "leaveFamily": "가족 그룹 떠나기",
+  "legacy": "레거시",
+  "lightTheme": "라이트",
+  "linkCopiedToClipboard": "링크가 클립보드에 복사되었습니다",
+  "linkDeletedSuccessfully": "링크가 성공적으로 삭제되었습니다",
+  "linkEnabled": "활성화됨",
+  "linkExpired": "만료됨",
+  "linkHasExpired": "링크가 만료되었습니다",
+  "linkNeverExpires": "만료 안 함",
+  "localBackupDailyManualCopy": "앱을 실행할 때 하루에 하나씩 로컬 백업을 생성합니다. 수동으로 백업하려면 \"지금 백업\"을 이용하세요. 백업 파일은 최대 5개 유지됩니다.",
+  "localBackupSidebarTitle": "로컬 백업",
+  "locationUpdatedAndBackupCreated": "위치를 변경하고 초기 백업을 생성했습니다!",
+  "lockButtonLabel": "잠금",
+  "loggingOut": "로그아웃하는 중...",
+  "@loggingOut": {
+    "description": "Message shown while logging out"
+  },
+  "logInLabel": "로그인",
+  "@logInLabel": {
+    "description": "Log in button label"
+  },
+  "loginSessionExpired": "세션 만료됨",
+  "@loginSessionExpired": {
+    "description": "Login session expired title"
+  },
+  "loginSessionExpiredDetails": "세션이 만료되었습니다. 다시 로그인해주세요.",
+  "@loginSessionExpiredDetails": {
+    "description": "Login session expired details"
+  },
+  "loginTerms": "로그인을 누름으로써, 나는 <u-terms>사용자 약관</u-terms>과 <u-policy>개인정보 취급방침</u-policy>에 동의합니다.",
+  "@loginTerms": {
+    "description": "Terms agreement text for login"
+  },
+  "loginWithAuthAccount": "Auth 계정으로 로그인",
+  "loginWithTOTP": "TOTP로 로그인 하기",
+  "@loginWithTOTP": {
+    "description": "Login with TOTP button label"
+  },
+  "logout": "로그아웃",
+  "logsDialogBodyLocker": "문제를 해결하기 위해 로그가 전송됩니다.",
+  "@logsDialogBodyLocker": {
+    "description": "Dialog body text for sending logs in Locker app (without file name warning)"
+  },
+  "longPressAnEmailToVerifyEndToEndEncryption": "이메일을 길게 눌러 종단간 암호화를 확인하세요.",
+  "lostDeviceTitle": "기기를 잃어버리셨나요?",
+  "@lostDeviceTitle": {
+    "description": "Lost device title"
+  },
+  "machineLearning": "머신 러닝",
+  "magic": "마법",
+  "@magic": {
+    "description": "Section header for magic search results"
+  },
+  "manage": "관리",
+  "manageDeviceStorage": "장비 cache 관리",
+  "manageLink": "링크 관리",
+  "manageParticipants": "관리",
+  "manualSort": "사용자 정의",
+  "markingAsImportant": "중요로 표시 중...",
+  "merchandise": "제품",
+  "minimizeAppOnCopy": "복사 후 어플을 최소화하기",
+  "minimizeToTrayOnClose": "닫을 때 트레이로 최소화",
+  "moderateStrength": "보통",
+  "@moderateStrength": {
+    "description": "Moderate password strength label"
+  },
+  "mostFrequentlyUsed": "자주 사용됨",
+  "mostRecentlyUsed": "최근에 사용됨",
+  "moveMultipleToTrashMessage": "항목 {count}개를 휴지통으로 이동하시겠습니까?",
+  "@moveMultipleToTrashMessage": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "name": "이름",
+  "networkConnectionRefusedErr": "Ente에 접속할 수 없습니다, 잠시 후에 다시 시도해주세요. 에러가 반복되는 경우, 저희 지원 팀에 문의해주세요.",
+  "@networkConnectionRefusedErr": {
+    "description": "Error message shown when the app cannot connect to Ente due to connection refused"
+  },
+  "networkHostLookUpErr": "Ente에 접속할 수 없습니다, 네트워크 설정을 확인해주시고 에러가 반복되는 경우 저희 지원 팀에 문의해주세요.",
+  "@networkHostLookUpErr": {
+    "description": "Error message shown when the app cannot connect to Ente due to network host lookup failure"
+  },
+  "never": "안 함",
+  "newCollection": "새 컬렉션",
+  "next": "다음",
+  "@next": {
+    "description": "Next button label"
+  },
+  "nextTotpTitle": "다음",
+  "no": "아니오",
+  "noChangesWereMade": "변경 사항이 없습니다",
+  "noCollections": "컬렉션 없음",
+  "noDefaultBackupFolder": "기본 백업 폴더를 만들 수 없습니다.",
+  "noDeviceLimit": "없음",
+  "@noDeviceLimit": {
+    "description": "Text to indicate that there is limit on number of devices"
+  },
+  "noDuplicates": "✨ 중복 없음",
+  "noFilesFound": "항목이 없습니다",
+  "noInternetConnection": "인터넷 연결 없음",
+  "@noInternetConnection": {
+    "description": "No internet connection error message"
+  },
+  "noItemsMatchSelectedFilters": "선택한 필터와 일치하는 항목이 없습니다",
+  "noRecoveryKeyTitle": "복구 키가 없으세요?",
+  "@noRecoveryKeyTitle": {
+    "description": "No recovery key title"
+  },
+  "noResult": "결과 없음",
+  "noSystemLockFound": "시스템 잠금 찾을 수 없음",
+  "@noSystemLockFound": {
+    "description": "Error when no system lock is found"
+  },
+  "note": "메모",
+  "noteContent": "내용",
+  "noteContentHint": "중요한 생각이나 지침을 적어두세요",
+  "noteName": "제목",
+  "noteNameHint": "메모 제목",
+  "notes": "메모",
+  "notesLengthLimit": "메모는 최대 {count} 자까지 적을 수 있습니다",
+  "@notesLengthLimit": {
+    "description": "Text to indicate the maximum number of characters allowed for notes",
+    "placeholders": {
+      "count": {
+        "description": "The maximum number of characters allowed for notes",
+        "type": "int",
+        "example": "100"
+      }
+    }
+  },
+  "nothingToSeeHere": "여기에는 아무것도 없습니다",
+  "notSupportedForHOTP": "HOTP는 지원하지 않습니다",
+  "ocrGenericDetectError": "사진에서 문자를 발견하지 못 했음",
+  "ocrImageDecodeFailedError": "사진 파일 읽을 수 없음",
+  "ocrImageNotFoundError": "사진 파일 찾을 수 없음",
+  "ocrModelsNetworkRequiredError": "처음 사용에는 OCR 모델은 받기 위해 인터넷 연결이 필요합니다",
+  "ocrModelsPrepareFailed": "OCR 모델 준비 실패",
+  "ocrNoTextDetected": "문자가 발견되지 않았습니다",
+  "offlineModeWarning": "백업 없이 진행하는 것을 선택하셨습니다. 코드의 안전성을 위해 별도의 백업 대책을 마련해주세요.",
+  "oopsSomethingWentWrong": "문제가 생겼습니다",
+  "orPickAnExistingOne": "또는 기존 항목 선택",
+  "passkey": "패스키",
+  "passkeyAuthTitle": "패스키 검증",
+  "@passkeyAuthTitle": {
+    "description": "Passkey authentication title"
+  },
+  "passKeyPendingVerification": "검증 절차가 마무리되지 않았습니다",
+  "@passKeyPendingVerification": {
+    "description": "Message when passkey verification is pending"
+  },
+  "password": "암호",
+  "@password": {
+    "description": "Password field label"
+  },
+  "passwordChangedSuccessfully": "암호가 성공적으로 변경되었습니다",
+  "@passwordChangedSuccessfully": {
+    "description": "Password changed successfully message"
+  },
+  "passwordEmptyError": "비밀번호는 비어있을 수 없습니다",
+  "passwordForDecryptingExport": "복호화시 이용할 비밀번호",
+  "passwordHint": "암호",
+  "passwordLock": "비밀번호 잠금",
+  "passwordStrength": "암호 보안 강도: {passwordStrengthValue}",
+  "@passwordStrength": {
+    "description": "Text to indicate the password strength",
+    "placeholders": {
+      "passwordStrengthValue": {
+        "description": "The strength of the password as a string",
+        "type": "String",
+        "example": "Weak or Moderate or Strong"
+      }
+    }
+  },
+  "passwordToEncryptExport": "암호화된 내보내기를 위한 암호",
+  "passwordTooShort": "비밀번호는 8자 이상이어야 합니다.",
+  "passwordWarning": "저희는 이 암호를 저장하지 않으니, 만약 잊어버리시게 되면, <underline>데이터를 복호화 해드릴 수 없습니다</underline>",
+  "@passwordWarning": {
+    "description": "Warning about password storage"
+  },
+  "pendingSyncs": "경고",
+  "pendingSyncsWarningBody": "코드 몇 개가 백업 되어있지 않습니다.\n\n로그아웃하기 전 해당 코드들을 백업하셨는지 확인해주세요.",
+  "period": "기간",
+  "personalNote": "메모",
+  "personalNoteDescription": "생각과 지침을 적어두세요.",
+  "photoGridSize": "사진 Grid 크기",
+  "physicalRecords": "물건",
+  "physicalRecordsDescription": "실물 항목의 위치를 저장하세요.",
+  "pinLock": "Pin 잠금",
+  "@pinLock": {
+    "description": "PIN lock option title"
+  },
+  "pinnedCodeMessage": "{code} 고정 완료",
+  "@pinnedCodeMessage": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "pinnedCount": "{count, plural, one{{count}개 고정함} other{{count}개 고정함}}",
+  "@pinnedCount": {
+    "description": "Text to show number of items pinned",
+    "placeholders": {
+      "count": {
+        "description": "Number of items pinned",
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "pinText": "고정",
+  "plainHTML": "일반 HTML",
+  "pleaseCheckPasswordAndTryAgain": "비밀번호를 확인하시고 다시 시도해주세요.",
+  "pleaseCheckYourInternetConnectionAndTryAgain": "인터넷 연결을 확인하시고 다시 시도해주세요.",
+  "@pleaseCheckYourInternetConnectionAndTryAgain": {
+    "description": "Message asking user to check internet connection"
+  },
+  "pleaseLoginAgain": "다시 로그인하세요",
+  "pleaseSendTheLogsTo": "이 로그를 {toEmail} 쪽으로 보내주세요",
+  "@pleaseSendTheLogsTo": {
+    "description": "Message asking user to send logs to email address",
+    "placeholders": {
+      "toEmail": {
+        "type": "String",
+        "description": "Email address to send logs to"
+      }
+    }
+  },
+  "pleaseTryAgain": "다시 시도해주세요",
+  "@pleaseTryAgain": {
+    "description": "Message asking user to try again"
+  },
+  "pleaseVerifyDetails": "입력된 정보를 확인하고 다시 시도하세요",
+  "pleaseWait": "잠시만 기다려주세요...",
+  "@pleaseWait": {
+    "description": "Please wait message"
+  },
+  "preparingLogs": "로그를 준비하는 중...",
+  "preview": "미리 보기",
+  "previous": "이전",
+  "privacy": "개인 정보",
+  "privacyPolicyTitle": "개인정보 취급 방침",
+  "@privacyPolicyTitle": {
+    "description": "Privacy policy title"
+  },
+  "publicLinkEnabled": "공개 링크 활성화됨",
+  "qr": "QR",
+  "qrCode": "QR 코드",
+  "rateUsOnStore": "{storeName}에서 평가해주세요",
+  "@rateUsOnStore": {
+    "placeholders": {
+      "storeName": {}
+    }
+  },
+  "rawCodeData": "원시 코드 데이터",
+  "recordLocation": "위치",
+  "recordLocationHint": "이 항목은 어디에 보관되어 있습니까?",
+  "recordNameHint": "실물 항목의 이름",
+  "recordNotes": "메모",
+  "recordNotesHint": "항목에 대한 추가 정보",
+  "recordSavedSuccessfully": "기록이 성공적으로 저장되었습니다",
+  "recover": "복구",
+  "@recover": {
+    "description": "Recover button label"
+  },
+  "recoverAccount": "계정 복구",
+  "@recoverAccount": {
+    "description": "Recover account button label"
+  },
+  "recoveryKey": "복구 키",
+  "@recoveryKey": {
+    "description": "Recovery key label"
+  },
+  "recoveryKeyCopiedToClipboard": "클립보드에 복구 키 복사 됨",
+  "@recoveryKeyCopiedToClipboard": {
+    "description": "Recovery key copied message"
+  },
+  "recoveryKeyOnForgotPassword": "암호를 잊어버린 경우, 데이터를 복구하려면 이 키를 이용하는 방법 뿐입니다.",
+  "@recoveryKeyOnForgotPassword": {
+    "description": "Recovery key importance explanation"
+  },
+  "recoveryKeySaved": "다운로드 폴더에 복구 키가 저장되었습니다!",
+  "@recoveryKeySaved": {
+    "description": "Recovery key saved confirmation message"
+  },
+  "recoveryKeySaveDescription": "저희는 이 키를 보관하지 않으니, 여기에 있는 24 단어로 구성된 키를 안전하게 보관해주세요.",
+  "@recoveryKeySaveDescription": {
+    "description": "Recovery key save description"
+  },
+  "recoveryKeySuccessBody": "좋습니다! 복구 키가 확인되었습니다. 확인 절차를 거쳐주셔서 감사합니다.\n\n잊지 마시고 꼭 복구 키를 안전하게 보관해주세요.",
+  "recoveryKeyVerified": "복구 키 확인 됨",
+  "recoveryKeyVerifyReason": "암호를 잃어버리셨을 경우, 복구 키만이 당신의 사진들을 복원할 유일한 방법이 됩니다. 설정 > 계정으로 들어가셔서 복구 키를 확인하세요.\n\n여기에 복구 키를 입력하셔서, 확인하셨던 복구 키가 정상인지 체크해보세요.",
+  "recoverySuccessful": "복구 성공!",
+  "recreatePasswordBody": "현재 사용 중인 기기는 암호를 확인하기에 적합하지 않으나, 모든 기기에서 작동하는 방식으로 비밀번호를 다시 생성할 수 있습니다.\n\n복구 키를 사용하여 로그인하고 암호를 다시 생성해주세요. (원하시면 현재 사용 중인 암호와 같은 암호를 다시 사용하실 수 있습니다.)",
+  "@recreatePasswordBody": {
+    "description": "Body text for recreate password dialog"
+  },
+  "recreatePasswordTitle": "암호 다시 생성",
+  "@recreatePasswordTitle": {
+    "description": "Title for recreate password dialog"
+  },
+  "reEnterPassword": "암호 다시 입력",
+  "@reEnterPassword": {
+    "description": "Re-enter password prompt"
+  },
+  "remove": "제거",
+  "removeAccess": "접근 권한 제거",
+  "removeCollectionParticipantBody": "{userEmail}님이 이 공유 컬렉션에서 제거됩니다\n\n그들이 추가한 항목도 컬렉션에서 제거됩니다",
+  "@removeCollectionParticipantBody": {
+    "placeholders": {
+      "userEmail": {}
+    }
+  },
+  "removeFromAlbum": "앨범에서 삭제 됨",
+  "removeFromAlbumTitle": "앨범에서 삭제?",
+  "removeLink": "링크 제거",
+  "removeParticipant": "참여자 제거",
+  "@removeParticipant": {
+    "description": "menuSectionTitle for removing a participant"
+  },
+  "removeWithQuestionMark": "제거하시겠습니까?",
+  "removingFromFavorites": "즐겨 찾기에서 제거 중...",
+  "removingFromImportant": "중요에서 제거 중...",
+  "renameCollection": "컬렉션 이름 변경",
+  "reportABug": "버그 제보",
+  "@reportABug": {
+    "description": "Label for reporting a bug"
+  },
+  "resetPasswordTitle": "암호 초기화",
+  "@resetPasswordTitle": {
+    "description": "Reset password title"
+  },
+  "restore": "복구",
+  "@restore": {
+    "description": "Display text for an action which triggers a restore of item from trash",
+    "type": "text"
+  },
+  "restoringItems": "복원 중...",
+  "retry": "다시 시도",
+  "save": "저장",
+  "@save": {
+    "description": "Label for save button"
+  },
+  "saveKey": "키 저장하기",
+  "@saveKey": {
+    "description": "Save key button label"
+  },
+  "saveOnlyDescription": "이것을 당신의 스토리지 (일반적으로 다운로드 폴더) 에 저장하시겠습니까?",
+  "@saveOnlyDescription": {
+    "description": "Description text asking user if they want to save to storage (for platforms that don't support sharing)"
+  },
+  "saveOrSendDescription": "이것을 당신의 스토리지 (일반적으로 다운로드 폴더) 에 저장하시겠습니까, 아니면 다른 App으로 전송하시겠습니까?",
+  "@saveOrSendDescription": {
+    "description": "Description text asking user if they want to save to storage or share with other apps"
+  },
+  "saveToLocker": "Locker에 저장",
+  "scan": "촬영",
+  "scanACode": "코드 촬영",
+  "scanAQrCode": "QR 코드 스캔",
+  "scheduleShare": "공유 예약",
+  "search": "찾기",
+  "searchEmptyDescription": "다른 검색어를 시도해 보세요.",
+  "searchEmptyTitle": "일치하는 항목이 없습니다",
+  "searchEverywhereSubtitle": "모든 컬렉션과 파일에서 검색합니다.",
+  "searchEverywhereTitle": "\"{query}\" 전체 검색",
+  "@searchEverywhereTitle": {
+    "description": "CTA title prompting the user to search globally",
+    "placeholders": {
+      "query": {
+        "type": "String",
+        "example": "passport"
+      }
+    }
+  },
+  "searchHint": "검색...",
+  "secret": "비밀",
+  "secretCanNotBeEmpty": "비밀 키는 비워둘 수 없습니다",
+  "security": "보안",
+  "seeAllCollections": "모든 컬렉션 보기",
+  "selectAll": "모두 선택",
+  "selectBackupFolder": "백업 폴더 선택",
+  "selectDate": "날짜 선택",
+  "selected": "선택됨",
+  "selectedCount": "{count, plural, one{{count}개 선택함} other{{count}개 선택함}}",
+  "@selectedCount": {
+    "description": "Number of items selected",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "selectExportFormat": "내보낼 포맷 선택",
+  "selectFile": "파일 선택",
+  "selectFolder": "폴더 선택",
+  "selectFolderToContinue": "계속하려면 폴더를 선택하세요",
+  "selectLanguage": "언어 선택",
+  "selectTime": "시간 선택",
+  "send": "보내기",
+  "@send": {
+    "description": "Label for send button"
+  },
+  "sendInvite": "초대 보내기",
+  "sendLink": "링크 보내기",
+  "sendLogsDescription": "이 로그를 전송하면 문제 해결을 위한 디버깅에 도움이 됩니다. 민감한 정보가 로그에 기록되지 않도록 주의를 기울이고 있지만, 공유하기 전에 해당 로그를 직접 확인하시기를 권장합니다.",
+  "serverEndpoint": "서버 엔드포인트",
+  "@serverEndpoint": {
+    "description": "Label for server endpoint setting"
+  },
+  "sessionExpired": "세션 만료",
+  "@sessionExpired": {
+    "description": "Error message when session has expired"
+  },
+  "setBackupFolder": "백업 폴더 설정",
+  "setBackupPassword": "백업 비밀번호 설정",
+  "setNewPassword": "새 비밀번호 설정",
+  "@setNewPassword": {
+    "description": "Set new password title"
+  },
+  "setNewPin": "새 PIN 번호 설정",
+  "@setNewPin": {
+    "description": "Set new PIN title"
+  },
+  "setPasswordTitle": "암호 지정",
+  "@setPasswordTitle": {
+    "description": "Set password title"
+  },
+  "settings": "설정",
+  "setupFirstAccount": "첫 번째 계정을\n설정하세요",
+  "share": "공유",
+  "shareALink": "링크 공유",
+  "shareCodes": "코드 공유하기",
+  "shareCodesDuration": "코드 공유를 허용할 시간을 선택해주세요.",
+  "sharedWith": "공유 대상",
+  "shareLink": "링크 공유",
+  "shareThisLink": "이 링크를 통해 누구나 항목에 접근할 수 있습니다. 언제든지 링크를 삭제하여 접근을 제거할 수 있습니다.",
+  "sharing": "공유 중...",
+  "shouldHideCode": "코드 숨기기",
+  "showLargeIcons": "큰 아이콘 보기",
+  "showQRAuthMessage": "QR 코드를 보기 위해 인증절차를 거쳐주세요",
+  "sigInBackupReminder": "Ente는 로그인 후에 자동으로 코드를 백업합니다.\n\n그래도 별도의 백업으로 코드를 내보낼 것을 권장합니다.",
+  "signInToBackup": "코드를 백업하시려면 로그인해주세요",
+  "signOutFromOtherDevices": "다른 기기들에서 로그아웃하기",
+  "@signOutFromOtherDevices": {
+    "description": "Sign out from other devices title"
+  },
+  "signOutOtherBody": "다른 사람이 내 암호를 알 수도 있을 거란 의심이 드신다면, 당신의 계정을 사용 중인 다른 모든 기기에서 로그아웃할 수 있습니다.",
+  "@signOutOtherBody": {
+    "description": "Sign out other devices explanation"
+  },
+  "signOutOtherDevices": "다른 기기들을 로그아웃시키기",
+  "@signOutOtherDevices": {
+    "description": "Sign out other devices button label"
+  },
+  "signUp": "가입하기",
+  "signUpTerms": "나는 <u-terms>사용자 약관</u-terms>과 <u-policy>개인정보 취급방침</u-policy>에 동의합니다.",
+  "@signUpTerms": {
+    "description": "Terms agreement text for sign up"
+  },
+  "singIn": "로그인",
+  "someoneSharingAlbumsWithYouShouldSeeTheSameId": "앨범을 공유하는 사람은 자신의 기기에서 동일한 ID를 볼 수 있어야 합니다.",
+  "somethingWentWrong": "문제가 발생했습니다",
+  "somethingWentWrongMessage": "뭔가 잘못된 것 같습니다, 다시 시도해주세요",
+  "somethingWentWrongParsingCode": "{x} 코드를 분석할 수 없습니다.",
+  "@somethingWentWrongParsingCode": {
+    "placeholders": {
+      "x": {}
+    }
+  },
+  "sorry": "죄송합니다",
+  "sorryCouldNotAddToFavorites": "즐겨 찾기에 추가 할 수 없습니다!",
+  "sorryCouldNotRemoveFromFavorites": "즐겨 찾기에서 제거 할 수 없습니다!",
+  "sorryTheCodeYouveEnteredIsIncorrect": "죄송합니다, 입력하신 코드가 맞지 않습니다",
+  "@sorryTheCodeYouveEnteredIsIncorrect": {
+    "description": "Detailed error message when code is incorrect"
+  },
+  "sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": "죄송합니다, 이 기기에서 보안 키를 생성할 수 없습니다.\n\n다른 기기에서 계정을 생성해주세요.",
+  "@sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": {
+    "description": "Error message for insecure device"
+  },
+  "strongStrength": "강함",
+  "@strongStrength": {
+    "description": "Strong password strength label"
+  },
+  "submit": "제출",
+  "subscribe": "구독",
+  "subscribeToChangeLinkSetting": "이 링크 설정을 바꾸려면 유료 구독이 필요합니다.",
+  "subscribeToEnableSharing": "공유하기 위해서는 유료 구독이 필요합니다.",
+  "subscriptionRequiredForSharing": "링크를 공유하려면 유료 구독이 필요합니다",
+  "success": "성공",
+  "suggestFeatures": "기능 제안",
+  "support": "지원",
+  "supportEnte": "<bold-green>ente</bold-green> 지원",
+  "systemTheme": "시스템",
+  "tag": "태그",
+  "tags": "태그",
+  "tapToUnlock": "잠금을 해제하려면 누르세요",
+  "@tapToUnlock": {
+    "description": "Message prompting user to tap to unlock"
+  },
+  "tellUsWhatYouThink": "저희에게 의견을 말해주세요",
+  "tempErrorContactSupportIfPersists": "뭔가 잘못된 것 같습니다. 잠시 후에 다시 시도해주세요. 에러가 반복되는 경우, 저희 지원 팀에 문의해주세요.",
+  "terminate": "종료",
+  "@terminate": {
+    "description": "Terminate button label"
+  },
+  "termsOfServicesTitle": "약관",
+  "@termsOfServicesTitle": {
+    "description": "Terms of service title"
+  },
+  "theme": "테마",
   "theRecoveryKeyYouEnteredIsIncorrect": "입력하신 복구 키가 맞지 않습니다",
   "@theRecoveryKeyYouEnteredIsIncorrect": {
     "description": "Detailed error message when recovery key is incorrect"
+  },
+  "thisDevice": "이 기기",
+  "@thisDevice": {
+    "description": "Label for current device"
+  },
+  "thisEmailIsAlreadyInUse": "이 이메일은 이미 사용 중입니다",
+  "@thisEmailIsAlreadyInUse": {
+    "description": "Error message when email is already in use"
+  },
+  "thisIsPersonVerificationId": "이것은 {email}의 확인 ID입니다",
+  "@thisIsPersonVerificationId": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "someone@ente.com"
+      }
+    }
+  },
+  "thisIsYourVerificationId": "이것은 귀하의 확인 ID입니다",
+  "thisWillLogYouOutOfTheFollowingDevice": "이 작업을 하시면 다음 기기에서 로그아웃하게 됩니다:",
+  "@thisWillLogYouOutOfTheFollowingDevice": {
+    "description": "Warning message for logging out of another device"
+  },
+  "title": "제목",
+  "todaysLogs": "오늘의 로그",
+  "toEnableAppLockPleaseSetupDevicePasscodeOrScreen": "어플 잠금을 활성화하시려면, 기기의 암호를 만들거나 시스템 설정에서 화면 잠금을 설정해주세요.",
+  "tooManyIncorrectAttempts": "잘못된 시도 횟수가 너무 많습니다",
+  "@tooManyIncorrectAttempts": {
+    "description": "Message shown when too many incorrect attempts are made"
+  },
+  "toResetVerifyEmail": "암호를 재설정하시려면, 먼저 이메일을 인증해주세요.",
+  "@toResetVerifyEmail": {
+    "description": "Message asking user to verify email before password reset"
+  },
+  "trash": "휴지통",
+  "trashClearedSuccessfully": "휴지통이 성공적으로 비워졌습니다",
+  "trashCode": "코드를 삭제할까요?",
+  "trashCodeMessage": "정말로 {account} 의 코드를 삭제할까요?",
+  "@trashCodeMessage": {
+    "placeholders": {
+      "account": {}
+    }
+  },
+  "trashIsEmpty": "휴지통이 비어 있습니다",
+  "tryAgain": "다시 시도해주세요",
+  "@tryAgain": {
+    "description": "Try again button label"
   },
   "twofactorAuthenticationSuccessfullyReset": "2FA가 성공적으로 초기화되었습니다",
   "@twofactorAuthenticationSuccessfullyReset": {
     "description": "Message when two-factor authentication is successfully reset"
   },
+  "twoFactorAuthTitle": "2단계 인증",
+  "@twoFactorAuthTitle": {
+    "description": "Two-factor authentication title"
+  },
+  "type": "유형",
+  "uncategorized": "분류되지 않음",
+  "unimportant": "중요하지 않음",
+  "unlock": "잠금 해제",
+  "@unlock": {
+    "description": "Short action label used as the system authentication reason when unlocking the app"
+  },
+  "unnamedCollection": "이름 없는 컬렉션",
+  "unpinnedCodeMessage": "{code} 고정 해제 완료",
+  "@unpinnedCodeMessage": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "unpinnedCount": "{count, plural, one{{count}개 고정 해제함} other{{count}개 고정 해제함}}",
+  "@unpinnedCount": {
+    "description": "Text to show number of items unpinned",
+    "placeholders": {
+      "count": {
+        "description": "Number of items unpinned",
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "unpinText": "고정 해제",
+  "unsavedNoteChangesDescription": "이 메모에 저장되지 않은 변경 사항이 있습니다. 지금 뒤로 가면 변경 사항이 손실됩니다.",
+  "unsavedNoteChangesTitle": "변경 사항을 취소하시겠습니까?",
+  "untitled": "제목 없음",
+  "updateAvailable": "업데이트 가능",
+  "updateBackupPassword": "백업 비밀번호 변경",
+  "uploadedFilesProgress": "{completed}/{total}개 항목 업로드됨...",
+  "@uploadedFilesProgress": {
+    "description": "Progress message showing uploaded items",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "example": "3"
+      },
+      "total": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "uploadError": "업로드 오류",
+  "uploadFileCountLimitErrorBody": "파일 한도에 도달했습니다. 더 많은 저장 공간을 위해 유료 플랜으로 업그레이드해 주세요.",
+  "@uploadFileCountLimitErrorBody": {
+    "description": "Body shown when uploads fail because the locker already has the maximum file count"
+  },
+  "uploadFileCountLimitErrorTitle": "파일 한도 도달",
+  "@uploadFileCountLimitErrorTitle": {
+    "description": "Title shown when uploads fail because the locker already has the maximum file count"
+  },
+  "uploadFileCountLimitErrorToast": "작업 실패. 파일 한도에 도달했습니다.",
+  "@uploadFileCountLimitErrorToast": {
+    "description": "Toast shown when info items fail to save due to hitting the file count limit"
+  },
+  "uploadFiles": "항목 업로드",
+  "uploadFileTooLargeErrorBody": "이 파일은 최대 지원 업로드 크기인 10GB를 초과합니다.",
+  "@uploadFileTooLargeErrorBody": {
+    "description": "Body shown when uploads fail because the file exceeds the supported size"
+  },
+  "uploadFileTooLargeErrorTitle": "파일이 너무 큽니다",
+  "@uploadFileTooLargeErrorTitle": {
+    "description": "Title shown when uploads fail because the file exceeds the supported size"
+  },
+  "uploadStorageLimitErrorBody": "저장 공간이 부족합니다. 계속 업로드하려면 공간을 확보해 주세요.",
+  "@uploadStorageLimitErrorBody": {
+    "description": "Body shown when uploads fail due to running out of storage"
+  },
+  "uploadStorageLimitErrorTitle": "저장 공간 한도 도달",
+  "@uploadStorageLimitErrorTitle": {
+    "description": "Title shown when uploads fail due to running out of storage"
+  },
+  "useOffline": "백업 없이 사용",
+  "useRecoveryKey": "복구 키 사용",
+  "@useRecoveryKey": {
+    "description": "Use recovery key button label"
+  },
+  "username": "사용자 이름",
+  "usernameHint": "로그인 ID 또는 이메일",
+  "verificationFailedPleaseTryAgain": "검증 실패, 다시 시도해주세요",
+  "@verificationFailedPleaseTryAgain": {
+    "description": "Verification failed error message"
+  },
+  "verify": "인증",
+  "@verify": {
+    "description": "Verify button label"
+  },
+  "verifyEmail": "이메일 인증하기",
+  "@verifyEmail": {
+    "description": "Verify email title"
+  },
+  "verifyingRecoveryKey": "복구 키 확인 중...",
+  "verifyPassword": "비밀번호 확인",
+  "@verifyPassword": {
+    "description": "Verify password button label"
+  },
+  "viewActiveSessions": "활성화된 Session 확인하기",
+  "viewer": "뷰어",
+  "viewLogsAction": "로그 확인",
+  "viewRawCodes": "원시 코드 보기",
+  "viewRecoveryKey": "복구 키 보기",
+  "waitingForVerification": "검증 대기 중...",
+  "@waitingForVerification": {
+    "description": "Waiting for verification message"
+  },
+  "warning": "경고",
+  "weakStrength": "약함",
+  "@weakStrength": {
+    "description": "Weak password strength label"
+  },
+  "weAreOpenSource": "저희는 오픈 소스로 운영됩니다!",
+  "yes": "네",
+  "yesConvertToViewer": "예, 뷰어로 변환합니다",
+  "yesLogout": "네, 로그아웃하기",
+  "@yesLogout": {
+    "description": "Confirmation button for logout"
+  },
+  "yesRemove": "예, 제거합니다",
+  "you": "나",
+  "youAreOnTheLatestVersion": "최신 버전을 사용 중이십니다",
+  "youCannotShareWithYourself": "자신과 공유할 수 없습니다",
+  "yourTrashIsEmpty": "휴지통이 비어 있습니다",
   "yourVerificationCodeHasExpired": "검증 코드의 유효시간이 경과하였습니다",
   "@yourVerificationCodeHasExpired": {
     "description": "Error message when verification code has expired"
   },
-  "incorrectCode": "잘못된 코드",
-  "@incorrectCode": {
-    "description": "Error message when code is incorrect"
-  },
-  "sorryTheCodeYouveEnteredIsIncorrect": "죄송합니다, 입력하신 코드가 맞지 않습니다",
-  "@sorryTheCodeYouveEnteredIsIncorrect": {
-    "description": "Detailed error message when code is incorrect"
-  },
-  "developerSettings": "개발자 설정",
-  "@developerSettings": {
-    "description": "Label for developerSettings"
-  },
-  "serverEndpoint": "서버 엔드포인트",
-  "@serverEndpoint": {
-    "description": "Label for serverEndpoint"
-  },
-  "invalidEndpoint": "유효하지 않은 엔드포인트",
-  "@invalidEndpoint": {
-    "description": "Label for invalidEndpoint"
-  },
-  "invalidEndpointMessage": "죄송합니다, 입력하신 엔드포인트가 유효하지 않습니다. 유효한 엔드포인트를 입력하시고 다시 시도해주세요.",
-  "@invalidEndpointMessage": {
-    "description": "Label for invalidEndpointMessage"
-  },
-  "endpointUpdatedMessage": "엔드포인트가 성공적으로 업데이트됨",
-  "@endpointUpdatedMessage": {
-    "description": "Label for endpointUpdatedMessage"
-  }
+  "youveNoDuplicateCodesThatCanBeCleared": "정리해야 할 중복 코드가 없습니다"
 }

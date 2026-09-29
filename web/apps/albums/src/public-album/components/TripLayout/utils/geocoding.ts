@@ -19,10 +19,8 @@ export interface LocationInfo {
     country: string;
 }
 
-// Icon cache to avoid recreating identical icons
 export const iconCache = new Map<string, import("leaflet").DivIcon>();
 
-// Throttle function for performance optimization
 export const throttle = <T extends (...args: unknown[]) => void>(
     func: T,
     delay: number,
@@ -49,13 +47,12 @@ export const throttle = <T extends (...args: unknown[]) => void>(
     };
 };
 
-// Reverse geocoding function using Stadia Maps
 export const getLocationName = async (
     lat: number,
     lng: number,
 ): Promise<LocationInfo> => {
     try {
-        // Round coordinates to 2 decimal place for better geocoding
+        // Keep reverse-geocoding requests at place-level precision.
         const roundedLat = Math.round(lat * 100) / 100;
         const roundedLng = Math.round(lng * 100) / 100;
 
@@ -69,32 +66,26 @@ export const getLocationName = async (
 
         const data = (await response.json()) as StadiaMapsGeocodingResponse;
 
-        // Extract location name from the response
         const feature = data.features?.[0];
         let result: LocationInfo;
 
         if (feature?.properties) {
             const props = feature.properties;
 
-            // Build location name with city and state/region for better context
             const city = props.locality || props.neighbourhood;
 
-            // Get location name
             const locationName =
                 city || props.county || props.region || props.name || "Unknown";
 
-            // Get country info
             const country = props.country || "Unknown";
 
             result = { place: locationName, country };
         } else {
-            // Fallback if no location found
             result = { place: "Unknown", country: "Unknown" };
         }
 
         return result;
     } catch {
-        // Fallback on error
         return { place: "Unknown", country: "Unknown" };
     }
 };

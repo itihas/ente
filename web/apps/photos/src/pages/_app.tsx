@@ -1,29 +1,47 @@
+import { authPageConfig } from "@/auth-page-config";
+import { AppLockReauthenticationDialog } from "@/components/app-lock/AppLockReauthenticationDialog";
+import { AppLockSetupError } from "@/components/app-lock/LockScreenContents";
+import {
+    updateAvailableForDownloadDialogAttributes,
+    updateReadyToInstallDialogAttributes,
+} from "@/components/utils/download";
+import {
+    useAutoLockWhenBackgrounded,
+    useSetupAppLock,
+} from "@/components/utils/use-app-lock";
+import { useDesktopAppLockRoute } from "@/components/utils/use-app-lock-route";
+import { resumeExportsIfNeeded } from "@/services/export";
+import { photosLogout } from "@/services/logout";
+import { runMigrations } from "@/services/migration";
 import "@fontsource-variable/inter";
+import "@fontsource-variable/outfit";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { CssBaseline, Typography } from "@mui/material";
-import { styled, ThemeProvider } from "@mui/material/styles";
-import { useNotification } from "components/utils/hooks-app";
-import { useDesktopAppLockRoute } from "components/utils/use-app-lock-route";
+import { styled, ThemeProvider, useColorScheme } from "@mui/material/styles";
+import { AuthPageProvider } from "ente-accounts/components/auth/AuthPageProvider";
 import {
     isLocalStorageAndIndexedDBMismatch,
     savedLocalUser,
-    savedPartialLocalUser,
 } from "ente-accounts/services/accounts-db";
 import { isDesktop, staticAppTitle } from "ente-base/app";
 import { CenteredRow } from "ente-base/components/containers";
-import { CustomHead } from "ente-base/components/Head";
+import { CustomHeadPhotos } from "ente-base/components/Head";
 import {
     LoadingIndicator,
     TranslucentLoadingOverlay,
 } from "ente-base/components/loaders";
 import { AttributedMiniDialog } from "ente-base/components/MiniDialog";
+import { Notification } from "ente-base/components/Notification";
+import { ThemedLoadingBar } from "ente-base/components/ThemedLoadingBar";
 import { useAttributedMiniDialog } from "ente-base/components/utils/dialog";
 import {
     useIsRouteChangeInProgress,
+    useNotification,
     useSetupI18n,
     useSetupLogs,
 } from "ente-base/components/utils/hooks-app";
 import { photosTheme } from "ente-base/components/utils/theme";
+import { useLoadingBar } from "ente-base/components/utils/use-loading-bar";
 import { BaseContext, deriveBaseContext } from "ente-base/context";
 import log from "ente-base/log";
 import { logStartupBanner } from "ente-base/log-web";
@@ -32,33 +50,16 @@ import {
     initVideoProcessing,
     isHLSGenerationSupported,
 } from "ente-gallery/services/video";
-import { AppLockReauthenticationDialog } from "ente-new/photos/components/app-lock/AppLockReauthenticationDialog";
-import { Notification } from "ente-new/photos/components/Notification";
-import { ThemedLoadingBar } from "ente-new/photos/components/ThemedLoadingBar";
-import {
-    updateAvailableForDownloadDialogAttributes,
-    updateReadyToInstallDialogAttributes,
-} from "ente-new/photos/components/utils/download";
-import {
-    useAutoLockWhenBackgrounded,
-    useSetupAppLock,
-} from "ente-new/photos/components/utils/use-app-lock";
-import { useLoadingBar } from "ente-new/photos/components/utils/use-loading-bar";
 import { useAppLockSnapshot } from "ente-new/photos/components/utils/use-snapshot";
-import { resumeExportsIfNeeded } from "ente-new/photos/services/export";
-import { runMigrations } from "ente-new/photos/services/migration";
 import { initML, isMLSupported } from "ente-new/photos/services/ml";
-import { getFamilyPortalRedirectURL } from "ente-new/photos/services/user-details";
 import { PhotosAppContext } from "ente-new/photos/types/context";
 import { t } from "i18next";
 import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { photosLogout } from "services/logout";
 
-import "photoswipe/dist/photoswipe.css";
-import "styles/global.css";
-import "styles/photoswipe.css";
+import "ente-gallery/styles/photoswipe.css";
+import "../styles/global.css";
 
 type PhotosAppProps = AppProps<Record<string, unknown>>;
 
@@ -77,6 +78,7 @@ const App: React.FC<PhotosAppProps> = ({ Component, pageProps }) => {
     const { loadingBarRef, showLoadingBar, hideLoadingBar } = useLoadingBar();
 
     const [watchFolderView, setWatchFolderView] = useState(false);
+    const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
 
     const logout = useCallback(() => void photosLogout(), []);
 
@@ -96,10 +98,6 @@ const App: React.FC<PhotosAppProps> = ({ Component, pageProps }) => {
     useEffect(() => {
         const electron = globalThis.electron;
         if (!electron) return undefined;
-
-        // Attach various listeners for events sent to us by the Node.js layer.
-        // This is for events that we should listen for always, not just when
-        // the user is logged in.
 
         const handleOpenEnteURL = (url: string) => {
             if (url.startsWith("ente://app")) {
@@ -141,34 +139,6 @@ const App: React.FC<PhotosAppProps> = ({ Component, pageProps }) => {
         if (isDesktop) void resumeExportsIfNeeded();
     }, []);
 
-    useEffect(() => {
-        const query = new URLSearchParams(window.location.search);
-        const needsFamilyRedirect = query.get("redirect") == "families";
-        if (needsFamilyRedirect && savedPartialLocalUser()?.token)
-            redirectToFamilyPortal();
-
-        // Creating this inline, we need this on debug only and temporarily. Can
-        // remove the debug print itself after a while.
-        interface NROptions {
-            shallow: boolean;
-        }
-        router.events.on("routeChangeStart", (url: string, o: NROptions) => {
-            if (process.env.NEXT_PUBLIC_ENTE_TRACE_RT) {
-                log.debug(() => [o.shallow ? "route-shallow" : "route", url]);
-            }
-
-            if (needsFamilyRedirect && savedPartialLocalUser()?.token) {
-                redirectToFamilyPortal();
-
-                // https://github.com/vercel/next.js/issues/2476#issuecomment-573460710
-                // eslint-disable-next-line @typescript-eslint/only-throw-error
-                throw "Aborting route change, redirection in process....";
-            }
-        });
-        // TODO:
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const baseContext = useMemo(
         () => deriveBaseContext({ logout, showMiniDialog }),
         [logout, showMiniDialog],
@@ -179,6 +149,7 @@ const App: React.FC<PhotosAppProps> = ({ Component, pageProps }) => {
             hideLoadingBar,
             watchFolderView,
             setWatchFolderView,
+            setIsFileViewerOpen,
             showNotification,
         }),
         [
@@ -186,6 +157,7 @@ const App: React.FC<PhotosAppProps> = ({ Component, pageProps }) => {
             hideLoadingBar,
             watchFolderView,
             setWatchFolderView,
+            setIsFileViewerOpen,
             showNotification,
         ],
     );
@@ -194,38 +166,37 @@ const App: React.FC<PhotosAppProps> = ({ Component, pageProps }) => {
 
     return (
         <ThemeProvider theme={photosTheme}>
-            <CustomHead title={title} />
+            <CustomHeadPhotos {...{ title }} />
             <CssBaseline enableColorScheme />
 
             <ThemedLoadingBar ref={loadingBarRef} />
             <AttributedMiniDialog {...miniDialogProps} />
             <Notification {...notificationProps} />
 
-            {isDesktop && <WindowTitlebar>{title}</WindowTitlebar>}
+            {isDesktop && (
+                <WindowTitlebar {...{ isFileViewerOpen }}>
+                    {title}
+                </WindowTitlebar>
+            )}
             <BaseContext value={baseContext}>
-                {
-                    // The web and desktop components are rendered separately
-                    // because the desktop currently supports app-lock,
-                    // for which we have certain hooks and components.
-                    // We don't want this to load in the web as well, since there
-                    // is no particular purpose it would serve.
-                }
                 <PhotosAppContext value={appContext}>
-                    {!isI18nReady ? (
-                        <LoadingIndicator />
-                    ) : isDesktop ? (
-                        <DesktopMainContent
-                            Component={Component}
-                            pageProps={pageProps}
-                            isChangingRoute={isChangingRoute}
-                        />
-                    ) : (
-                        <WebMainContent
-                            Component={Component}
-                            pageProps={pageProps}
-                            isChangingRoute={isChangingRoute}
-                        />
-                    )}
+                    <AuthPageProvider value={authPageConfig}>
+                        {!isI18nReady ? (
+                            <LoadingIndicator />
+                        ) : isDesktop ? (
+                            <DesktopMainContent
+                                Component={Component}
+                                pageProps={pageProps}
+                                isChangingRoute={isChangingRoute}
+                            />
+                        ) : (
+                            <WebMainContent
+                                Component={Component}
+                                pageProps={pageProps}
+                                isChangingRoute={isChangingRoute}
+                            />
+                        )}
+                    </AuthPageProvider>
                 </PhotosAppContext>
             </BaseContext>
         </ThemeProvider>
@@ -250,7 +221,8 @@ const DesktopMainContent: React.FC<MainContentProps> = ({
     pageProps,
     isChangingRoute,
 }) => {
-    const isAppLockReady = useSetupAppLock();
+    const { isAppLockReady, appLockSetupFailed, retryAppLockSetup } =
+        useSetupAppLock();
     const appLock = useAppLockSnapshot();
     const { shouldBlockAppLockRouteTransition } = useDesktopAppLockRoute(
         isAppLockReady,
@@ -264,6 +236,9 @@ const DesktopMainContent: React.FC<MainContentProps> = ({
         appLock.autoLockTimeMs,
     );
 
+    if (appLockSetupFailed) {
+        return <AppLockSetupError onRetry={retryAppLockSetup} />;
+    }
     if (!isAppLockReady) return <LoadingIndicator />;
     if (shouldBlockAppLockRouteTransition) return <LoadingIndicator />;
 
@@ -276,25 +251,31 @@ const DesktopMainContent: React.FC<MainContentProps> = ({
     );
 };
 
-const redirectToFamilyPortal = () =>
-    void getFamilyPortalRedirectURL().then((url) => {
-        window.location.href = url;
-    });
+const WindowTitlebar: React.FC<
+    React.PropsWithChildren<{ isFileViewerOpen: boolean }>
+> = ({ children, isFileViewerOpen }) => {
+    const { mode, systemMode } = useColorScheme();
 
-const WindowTitlebar: React.FC<React.PropsWithChildren> = ({ children }) => (
-    <WindowTitlebarArea>
-        <Typography variant="small" sx={{ mt: "2px", fontWeight: "bold" }}>
-            {children}
-        </Typography>
-    </WindowTitlebarArea>
-);
+    useEffect(() => {
+        if (mode && (mode != "system" || systemMode)) {
+            globalThis.electron?.setTitleBarOverlay(mode, isFileViewerOpen);
+        }
+    }, [isFileViewerOpen, mode, systemMode]);
 
-// See: [Note: Customize the desktop title bar]
+    return (
+        <WindowTitlebarArea>
+            <Typography variant="small" sx={{ mt: "2px", fontWeight: "bold" }}>
+                {children}
+            </Typography>
+        </WindowTitlebarArea>
+    );
+};
+
+// Electron uses this as a window drag region.
 const WindowTitlebarArea = styled(CenteredRow)`
     width: 100%;
-    height: env(titlebar-area-height, 30px /* fallback */);
-    /* LoadingIndicator is 100vh, so resist shrinking when shown with it. */
+    height: env(titlebar-area-height, 0px);
     flex-shrink: 0;
-    /* Allow using the titlebar to drag the window. */
+    overflow: hidden;
     app-region: drag;
 `;

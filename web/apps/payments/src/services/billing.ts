@@ -1,15 +1,6 @@
 import { loadStripe } from "@stripe/stripe-js";
 
-/**
- * Communicate with Stripe using their JS SDK, and redirect back to the client.
- *
- * All necessary parameters are obtained by parsing the request parameters.
- *
- * In case of unrecoverable errors, this function will throw. Otherwise it will
- * redirect to the client or to some fallback URL.
- */
 export const parseAndHandleRequest = async () => {
-    // See: [Note: Intercept payments redirection to desktop app]
     if (window.location.pathname == "/desktop-redirect") {
         const desktopRedirectURL = new URL("ente://app/gallery");
         desktopRedirectURL.search = new URL(window.location.href).search;
@@ -54,8 +45,6 @@ export const parseAndHandleRequest = async () => {
         }
 
         if (!action && !paymentToken && !productID && !redirectURL) {
-            // Maybe someone attempted to directly open this page in their
-            // browser. Not much we can do, just redirect them to the main site.
             console.log(
                 "None of the required query parameters were supplied, redirecting to the ente.com",
             );
@@ -118,7 +107,6 @@ const stripePublishableKey = (accountCountry: StripeAccountCountry) => {
     }
 };
 
-/** Return the {@link StripeAccountCountry} for the user. */
 const getUserStripeAccountCountry = async (paymentToken: string) => {
     const url = `${apiOrigin}/billing/stripe-account-country`;
     const res = await fetch(url, { headers: { "X-Auth-Token": paymentToken } });
@@ -131,7 +119,6 @@ const getUserStripeAccountCountry = async (paymentToken: string) => {
     throw new Error(`Unexpected response for ${url}: ${JSON.stringify(json)}`);
 };
 
-/** Load and return the Stripe JS SDK initialized for the given country. */
 const getStripe = async (
     redirectURL: string,
     accountCountry: StripeAccountCountry,
@@ -147,7 +134,6 @@ const getStripe = async (
     }
 };
 
-/** The flow when the user wants to buy a new subscription. */
 const buySubscription = async (
     productID: string,
     paymentToken: string,
@@ -168,7 +154,6 @@ const buySubscription = async (
     }
 };
 
-/** Create a new checkout session on museum and return the sessionID. */
 const createCheckoutSession = async (
     productID: string,
     paymentToken: string,
@@ -200,7 +185,6 @@ const updateSubscription = async (
         );
         switch (status) {
             case "success": {
-                // Subscription was updated successfully, nothing more required
                 redirectToApp(redirectURL, "success");
                 return;
             }
@@ -401,10 +385,6 @@ const redirectForPaymentIntentStatus = (
     }
 };
 
-/**
- * Make a request to museum to update an existing Stripe subscription with
- * {@link productID} for the user.
- */
 async function updateStripeSubscription(
     paymentToken: string,
     productID: string,
@@ -438,59 +418,49 @@ async function updateStripeSubscription(
 type RedirectStatus = "success" | "fail";
 
 type FailureReason =
-    /**
-     * Unable to authenticate the payment method.
-     *
-     * User should be shown button for fixing card via customer portal.
-     */
     | "authentication_failed"
-    /**
-     * Payment method declined results in this error.
-     *
-     * Show button to the customer portal.
-     */
     | "requires_payment_method"
-    /**
-     * An error in initializing the Stripe JS SDK.
-     */
     | "stripe_error"
     | "canceled"
     | "server_error";
 
-/**
- * Navigate to {@link redirectURL}, passing the given values as query params.
- *
- * [Note: Redirects do not interrupt script execution]
- *
- * I have been unable to find a documentation / reference source for this, but
- * in practice when I test it with a following snippet
- *
- *     const nonce = Math.random();
- *     console.log("before", nonce);
- *     window.location.href = "http://example.org";
- *     console.log("after", nonce);
- *
- * I observe that the code after the navigation also runs.
- */
+const isEnteHostname = (hostname: string) =>
+    hostname.endsWith(".ente.com") ||
+    hostname.endsWith(".ente.io") ||
+    hostname.endsWith(".ente.sh");
+
+// Assigning window.location.href does not stop script execution; statements
+// after a redirect still run, so callers must return explicitly.
 const redirectToApp = (
     redirectURL: string,
     status: RedirectStatus,
     reason?: FailureReason,
 ) => {
-    // [Note: Intercept payments redirection to desktop app]
-    //
-    // The desktop app passes "<our-origin>/desktop-redirect" as `redirectURL`.
-    // This is just a placeholder, we want to intercept this and instead
-    // redirect to the ente:// scheme protocol handler that is internally being
-    // used by the desktop app.
-    if (new URL(redirectURL).pathname == "/desktop-redirect") {
-        redirectToApp("ente://app/gallery", status, reason);
-        return;
+    let url = new URL(redirectURL);
+    if (url.protocol != "http:" && url.protocol != "https:") {
+        throw new Error("Invalid payment redirect URL");
     }
 
-    let url = `${redirectURL}?status=${status}`;
-    if (reason) url = `${url}&reason=${reason}`;
-    window.location.href = url;
+    const isSameOrigin = url.origin == window.location.origin;
+    const isDevURL =
+        import.meta.env.DEV && url.hostname == window.location.hostname;
+    const isEnteURL =
+        url.protocol == "https:" &&
+        url.port == "" &&
+        isEnteHostname(url.hostname);
+    const isAllowedURL = isSameOrigin || isDevURL || isEnteURL;
+    if (!isAllowedURL) {
+        throw new Error("Invalid payment redirect URL");
+    }
+
+    if (isSameOrigin && url.pathname == "/desktop-redirect") {
+        url = new URL("ente://app/gallery");
+    }
+
+    url.searchParams.set("status", status);
+    if (reason) url.searchParams.set("reason", reason);
+    else url.searchParams.delete("reason");
+    window.location.href = url.href;
 };
 
 const redirectHome = () => {

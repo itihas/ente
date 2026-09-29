@@ -12,12 +12,12 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
-import { type ModalVisibilityProps } from "ente-base/components/utils/modal";
+import type { ModalVisibilityProps } from "ente-base/components/utils/modal";
 import log from "ente-base/log";
 import {
     useResolvedContactAvatar,
     useResolvedContactDisplay,
-} from "ente-contacts-web";
+} from "ente-contacts";
 import { downloadManager } from "ente-gallery/services/download";
 import { getAvatarColor } from "ente-gallery/utils/avatar-colors";
 import type { EnteFile } from "ente-media/file";
@@ -32,7 +32,7 @@ import {
     addCommentReaction,
     deleteReaction,
 } from "ente-new/photos/services/reaction";
-import { type UnifiedReaction } from "ente-new/photos/services/social";
+import type { UnifiedReaction } from "ente-new/photos/services/social";
 import i18n, { t } from "i18next";
 import React, {
     useCallback,
@@ -41,10 +41,6 @@ import React, {
     useRef,
     useState,
 } from "react";
-
-// =============================================================================
-// Icons
-// =============================================================================
 
 const SendIcon: React.FC = () => (
     <svg
@@ -150,11 +146,6 @@ const PersonIcon: React.FC = () => (
     </svg>
 );
 
-// =============================================================================
-// Types
-// =============================================================================
-
-/** Collection info for the dropdown. */
 interface CollectionInfo {
     id: number;
     name: string;
@@ -162,12 +153,7 @@ interface CollectionInfo {
     coverFile?: EnteFile;
 }
 
-// =============================================================================
-// Utility Functions
-// =============================================================================
-
 const formatTimeAgo = (timestampMicros: number): string => {
-    // Server timestamps are in microseconds, convert to milliseconds
     const timestampMs = Math.floor(timestampMicros / 1000);
     const now = Date.now();
     const diff = now - timestampMs;
@@ -179,7 +165,6 @@ const formatTimeAgo = (timestampMicros: number): string => {
     const days = Math.floor(hours / 24);
     if (days < 7) return t("days_ago", { count: days });
 
-    // For 7+ days, show actual date using locale-aware formatting
     const date = new Date(timestampMs);
     const currentYear = new Date(now).getFullYear();
     const locale = i18n.language;
@@ -204,10 +189,6 @@ const getParentComment = (
     return comments.find((c) => c.id === parentID);
 };
 
-/**
- * Truncates comment text to first 100 characters of the first line.
- * Adds "..." if multiline or if first line exceeds 100 chars.
- */
 const truncateCommentText = (text: string): string => {
     const lines = text.split("\n");
     const firstLine = lines[0] ?? text;
@@ -218,26 +199,17 @@ const truncateCommentText = (text: string): string => {
     return isMultiline ? firstLine + "..." : firstLine;
 };
 
-// =============================================================================
-// Shared Comment Components
-// =============================================================================
-
 interface CommentHeaderProps {
     userName: string;
     timestamp: number;
     avatarSize?: number;
     isMaskedEmail?: boolean;
-    /** Key used for computing avatar color (e.g., anonUserID for anonymous users). */
     avatarColorKey?: string;
     userID?: number;
     email?: string;
     useContactDisplay?: boolean;
 }
 
-/**
- * Header component showing avatar, username, and timestamp.
- * Used consistently for both root comments and replies.
- */
 const CommentHeader: React.FC<CommentHeaderProps> = ({
     userName,
     timestamp,
@@ -294,9 +266,6 @@ interface QuotedReplyProps {
     currentAnonUserID?: string;
 }
 
-/**
- * Shows the quoted parent comment inside a reply bubble.
- */
 const QuotedReply: React.FC<QuotedReplyProps> = ({
     parentComment,
     isOwn,
@@ -317,9 +286,7 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
         email: shouldResolveParent ? parentEmail : undefined,
     });
 
-    // Get the author name
     const getAuthorName = (): string => {
-        // Check if this is the current user (logged in or anonymous)
         if (parentComment.userID === currentUserID) {
             return t("you");
         }
@@ -330,7 +297,6 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
             return t("you");
         }
 
-        // For anonymous users, look up in anonUserNames
         if (parentComment.anonUserID) {
             return (
                 anonUserNames?.get(parentComment.anonUserID) ??
@@ -338,7 +304,6 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
             );
         }
 
-        // For registered users, look up email
         return shouldResolveParent
             ? resolvedParent.primaryLabel || parentEmail || t("user")
             : (parentEmail ?? t("user"));
@@ -391,79 +356,26 @@ const QuotedReply: React.FC<QuotedReplyProps> = ({
     );
 };
 
-// =============================================================================
-// Main Component
-// =============================================================================
-
 export interface CommentsSidebarProps extends ModalVisibilityProps {
-    /**
-     * The file whose comments are being displayed.
-     */
     file?: EnteFile;
-    /**
-     * The currently active collection ID (when viewing from within a collection).
-     */
     activeCollectionID?: number;
-    /**
-     * A mapping from file IDs to the IDs of collections they belong to.
-     */
     fileNormalCollectionIDs?: Map<number, number[]>;
-    /**
-     * Collection summaries indexed by their IDs.
-     */
     collectionSummaries?: CollectionSummaries;
-    /**
-     * The current user's ID.
-     */
     currentUserID?: number;
-    /**
-     * Pre-fetched comments by collection ID.
-     */
     prefetchedComments?: Map<number, Comment[]>;
-    /**
-     * Pre-fetched reactions by collection ID (includes both file and comment reactions).
-     */
     prefetchedReactions?: Map<number, UnifiedReaction[]>;
-    /**
-     * Pre-fetched user ID to email mapping.
-     */
     prefetchedUserIDToEmail?: Map<number, string>;
-    /**
-     * Called when a comment is successfully added. The parent should update its
-     * comments state to include this new comment.
-     */
     onCommentAdded?: (comment: Comment) => void;
-    /**
-     * Called when a comment is successfully deleted. The parent should update its
-     * comments state to mark this comment as deleted.
-     */
     onCommentDeleted?: (collectionID: number, commentID: string) => void;
-    /**
-     * Called when a comment reaction is added. The parent should update its
-     * reactions state to include this new reaction.
-     */
     onCommentReactionAdded?: (reaction: UnifiedReaction) => void;
-    /**
-     * Called when a comment reaction is deleted. The parent should update its
-     * reactions state to remove this reaction.
-     */
     onCommentReactionDeleted?: (
         collectionID: number,
         reactionID: string,
     ) => void;
-    /**
-     * If set, the sidebar will scroll to and highlight this comment.
-     */
     highlightCommentID?: string;
-    /**
-     * Map of anonymous user ID to decrypted user name.
-     */
     anonUserNames?: Map<string, string>;
 }
 
-/**
- * A sidebar panel for displaying and managing comments on a file.
- */
 interface ContextMenuState {
     comment: Comment;
     anchorEl: HTMLElement;
@@ -500,45 +412,37 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
     const hasLoadedRef = useRef(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const commentsContainerRef = useRef<HTMLDivElement>(null);
-    // Ref to preserve isLiked state during context menu close animation
+    // The menu stays mounted while contextMenu clears for its close animation.
     const contextMenuIsLikedRef = useRef(false);
 
-    // Comments grouped by collection: collectionID -> comments
     const [commentsByCollection, setCommentsByCollection] = useState<
         Map<number, Comment[]>
     >(new Map());
 
-    // Selected collection for viewing comments (when in gallery view)
     const [selectedCollectionID, setSelectedCollectionID] = useState<
         number | undefined
     >(undefined);
 
-    // Thumbnail URLs for each collection's cover file: collectionID -> URL
     const [thumbnailURLs, setThumbnailURLs] = useState<Map<number, string>>(
         new Map(),
     );
 
-    // Comment reactions: commentID -> reactionID (for current user's likes)
     const [likedComments, setLikedComments] = useState<Map<string, string>>(
         new Map(),
     );
 
-    // All reactions by collection: collectionID -> reactions array
     const [reactionsByCollection, setReactionsByCollection] = useState<
         Map<number, UnifiedReaction[]>
     >(new Map());
 
-    // Track whether we've scrolled to the highlight comment for this open
     const hasScrolledToHighlightRef = useRef(false);
 
-    // Focus input when replying to a comment
     useEffect(() => {
         if (replyingTo && inputRef.current) {
             inputRef.current.focus();
         }
     }, [replyingTo]);
 
-    // Reset tracking refs when sidebar closes
     useEffect(() => {
         if (!open) {
             hasScrolledToHighlightRef.current = false;
@@ -546,7 +450,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         }
     }, [open]);
 
-    // Scroll to and highlight the target comment when opening from feed
     useEffect(() => {
         if (
             !open ||
@@ -564,7 +467,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         let cleanupTimeout: ReturnType<typeof setTimeout> | undefined;
         let blinkInterval: ReturnType<typeof setInterval> | undefined;
 
-        // Wait for DOM to update after comments state change
         const initialTimeout = setTimeout(() => {
             const commentWrapper = commentsContainerRef.current?.querySelector(
                 `[data-comment-id="${highlightCommentID}"]`,
@@ -572,24 +474,20 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             if (commentWrapper) {
                 hasScrolledToHighlightRef.current = true;
 
-                // Scroll to the comment
                 commentWrapper.scrollIntoView({
                     behavior: "smooth",
                     block: "center",
                 });
 
-                // Find the bubble element inside the wrapper
                 const bubbleElement = commentWrapper.querySelector<HTMLElement>(
                     "[data-comment-bubble]",
                 );
 
                 if (bubbleElement) {
-                    // Wait for scroll to mostly complete, then apply blink highlight
                     highlightTimeout = setTimeout(() => {
                         const computedStyle = getComputedStyle(bubbleElement);
                         const originalBg = computedStyle.backgroundColor;
 
-                        // Parse the RGB values to create 80% opacity version
                         const rgbMatch = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(
                             originalBg,
                         );
@@ -609,12 +507,10 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                 : originalBg;
                         }, 300);
 
-                        // Stop blinking after 1.5 seconds
                         fadeTimeout = setTimeout(() => {
                             if (blinkInterval) clearInterval(blinkInterval);
                             bubbleElement.style.backgroundColor = originalBg;
 
-                            // Clean up transition style
                             cleanupTimeout = setTimeout(() => {
                                 bubbleElement.style.transition = "";
                                 bubbleElement.style.backgroundColor = "";
@@ -634,7 +530,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         };
     }, [open, highlightCommentID, loading, comments]);
 
-    // Reset state when the file changes to avoid showing stale data
     useEffect(() => {
         setSelectedCollectionID(undefined);
         setComments([]);
@@ -644,17 +539,14 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         hasLoadedRef.current = false;
     }, [file?.id]);
 
-    // Check if opened from a collection context
     const hasCollectionContext =
         activeCollectionID !== undefined && activeCollectionID !== 0;
 
-    // Get all collections the file belongs to
     const fileCollectionIDs = useMemo(() => {
         if (!file) return [];
         return fileNormalCollectionIDs?.get(file.id) ?? [];
     }, [file, fileNormalCollectionIDs]);
 
-    // Build collection info list with comment counts and cover files (shared albums only)
     const collectionsInfo = useMemo((): CollectionInfo[] => {
         return fileCollectionIDs
             .filter((collectionID) =>
@@ -676,14 +568,12 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             });
     }, [fileCollectionIDs, collectionSummaries, commentsByCollection]);
 
-    // Collections sorted by comment count (descending) for dropdown
     const sortedCollectionsInfo = useMemo(() => {
         return [...collectionsInfo].sort(
             (a, b) => b.commentCount - a.commentCount,
         );
     }, [collectionsInfo]);
 
-    // Currently selected collection info
     const selectedCollectionInfo = useMemo(() => {
         const targetID = hasCollectionContext
             ? activeCollectionID
@@ -700,16 +590,13 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         sortedCollectionsInfo,
     ]);
 
-    // Check if the current user can delete a given comment.
-    // User can delete if: they authored the comment, OR they are owner/admin of the collection.
+    // Authors, collection owners, and shared-collection admins can delete.
     const canDeleteComment = useCallback(
         (comment: Comment): boolean => {
-            // Comment author can always delete their own comment
             if (comment.userID === currentUserID) {
                 return true;
             }
 
-            // Check if user is owner or admin of the selected collection
             const collectionID = selectedCollectionInfo?.id;
             if (!collectionID || !collectionSummaries) {
                 return false;
@@ -720,7 +607,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 return false;
             }
 
-            // User is owner (not sharedIncoming) or admin (sharedIncomingAdmin)
             return (
                 !summary.attributes.has("sharedIncoming") ||
                 summary.attributes.has("sharedIncomingAdmin")
@@ -729,40 +615,29 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         [currentUserID, selectedCollectionInfo, collectionSummaries],
     );
 
-    // Load comments and reactions from prefetched data.
+    // Polling refreshes preserve the selection and skip the initial spinner.
     const loadComments = useCallback(() => {
         if (!file || !open || !prefetchedComments) return;
 
-        // Only show loading spinner on initial load, not during polling refresh
         const isInitialLoad = !hasLoadedRef.current;
         if (isInitialLoad) {
             setLoading(true);
         }
 
         try {
-            // Use prefetched data
             setCommentsByCollection(prefetchedComments);
             setReactionsByCollection(prefetchedReactions ?? new Map());
 
-            // Set comments for the currently selected collection
             if (hasCollectionContext && activeCollectionID) {
                 const activeComments =
                     prefetchedComments.get(activeCollectionID) ?? [];
                 setComments(activeComments);
             } else {
-                // For gallery view, only auto-select on initial load.
-                // Use functional update to check current selection without
-                // adding selectedCollectionID as a dependency.
                 setSelectedCollectionID((currentSelection) => {
                     if (currentSelection !== undefined) {
-                        // Already have a selection, don't change it.
-                        // The useEffect that watches selectedCollectionID will
-                        // update the displayed comments.
                         return currentSelection;
                     }
 
-                    // Initial selection: find collection with most comments.
-                    // Only consider shared collections (non-shared ones won't appear in the UI).
                     let maxCount = -1;
                     let bestCollectionID: number | undefined;
                     for (const [
@@ -808,14 +683,12 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         collectionSummaries,
     ]);
 
-    // Load comments when the sidebar opens
     useEffect(() => {
         if (open) {
             loadComments();
         }
     }, [open, loadComments]);
 
-    // Set initial selected collection to the one with most comments (gallery view)
     useEffect(() => {
         if (
             open &&
@@ -823,8 +696,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             selectedCollectionID === undefined &&
             commentsByCollection.size > 0
         ) {
-            // Find the collection with the most comments.
-            // Only consider shared collections (non-shared ones won't appear in the UI).
             let maxCount = -1;
             let bestCollectionID: number | undefined;
             for (const [
@@ -856,7 +727,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         collectionSummaries,
     ]);
 
-    // Update displayed comments when selected collection changes (gallery view)
     useEffect(() => {
         if (!hasCollectionContext && selectedCollectionID !== undefined) {
             const collectionComments =
@@ -865,7 +735,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         }
     }, [hasCollectionContext, selectedCollectionID, commentsByCollection]);
 
-    // Fetch thumbnails for each collection's cover file
     useEffect(() => {
         if (!open || collectionsInfo.length === 0) {
             return;
@@ -905,9 +774,8 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         };
     }, [open, collectionsInfo]);
 
-    // Build liked comments map from reactions when selected collection changes
+    // Preserve likes while the sidebar closes.
     useEffect(() => {
-        // Don't reset state on close - preserves UI during exit animation
         if (!open) return;
         if (!selectedCollectionInfo) {
             setLikedComments(new Map());
@@ -920,7 +788,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             return;
         }
 
-        // Find comment reactions that are likes from the current user.
         const newLikedComments = new Map<string, string>();
         for (const reaction of reactions) {
             if (reaction.commentID && reaction.reactionType === "green_heart") {
@@ -949,7 +816,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 replyingTo?.id,
             );
 
-            // Add the new comment to local state
             const newComment: Comment = {
                 id: newCommentID,
                 collectionID,
@@ -958,7 +824,8 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 parentCommentID: replyingTo?.id,
                 isDeleted: false,
                 userID: currentUserID ?? 0,
-                createdAt: Date.now() * 1000, // Microseconds to match server format
+                // Server timestamps use microseconds.
+                createdAt: Date.now() * 1000,
                 updatedAt: Date.now() * 1000,
             };
             setComments((prev) => [...prev, newComment]);
@@ -972,10 +839,8 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
             setCommentText("");
             setReplyingTo(null);
 
-            // Notify parent to update its comments state
             onCommentAdded?.(newComment);
 
-            // Scroll to bottom after adding comment
             setTimeout(() => {
                 if (commentsContainerRef.current) {
                     commentsContainerRef.current.scrollTop = 0;
@@ -992,7 +857,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         setReplyingTo(commentToReply);
     };
 
-    // Handler for keydown: Enter to send, Shift+Enter for new line
     const handleCommentKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -1108,7 +972,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                 try {
                     await deleteComment(targetComment.id);
 
-                    // Update local state
                     setComments((prev) =>
                         prev.map((c) =>
                             c.id === targetComment.id
@@ -1131,7 +994,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                         return next;
                     });
 
-                    // Notify parent to update its comments state
                     onCommentDeleted?.(
                         targetComment.collectionID,
                         targetComment.id,
@@ -1143,7 +1005,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
         }
     };
 
-    // Filter out deleted comments and sort by timestamp (newest first for column-reverse layout)
     const sortedComments = [...comments]
         .filter((c) => !c.isDeleted)
         .sort((a, b) => b.createdAt - a.createdAt);
@@ -1301,16 +1162,13 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                             const commentIsOwn =
                                 comment.userID === currentUserID;
 
-                            // With column-reverse, visual order is reversed from array order
-                            // Visual "above" = higher index, visual "below" = lower index
+                            // column-reverse makes the next array item visually
+                            // previous.
                             const prevComment = sortedComments[index + 1];
                             const nextComment = sortedComments[index - 1];
 
-                            // 10 minutes in microseconds (server timestamps are in microseconds)
                             const GROUP_TIME_THRESHOLD = 10 * 60 * 1000 * 1000;
 
-                            // Comments are in same sequence if same user AND within 10 minutes
-                            // For anon users, also check if they have the same anonUserID
                             const isSameUser = (a: Comment, b: Comment) => {
                                 if (a.anonUserID && b.anonUserID) {
                                     return a.anonUserID === b.anonUserID;
@@ -1342,7 +1200,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                             const showOwnTimestamp =
                                 commentIsOwn && isFirstInSequence;
 
-                            // Get the display name, avatar color key, and masked email status for the comment author
                             const getCommentAuthorInfo = (): {
                                 name: string;
                                 avatarColorKey: string;
@@ -1351,7 +1208,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                 userID?: number;
                                 useContactDisplay: boolean;
                             } => {
-                                // If anonymous user, check anonUserNames map
                                 if (comment.anonUserID) {
                                     const anonName =
                                         anonUserNames?.get(
@@ -1360,13 +1216,11 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                         `${t("anonymous")} ${comment.anonUserID.slice(-4)}`;
                                     return {
                                         name: anonName,
-                                        // Use name for avatar color (varying length like mobile emails)
                                         avatarColorKey: anonName,
                                         isMaskedEmail: false,
                                         useContactDisplay: false,
                                     };
                                 }
-                                // For registered users, use email
                                 const emailFromMap =
                                     prefetchedUserIDToEmail?.get(
                                         comment.userID,
@@ -1374,7 +1228,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                 const email = emailFromMap ?? t("user");
                                 return {
                                     name: email,
-                                    // Use email or userID for avatar color
                                     avatarColorKey: emailFromMap
                                         ? emailFromMap
                                         : String(comment.userID),
@@ -1554,7 +1407,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
                                                     ) ?? t("user")
                                                 );
                                             }
-                                            // Regular user
                                             return replyingTo.userID ===
                                                 currentUserID
                                                 ? t("yourself")
@@ -1635,11 +1487,6 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({
     );
 };
 
-// =============================================================================
-// Styled Components
-// =============================================================================
-
-// Drawer & Layout
 const SidebarDrawer = styled(Drawer)(({ theme }) => ({
     "& .MuiDrawer-paper": {
         width: "23vw",
@@ -1698,7 +1545,6 @@ const CloseButton = styled(IconButton)(({ theme }) => ({
     }),
 }));
 
-// Collection Dropdown
 const CollectionDropdownButton = styled(Box)(({ theme }) => ({
     display: "inline-flex",
     alignItems: "center",
@@ -1753,7 +1599,7 @@ const LoadingContainer = styled(Box)(() => ({
     justifyContent: "center",
     alignItems: "center",
     height: "100%",
-    // Offset for header (marginBottom: 48) + padding diff (32-24=8) = 56, halved
+    // Compensate for the 56px header offset.
     marginTop: -28,
 }));
 
@@ -1762,7 +1608,7 @@ const EmptyMessage = styled(Typography)(({ theme }) => ({
     justifyContent: "center",
     alignItems: "center",
     height: "100%",
-    // Offset for header (marginBottom: 48) + padding diff (32-24=8) = 56, halved
+    // Compensate for the 56px header offset.
     marginTop: -28,
     color: "#666",
     ...theme.applyStyles("dark", { color: "rgba(255, 255, 255, 0.5)" }),
@@ -1827,7 +1673,6 @@ const CommentsContainer = styled(Box)(({ theme }) => ({
     }),
 }));
 
-// Comment Header
 const CommentHeaderContainer = styled(Box)(() => ({
     display: "flex",
     alignItems: "center",
@@ -1864,7 +1709,6 @@ const OwnTimestamp = styled(Typography)(({ theme }) => ({
     ...theme.applyStyles("dark", { color: "rgba(255, 255, 255, 0.7)" }),
 }));
 
-// Comment Bubbles
 const CommentBubbleWrapper = styled(Box, {
     shouldForwardProp: (prop) =>
         !["isOwn", "isFirstOwn", "isLastOwn", "isHighlighted"].includes(
@@ -1925,7 +1769,6 @@ const QuotedReplyContainer = styled(Box, {
         })),
 }));
 
-// Input Area
 const InputContainer = styled(Box)(({ theme }) => ({
     position: "relative",
     backgroundColor: "#F3F3F3",
@@ -2005,7 +1848,6 @@ const SendButton = styled(IconButton)(({ theme }) => ({
     }),
 }));
 
-// Context Menu
 const ContextMenuOverlay = styled(Box)(() => ({
     position: "absolute",
     top: -25,

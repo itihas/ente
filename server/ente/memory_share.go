@@ -1,16 +1,12 @@
 package ente
 
-// MemoryShareType represents the type of memory share
 type MemoryShareType string
 
 const (
-	// MemoryShareTypeShare is a user-curated memory share with selected files
 	MemoryShareTypeShare MemoryShareType = "share"
-	// MemoryShareTypeLane is an auto-generated memory lane
-	MemoryShareTypeLane MemoryShareType = "lane"
+	MemoryShareTypeLane  MemoryShareType = "lane"
 )
 
-// MemoryShare represents a shared memory with its encrypted metadata
 type MemoryShare struct {
 	ID                 int64           `json:"id"`
 	UserID             int64           `json:"-"`
@@ -27,7 +23,6 @@ type MemoryShare struct {
 	URL                string          `json:"url,omitempty"`
 }
 
-// MemoryShareFile represents a file within a memory share
 type MemoryShareFile struct {
 	ID                 int64  `json:"id"`
 	MemoryShareID      int64  `json:"-"`
@@ -39,7 +34,6 @@ type MemoryShareFile struct {
 	CreatedAt          int64  `json:"createdAt"`
 }
 
-// CreateMemoryShareRequest is the request body for creating a memory share
 type CreateMemoryShareRequest struct {
 	Type               MemoryShareType       `json:"type,omitempty"`
 	MemoryHash         string                `json:"memoryHash,omitempty"`
@@ -50,7 +44,6 @@ type CreateMemoryShareRequest struct {
 	Files              []MemoryShareFileItem `json:"files" binding:"required,min=1"`
 }
 
-// MemoryShareFileItem represents a file in the create request
 type MemoryShareFileItem struct {
 	FileID             int64  `json:"fileID" binding:"required"`
 	Position           *int64 `json:"position,omitempty"`
@@ -58,22 +51,18 @@ type MemoryShareFileItem struct {
 	KeyDecryptionNonce string `json:"keyDecryptionNonce" binding:"required"`
 }
 
-// CreateMemoryShareResponse is the response for creating a memory share
 type CreateMemoryShareResponse struct {
 	MemoryShare MemoryShare `json:"memoryShare"`
 }
 
-// ListMemorySharesResponse is the response for listing memory shares
 type ListMemorySharesResponse struct {
 	MemoryShares []MemoryShare `json:"memoryShares"`
 }
 
-// PublicMemoryShareResponse is the response for public memory share access
 type PublicMemoryShareResponse struct {
 	MemoryShare MemoryShare `json:"memoryShare"`
 }
 
-// PublicMemoryShareFile combines file data with its re-encrypted key for public access
 type PublicMemoryShareFile struct {
 	File               File   `json:"file"`
 	Position           int64  `json:"position"`
@@ -81,12 +70,10 @@ type PublicMemoryShareFile struct {
 	KeyDecryptionNonce string `json:"keyDecryptionNonce"`
 }
 
-// PublicMemoryShareFilesResponse is the response for listing files in a public memory share
 type PublicMemoryShareFilesResponse struct {
 	Files []PublicMemoryShareFile `json:"files"`
 }
 
-// MemoryShareAccessContext represents the context for public memory share access
 type MemoryShareAccessContext struct {
 	ID          int64
 	ShareID     int64

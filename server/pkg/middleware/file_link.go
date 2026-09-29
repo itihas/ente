@@ -4,37 +4,33 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"time"
 
-	publicCtrl "github.com/ente-io/museum/pkg/controller/public"
-	"github.com/ente-io/museum/pkg/repo/public"
-	"github.com/ente-io/museum/pkg/utils/array"
+	publicCtrl "github.com/ente/museum/pkg/controller/public"
+	"github.com/ente/museum/pkg/repo/public"
 
-	"github.com/ente-io/museum/ente"
-	"github.com/ente-io/museum/pkg/controller"
-	"github.com/ente-io/museum/pkg/controller/discord"
-	"github.com/ente-io/museum/pkg/utils/auth"
-	"github.com/ente-io/museum/pkg/utils/network"
-	"github.com/ente-io/museum/pkg/utils/time"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	"github.com/ente/museum/pkg/controller"
+	"github.com/ente/museum/pkg/controller/discord"
+	"github.com/ente/museum/pkg/utils/auth"
+	"github.com/ente/museum/pkg/utils/network"
+	timeutil "github.com/ente/museum/pkg/utils/time"
+	"github.com/ente/stacktrace"
 	"github.com/gin-gonic/gin"
-	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 )
 
 var filePasswordWhiteListedURLs = []string{"/file-link/pass-info", "/file-link/verify-password"}
 
-// FileLinkMiddleware intercepts and authenticates incoming requests
 type FileLinkMiddleware struct {
 	FileLinkRepo      *public.FileLinkRepository
 	FileLinkCtrl      *publicCtrl.FileLinkController
-	Cache             *cache.Cache
+	Cache             *public.LinkCache
 	BillingCtrl       *controller.BillingController
 	DiscordController *discord.DiscordController
 }
 
-// Authenticate returns a middle ware that extracts the `X-Auth-Access-Token`
-// within the header of a request and uses it to validate the access token and set the
-// ente.PublicAccessContext with auth.PublicAccessKey as key
 func (m *FileLinkMiddleware) Authenticate(urlSanitizer func(_ *gin.Context) string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		accessToken := auth.GetAccessToken(c)
@@ -48,11 +44,12 @@ func (m *FileLinkMiddleware) Authenticate(urlSanitizer func(_ *gin.Context) stri
 		shouldCheckDeviceLimit := shouldCheckFileLinkDeviceLimit(reqPath)
 		passwordValidated := false
 
+		lookupStarted := time.Now()
 		cacheKey := computeHashKeyForList([]string{accessToken, clientIP, userAgent}, ":")
 		var cachedValue interface{}
 		cacheHit := false
 		if !shouldCheckDeviceLimit {
-			cachedValue, cacheHit = m.Cache.Get(cacheKey)
+			cachedValue, cacheHit = m.Cache.Get(accessToken, cacheKey)
 		}
 		var fileLinkRow *ente.FileLinkRow
 		var err error
@@ -64,12 +61,12 @@ func (m *FileLinkMiddleware) Authenticate(urlSanitizer func(_ *gin.Context) stri
 				return
 			}
 			if fileLinkRow.IsDisabled {
-				c.AbortWithStatusJSON(http.StatusGone, gin.H{"error": "disabled token"})
+				c.AbortWithStatusJSON(http.StatusGone, gin.H{"code": ente.LinkDisabled, "error": "disabled token"})
 				return
 			}
 			if fileLinkRow.ValidTill > 0 && // expiry time is defined, 0 indicates no expiry
-				fileLinkRow.ValidTill < time.Microseconds() {
-				c.AbortWithStatusJSON(http.StatusGone, gin.H{"error": "expired token"})
+				fileLinkRow.ValidTill < timeutil.Microseconds() {
+				c.AbortWithStatusJSON(http.StatusGone, gin.H{"code": ente.LinkExpired, "error": "expired token"})
 				return
 			}
 			if fileLinkRow.PassHash != nil && *fileLinkRow.PassHash != "" {
@@ -103,12 +100,11 @@ func (m *FileLinkMiddleware) Authenticate(urlSanitizer func(_ *gin.Context) stri
 		}
 
 		if fileLinkRow.ValidTill > 0 && // expiry time is defined, 0 indicates no expiry
-			fileLinkRow.ValidTill < time.Microseconds() {
-			c.AbortWithStatusJSON(http.StatusGone, gin.H{"error": "expired token"})
+			fileLinkRow.ValidTill < timeutil.Microseconds() {
+			c.AbortWithStatusJSON(http.StatusGone, gin.H{"code": ente.LinkExpired, "error": "expired token"})
 			return
 		}
 
-		// checks password protected public collection
 		if !passwordValidated && fileLinkRow.PassHash != nil && *fileLinkRow.PassHash != "" {
 			if err = m.validatePassword(c, reqPath, fileLinkRow); err != nil {
 				logrus.WithError(err).Warn("password validation failed")
@@ -118,7 +114,7 @@ func (m *FileLinkMiddleware) Authenticate(urlSanitizer func(_ *gin.Context) stri
 		}
 
 		if !cacheHit && !shouldCheckDeviceLimit {
-			m.Cache.Set(cacheKey, fileLinkRow, cache.DefaultExpiration)
+			m.Cache.Set(cacheKey, fileLinkRow, lookupStarted)
 		}
 
 		c.Set(auth.FileLinkAccessKey, &ente.FileLinkAccessContext{
@@ -138,7 +134,7 @@ func (m *FileLinkMiddleware) checkDeviceLimit(c *gin.Context, accessToken string
 	if linkDeviceToken != "" {
 		claim, err := publicCtrl.ValidateLinkDeviceToken(m.FileLinkCtrl.JwtSecret, linkDeviceToken, publicCtrl.LinkDeviceScopeFile, fileLinkRow.LinkID, accessToken)
 		if err == nil {
-			if claim.ExpiryTime-time.Microseconds() < publicCtrl.LinkDeviceTokenRefreshBefore {
+			if claim.ExpiryTime-timeutil.Microseconds() < publicCtrl.LinkDeviceTokenRefreshBefore {
 				token, _, tokenErr := publicCtrl.NewLinkDeviceToken(m.FileLinkCtrl.JwtSecret, publicCtrl.LinkDeviceScopeFile, fileLinkRow.LinkID, accessToken, fileLinkRow.ValidTill)
 				return token, false, stacktrace.Propagate(tokenErr, "")
 			}
@@ -198,7 +194,6 @@ func (m *FileLinkMiddleware) isDeviceLimitReached(ctx context.Context,
 	return false, stacktrace.Propagate(err, "failed to record access history")
 }
 
-// validatePassword will verify if the user is provided correct password for the public album
 func (m *FileLinkMiddleware) validatePassword(
 	c *gin.Context,
 	reqPath string,
@@ -206,7 +201,7 @@ func (m *FileLinkMiddleware) validatePassword(
 ) error {
 	accessTokenJWT := auth.GetAccessTokenJWT(c)
 	if accessTokenJWT == "" {
-		if array.StringInList(reqPath, filePasswordWhiteListedURLs) {
+		if slices.Contains(filePasswordWhiteListedURLs, reqPath) {
 			return nil
 		}
 		return &ente.ErrPassProtectedResource

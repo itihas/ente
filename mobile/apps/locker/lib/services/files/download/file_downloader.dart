@@ -5,25 +5,24 @@ import 'package:dio/dio.dart';
 import 'package:ente_crypto_api/ente_crypto_api.dart';
 import 'package:ente_network/network.dart';
 import 'package:ente_pure_utils/ente_pure_utils.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:locker/service_locator.dart';
 import 'package:locker/services/configuration.dart';
 import 'package:locker/services/db/locker_db.dart';
+import 'package:locker/services/files/download/file_url.dart';
 import 'package:locker/services/files/download/models/task.dart';
-import 'package:locker/services/files/download/service_locator.dart';
 import 'package:locker/services/files/offline/offline_file_storage.dart';
 import 'package:locker/services/files/sync/models/file.dart';
 import 'package:logging/logging.dart';
-import 'package:path/path.dart' as p;
 
 final _logger = Logger("FileDownloader");
 
-String _getTemporaryDecryptedFilePath(EnteFile file) {
+@visibleForTesting
+String getTemporaryDecryptedFilePath(EnteFile file) {
   final String tempDir = Configuration.instance.getTempDirectory();
-  final String safeDisplayName = p.basename(file.displayName);
-  return "$tempDir${file.uploadedFileID}_$safeDisplayName";
+  return "$tempDir${file.uploadedFileID}.decrypted";
 }
 
-/// Returns the encrypted offline blob for this device, downloading it only when
-/// a usable local copy does not already exist.
 Future<File> ensureEncryptedOfflineCopy(
   EnteFile file, {
   ProgressCallback? progressCallback,
@@ -64,14 +63,21 @@ Future<File> ensureEncryptedOfflineCopy(
     } else {
       late final Response response;
       try {
+        final headers = <String, dynamic>{
+          "X-Auth-Token": Configuration.instance.getToken(),
+        };
+        final signedUrl = await FileUrl.tryGetV3Url(
+          Network.instance.enteDio,
+          file.uploadedFileID!,
+          FileUrlType.download,
+          headers: headers,
+        );
         response = await Network.instance.getDio().download(
-              file.downloadUrl,
-              tempEncryptedFilePath,
-              options: Options(
-                headers: {"X-Auth-Token": Configuration.instance.getToken()},
-              ),
-              onReceiveProgress: progressCallback,
-            );
+          signedUrl ?? file.downloadUrl,
+          tempEncryptedFilePath,
+          options: Options(headers: signedUrl == null ? headers : null),
+          onReceiveProgress: progressCallback,
+        );
       } catch (e) {
         try {
           if (await encryptedFile.exists()) {
@@ -98,11 +104,7 @@ Future<File> ensureEncryptedOfflineCopy(
     await encryptedFile.delete();
     return finalEncryptedFile;
   } catch (e, s) {
-    _logger.severe(
-      '$logPrefix failed to ensure encrypted offline copy',
-      e,
-      s,
-    );
+    _logger.severe('$logPrefix failed to ensure encrypted offline copy', e, s);
     try {
       if (await encryptedFile.exists() &&
           encryptedFile.path != finalEncryptedFilePath) {
@@ -141,7 +143,7 @@ Future<File?> openFile(
     final String logPrefix = 'File-${file.uploadedFileID}:';
     final int startTime = DateTime.now().millisecondsSinceEpoch;
     final String decryptedFilePath = useTemporaryDecryptedFile
-        ? _getTemporaryDecryptedFilePath(file)
+        ? getTemporaryDecryptedFilePath(file)
         : getCachedDecryptedFilePath(file);
     final File decryptedFile = File(decryptedFilePath);
     final int sizeInBytes =
@@ -166,8 +168,9 @@ Future<File?> openFile(
 
       final double elapsedSeconds =
           (DateTime.now().millisecondsSinceEpoch - startTime) / 1000;
-      final double speedInKBps =
-          elapsedSeconds <= 0 ? 0 : sizeInBytes / 1024.0 / elapsedSeconds;
+      final double speedInKBps = elapsedSeconds <= 0
+          ? 0
+          : sizeInBytes / 1024.0 / elapsedSeconds;
       _logger.info(
         '$logPrefix local decrypt completed: ${formatBytes(sizeInBytes)}, avg speed: ${speedInKBps.toStringAsFixed(2)} KB/s',
       );
@@ -218,7 +221,7 @@ Future<File?> downloadAndDecrypt(
 
   final String decryptedFilePath = shouldUseCache
       ? cachedDecryptedFilePath
-      : _getTemporaryDecryptedFilePath(file);
+      : getTemporaryDecryptedFilePath(file);
   final File decryptedFile = File(decryptedFilePath);
 
   final startTime = DateTime.now().millisecondsSinceEpoch;
@@ -268,12 +271,19 @@ Future<File?> downloadAndDecrypt(
           return null;
         }
       } else {
+        final headers = <String, dynamic>{
+          "X-Auth-Token": Configuration.instance.getToken(),
+        };
+        final signedUrl = await FileUrl.tryGetV3Url(
+          Network.instance.enteDio,
+          file.uploadedFileID!,
+          FileUrlType.download,
+          headers: headers,
+        );
         final response = await Network.instance.getDio().download(
-          file.downloadUrl,
+          signedUrl ?? file.downloadUrl,
           tempEncryptedFilePath,
-          options: Options(
-            headers: {"X-Auth-Token": Configuration.instance.getToken()},
-          ),
+          options: Options(headers: signedUrl == null ? headers : null),
           onReceiveProgress: (a, b) {
             progressCallback?.call(a, b);
           },

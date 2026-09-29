@@ -15,9 +15,6 @@ export interface SearchPeopleListProps {
     onSelectPerson: (personID: string) => void;
 }
 
-/**
- * Shows a list of {@link Person}s in the empty state of the search bar.
- */
 export const SearchPeopleList: React.FC<SearchPeopleListProps> = ({
     people,
     onSelectPerson,
@@ -74,45 +71,16 @@ const SearchPersonButton = styled(UnstyledButton)(
 );
 
 export interface FilePeopleListProps {
-    /**
-     * The {@link EnteFile} whose information we are showing.
-     */
     file: EnteFile;
-    /**
-     * The list of faces in the file that are associated with a person.
-     */
     annotatedFaceIDs: AnnotatedFaceID[];
-    /**
-     * Called when the user selects a face in the list.
-     */
     onSelectFace: (annotatedFaceID: AnnotatedFaceID) => void;
-    /**
-     * People that were manually associated with the file, and should be shown
-     * in addition to detected faces.
-     */
     manuallyAssignedPeople?: Person[];
-    /**
-     * Called when the user selects a person (used for manually assigned people).
-     */
     onSelectPerson?: (personID: string) => void;
-    /**
-     * If set, show an option to manually associate the file with a person.
-     */
     onAddPerson?: () => void;
-    /**
-     * Title/tooltip for the "add person" button (if shown).
-     */
     addPersonTitle?: string;
-    /**
-     * Label shown under the "add person" button (if shown).
-     */
     addPersonLabel?: string;
 }
 
-/**
- * Show the list of faces in the given file that are associated with a specific
- * person.
- */
 export const FilePeopleList: React.FC<FilePeopleListProps> = ({
     file,
     annotatedFaceIDs,
@@ -229,17 +197,9 @@ const AddPersonAvatar = styled("div")(
 );
 
 export interface SuggestionFaceListProps {
-    /**
-     * Faces, each annotated with the corresponding {@link EnteFile}, to show in
-     * the list.
-     */
     faces: PreviewableFace[];
 }
 
-/**
- * Show the sampling of faces from a given cluster that is being offered as a
- * suggestion to the user.
- */
 export const SuggestionFaceList: React.FC<SuggestionFaceListProps> = ({
     faces,
 }) => {
@@ -275,19 +235,10 @@ const SuggestionFace = styled("div")`
 `;
 
 type FaceCropImageViewProps = PreviewableFace & {
-    /** Width and height for the placeholder. */
     placeholderDimension: number;
 };
 
-/**
- * An image view showing the face crop for the given face.
- *
- * The image is read from the "face-crops" {@link BlobCache}, regenerating it if
- * needed (which is why also need to pass the associated file).
- *
- * While the image is being fetched or regenerated, or if it doesn't exist, a
- * placeholder is shown.
- */
+// Missing local crops are regenerated from the associated file.
 const FaceCropImageView: React.FC<FaceCropImageViewProps> = ({
     faceID,
     file,

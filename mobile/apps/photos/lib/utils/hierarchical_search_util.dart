@@ -1,10 +1,11 @@
+import "package:ente_strings/ente_strings.dart";
 import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/constants.dart";
 import "package:photos/db/files_db.dart";
 import "package:photos/db/ml/db.dart";
-import "package:photos/generated/l10n.dart";
+import "package:photos/models/api/collection/user.dart";
 import "package:photos/models/file/extensions/file_props.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
@@ -23,18 +24,19 @@ import "package:photos/models/search/hierarchical/top_level_generic_filter.dart"
 import "package:photos/models/search/hierarchical/uploader_filter.dart";
 import "package:photos/service_locator.dart";
 import "package:photos/services/collections_service.dart";
+import "package:photos/services/contacts/contact_identity_resolver.dart";
 import "package:photos/services/machine_learning/face_ml/face_filtering/face_filtering_constants.dart";
 import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
 import "package:photos/services/magic_cache_service.dart";
 import "package:photos/services/search_service.dart";
 import "package:photos/ui/viewer/gallery/state/search_filter_data_provider.dart";
-import "package:photos/utils/file_util.dart";
 
 Future<Set<int>> _getFileIDsOfPersonIncludingManualAssignments(
   String personID,
 ) async {
-  final fileIDs =
-      (await MLDataDB.instance.getFileIDsOfPersonID(personID)).toSet();
+  final fileIDs = (await MLDataDB.instance.getFileIDsOfPersonID(
+    personID,
+  )).toSet();
   final person = await PersonService.instance.getPerson(personID);
   if (person != null) {
     fileIDs.addAll(person.data.manuallyAssigned);
@@ -56,6 +58,24 @@ Future<Set<int>> _getManualAssignmentFileIDsOfOtherPersons(
   return fileIDs;
 }
 
+Future<void> _hydrateFaceFilterMatches(FaceFilter filter) async {
+  if (filter.matchedUploadedIDs.isNotEmpty) {
+    return;
+  }
+
+  if (filter.personId != null) {
+    final fileIDs = await _getFileIDsOfPersonIncludingManualAssignments(
+      filter.personId!,
+    );
+    filter.matchedUploadedIDs.addAll(fileIDs);
+  } else if (filter.clusterId != null) {
+    final fileIDs = await MLDataDB.instance.getFileIDsOfClusterID(
+      filter.clusterId!,
+    );
+    filter.matchedUploadedIDs.addAll(fileIDs);
+  }
+}
+
 Future<List<EnteFile>> getFilteredFiles(
   List<HierarchicalSearchFilter> filters,
 ) async {
@@ -64,24 +84,14 @@ Future<List<EnteFile>> getFilteredFiles(
   late final List<EnteFile> filteredFiles;
   final files = await SearchService.instance.getAllFilesForHierarchicalSearch();
   final resultsNeverComputedFilters = <HierarchicalSearchFilter>[];
-  final ignoredCollections =
-      CollectionsService.instance.getHiddenCollectionIds();
+  final ignoredCollections = CollectionsService.instance
+      .getHiddenCollectionIds();
 
   logger.info("Getting filtered files for Filters: $filters");
   for (HierarchicalSearchFilter filter in filters) {
     if (filter is FaceFilter && filter.matchedUploadedIDs.isEmpty) {
       try {
-        if (filter.personId != null) {
-          final fileIDs = await _getFileIDsOfPersonIncludingManualAssignments(
-            filter.personId!,
-          );
-          filter.matchedUploadedIDs.addAll(fileIDs);
-        } else if (filter.clusterId != null) {
-          final fileIDs = await mlDataDB.getFileIDsOfClusterID(
-            filter.clusterId!,
-          );
-          filter.matchedUploadedIDs.addAll(fileIDs);
-        }
+        await _hydrateFaceFilterMatches(filter);
       } catch (e) {
         logger.severe("Error in filtering face filter: $e");
       }
@@ -93,13 +103,16 @@ Future<List<EnteFile>> getFilteredFiles(
         int index = 0;
 
         for (final faceFilter in filter.faceFilters) {
+          await _hydrateFaceFilterMatches(faceFilter);
+
           if (index == 0) {
             intersectionOfSelectedFaceFiltersFileIDs =
                 faceFilter.matchedUploadedIDs;
           } else {
             intersectionOfSelectedFaceFiltersFileIDs =
-                intersectionOfSelectedFaceFiltersFileIDs
-                    .intersection(faceFilter.matchedUploadedIDs);
+                intersectionOfSelectedFaceFiltersFileIDs.intersection(
+                  faceFilter.matchedUploadedIDs,
+                );
           }
           index++;
 
@@ -110,29 +123,30 @@ Future<List<EnteFile>> getFilteredFiles(
           }
         }
 
-        await mlDataDB
-            .getPersonsClusterIDs(selectedPersonIDs)
-            .then((clusterIDs) {
+        await mlDataDB.getPersonsClusterIDs(selectedPersonIDs).then((
+          clusterIDs,
+        ) {
           selectedClusterIDs.addAll(clusterIDs);
         });
 
-        final fileIDsToAvoid =
-            await mlDataDB.getAllFilesAssociatedWithAllClusters(
-          exceptClusters: selectedClusterIDs,
-        );
+        final fileIDsToAvoid = await mlDataDB
+            .getAllFilesAssociatedWithAllClusters(
+              exceptClusters: selectedClusterIDs,
+            );
         fileIDsToAvoid.addAll(
           await _getManualAssignmentFileIDsOfOtherPersons(
             selectedPersonIDs.toSet(),
           ),
         );
 
-        final filesOfFaceIDsNotInAnyCluster =
-            await mlDataDB.getAllFileIDsOfFaceIDsNotInAnyCluster();
+        final filesOfFaceIDsNotInAnyCluster = await mlDataDB
+            .getAllFileIDsOfFaceIDsNotInAnyCluster();
 
         fileIDsToAvoid.addAll(filesOfFaceIDsNotInAnyCluster);
 
-        final result =
-            intersectionOfSelectedFaceFiltersFileIDs.difference(fileIDsToAvoid);
+        final result = intersectionOfSelectedFaceFiltersFileIDs.difference(
+          fileIDsToAvoid,
+        );
         filter.matchedUploadedIDs.addAll(result);
       } catch (e) {
         logger.severe("Error in filtering only them filter: $e");
@@ -157,11 +171,13 @@ Future<List<EnteFile>> getFilteredFiles(
     Set<int> filteredUploadedIDs = {};
     for (int i = 0; i < filters.length; i++) {
       if (i == 0) {
-        filteredUploadedIDs =
-            filteredUploadedIDs.union(filters[i].matchedUploadedIDs);
+        filteredUploadedIDs = filteredUploadedIDs.union(
+          filters[i].matchedUploadedIDs,
+        );
       } else {
-        filteredUploadedIDs =
-            filteredUploadedIDs.intersection(filters[i].matchedUploadedIDs);
+        filteredUploadedIDs = filteredUploadedIDs.intersection(
+          filters[i].matchedUploadedIDs,
+        );
       }
     }
 
@@ -183,34 +199,48 @@ Future<void> curateFilters(
   BuildContext context,
 ) async {
   try {
-    final albumFilters = await _curateAlbumFilters(files);
-    final fileTypeFilters = _curateFileTypeFilters(files, context);
-    final locationFilters = await _curateLocationFilters(
-      files,
+    final l10n = Localizations.of<StringsLocalizations>(
+      context,
+      StringsLocalizations,
     );
-    final contactsFilters = _curateContactsFilter(files);
+    if (l10n == null) {
+      Logger("HierarchicalSearchUtil").warning(
+        "Skipping filter curation because localizations are unavailable",
+      );
+      return;
+    }
+
+    final albumFilters = await _curateAlbumFilters(files);
+    final fileTypeFilters = _curateFileTypeFilters(files, l10n);
+    final locationFilters = await _curateLocationFilters(files);
+    final currentUserID = Configuration.instance.getUserID();
+    final contactsFilters = currentUserID == null
+        ? <ContactsFilter>[]
+        : curateContactsFilters(
+            files,
+            currentUser: CollectionsService.instance.resolveUserIdentity(
+              currentUserID,
+              null,
+            ),
+            currentUserLabel: l10n.you,
+          );
     final uploaderFilters = _curateUploaderFilter(files);
     final cameraFilters = _curateCameraFilters(files);
     final faceFilters = await curateFaceFilters(files);
-    final magicFilters = await curateMagicFilters(files, context);
-    final onlyThemFilter = getOnlyThemFilter(
-      searchFilterDataProvider,
-      context,
-    );
+    final magicFilters = await curateMagicFilters(files, l10n);
+    final onlyThemFilter = getOnlyThemFilter(searchFilterDataProvider, l10n);
 
-    searchFilterDataProvider.clearAndAddRecommendations(
-      [
-        ...onlyThemFilter,
-        ...magicFilters,
-        ...faceFilters,
-        ...fileTypeFilters,
-        ...contactsFilters,
-        ...uploaderFilters,
-        ...cameraFilters,
-        ...albumFilters,
-        ...locationFilters,
-      ],
-    );
+    searchFilterDataProvider.clearAndAddRecommendations([
+      ...onlyThemFilter,
+      ...magicFilters,
+      ...faceFilters,
+      ...fileTypeFilters,
+      ...contactsFilters,
+      ...uploaderFilters,
+      ...cameraFilters,
+      ...albumFilters,
+      ...locationFilters,
+    ]);
   } catch (e) {
     Logger("HierarchicalSearchUtil").severe("Failed to curate filters", e);
   }
@@ -218,7 +248,7 @@ Future<void> curateFilters(
 
 List<OnlyThemFilter> getOnlyThemFilter(
   SearchFilterDataProvider searchFilterDataProvider,
-  BuildContext context,
+  StringsLocalizations l10n,
 ) {
   if (searchFilterDataProvider.initialGalleryFilter is FaceFilter &&
       searchFilterDataProvider.appliedFilters.isEmpty) {
@@ -227,29 +257,28 @@ List<OnlyThemFilter> getOnlyThemFilter(
         faceFilters: [
           searchFilterDataProvider.initialGalleryFilter as FaceFilter,
         ],
-        onlyThemString: AppLocalizations.of(context).onlyThem,
+        onlyThemString: l10n.onlyThem,
         occurrence: kMostRelevantFilter,
       ),
     ];
   }
 
-  final appliedFaceFilters =
-      searchFilterDataProvider.appliedFilters.whereType<FaceFilter>().toList();
+  final appliedFaceFilters = searchFilterDataProvider.appliedFilters
+      .whereType<FaceFilter>()
+      .toList();
   if (appliedFaceFilters.isEmpty || appliedFaceFilters.length > 4) {
     return [];
   } else {
     final onlyThemFilter = OnlyThemFilter(
       faceFilters: appliedFaceFilters,
-      onlyThemString: AppLocalizations.of(context).onlyThem,
+      onlyThemString: l10n.onlyThem,
       occurrence: kMostRelevantFilter,
     );
     return [onlyThemFilter];
   }
 }
 
-Future<List<AlbumFilter>> _curateAlbumFilters(
-  List<EnteFile> files,
-) async {
+Future<List<AlbumFilter>> _curateAlbumFilters(List<EnteFile> files) async {
   final albumFilters = <AlbumFilter>[];
   final idToOccurrence = <int, int>{};
   final uploadedIDs = <int>[];
@@ -258,8 +287,8 @@ Future<List<AlbumFilter>> _curateAlbumFilters(
       uploadedIDs.add(file.uploadedFileID!);
     }
   }
-  final collectionIDsOfFiles =
-      await FilesDB.instance.getAllCollectionIDsOfFiles(uploadedIDs);
+  final collectionIDsOfFiles = await FilesDB.instance
+      .getAllCollectionIDsOfFiles(uploadedIDs);
 
   for (int collectionID in collectionIDsOfFiles) {
     idToOccurrence[collectionID] = (idToOccurrence[collectionID] ?? 0) + 1;
@@ -284,7 +313,7 @@ Future<List<AlbumFilter>> _curateAlbumFilters(
 
 List<FileTypeFilter> _curateFileTypeFilters(
   List<EnteFile> files,
-  BuildContext context,
+  StringsLocalizations l10n,
 ) {
   final fileTypeFilters = <FileTypeFilter>[];
   int photosCount = 0;
@@ -308,7 +337,7 @@ List<FileTypeFilter> _curateFileTypeFilters(
     fileTypeFilters.add(
       FileTypeFilter(
         fileType: FileType.image,
-        typeName: AppLocalizations.of(context).photos,
+        typeName: l10n.photos,
         occurrence: photosCount,
       ),
     );
@@ -317,7 +346,7 @@ List<FileTypeFilter> _curateFileTypeFilters(
     fileTypeFilters.add(
       FileTypeFilter(
         fileType: FileType.video,
-        typeName: AppLocalizations.of(context).videos,
+        typeName: l10n.videos,
         occurrence: videosCount,
       ),
     );
@@ -326,7 +355,7 @@ List<FileTypeFilter> _curateFileTypeFilters(
     fileTypeFilters.add(
       FileTypeFilter(
         fileType: FileType.livePhoto,
-        typeName: AppLocalizations.of(context).livePhotos,
+        typeName: l10n.livePhotos,
         occurrence: livePhotosCount,
       ),
     );
@@ -339,8 +368,8 @@ Future<List<LocationFilter>> _curateLocationFilters(
   List<EnteFile> files,
 ) async {
   final locationFilters = <LocationFilter>[];
-  final locationTagToOccurrence =
-      await locationService.getLocationTagsToOccurance(files);
+  final locationTagToOccurrence = await locationService
+      .getLocationTagsToOccurance(files);
 
   for (LocationTag locationTag in locationTagToOccurrence.keys) {
     locationFilters.add(
@@ -354,39 +383,69 @@ Future<List<LocationFilter>> _curateLocationFilters(
   return locationFilters;
 }
 
-List<ContactsFilter> _curateContactsFilter(
-  List<EnteFile> files,
-) {
+List<ContactsFilter> curateContactsFilters(
+  List<EnteFile> files, {
+  required User currentUser,
+  required String currentUserLabel,
+}) {
   final contactsFilters = <ContactsFilter>[];
   final ownerIdToOccurrence = <int, int>{};
+  final ownerIdToCollectionIDs = <int, Set<int>>{};
 
-  for (EnteFile file in files) {
-    if (file.ownerID == Configuration.instance.getUserID() ||
-        file.uploadedFileID == null ||
+  for (final file in files) {
+    if (file.uploadedFileID == null ||
         file.uploadedFileID == -1 ||
         file.ownerID == null) {
       continue;
     }
-    ownerIdToOccurrence[file.ownerID!] =
-        (ownerIdToOccurrence[file.ownerID] ?? 0) + 1;
+    final ownerID = file.ownerID!;
+    ownerIdToOccurrence[ownerID] = (ownerIdToOccurrence[ownerID] ?? 0) + 1;
+    if (file.collectionID != null) {
+      ownerIdToCollectionIDs
+          .putIfAbsent(ownerID, () => <int>{})
+          .add(file.collectionID!);
+    }
   }
 
-  for (int id in ownerIdToOccurrence.keys) {
-    final user = CollectionsService.instance.getFileOwner(id, null);
+  for (final entry in ownerIdToOccurrence.entries) {
+    final ownerID = entry.key;
+    if (ownerID == currentUser.id) {
+      contactsFilters.add(
+        ContactsFilter(
+          user: currentUser,
+          occurrence: entry.value,
+          filterName: currentUserLabel,
+        ),
+      );
+      continue;
+    }
+
+    User? resolvedUser;
+    final collectionIDs = ownerIdToCollectionIDs[ownerID] ?? const <int>{};
+    for (final collectionID in [...collectionIDs, null]) {
+      final user = CollectionsService.instance.resolveUserIdentity(
+        ownerID,
+        collectionID,
+      );
+      final identity = resolveSuggestionIdentity(UserSuggestion.fromUser(user));
+      if (identity.isResolved) {
+        resolvedUser = user;
+        break;
+      }
+    }
+    if (resolvedUser == null) {
+      continue;
+    }
+
     contactsFilters.add(
-      ContactsFilter(
-        user: user,
-        occurrence: ownerIdToOccurrence[id]!,
-      ),
+      ContactsFilter(user: resolvedUser, occurrence: entry.value),
     );
   }
 
   return contactsFilters;
 }
 
-List<CameraFilter> _curateCameraFilters(
-  List<EnteFile> files,
-) {
+List<CameraFilter> _curateCameraFilters(List<EnteFile> files) {
   final cameraFilters = <CameraFilter>[];
   final modelToOccurrence = <String, int>{};
 
@@ -400,19 +459,14 @@ List<CameraFilter> _curateCameraFilters(
 
   for (final entry in modelToOccurrence.entries) {
     cameraFilters.add(
-      CameraFilter(
-        cameraModel: entry.key,
-        occurrence: entry.value,
-      ),
+      CameraFilter(cameraModel: entry.key, occurrence: entry.value),
     );
   }
 
   return cameraFilters;
 }
 
-List<UploaderFilter> _curateUploaderFilter(
-  List<EnteFile> files,
-) {
+List<UploaderFilter> _curateUploaderFilter(List<EnteFile> files) {
   final uploaderFilter = <UploaderFilter>[];
   final ownerIdToOccurrence = <String, int>{};
 
@@ -435,16 +489,15 @@ List<UploaderFilter> _curateUploaderFilter(
   return uploaderFilter;
 }
 
-Future<List<FaceFilter>> curateFaceFilters(
-  List<EnteFile> files,
-) async {
+Future<List<FaceFilter>> curateFaceFilters(List<EnteFile> files) async {
   try {
     final mlDataDB = MLDataDB.instance;
     final faceFilters = <FaceFilter>[];
-    final Map<int, Set<String>> fileIdToClusterID =
-        await mlDataDB.getFileIdToClusterIds();
-    final Map<String, PersonEntity> personIdToPerson =
-        await PersonService.instance.getPersonsMap();
+    final Map<int, Set<String>> fileIdToClusterID = await mlDataDB
+        .getFileIdToClusterIds();
+    final Map<String, PersonEntity> personIdToPerson = await PersonService
+        .instance
+        .getPersonsMap();
     final clusterIDToPersonID = await mlDataDB.getClusterIDToPersonID();
 
     final Map<String, List<EnteFile>> clusterIdToFiles = {};
@@ -469,8 +522,10 @@ Future<List<FaceFilter>> curateFaceFilters(
             personIdToFiles.putIfAbsent(p.remoteID, () => <EnteFile>[]).add(f);
             continue;
           }
-          final fileIDsForPerson =
-              personIdToFileIDs.putIfAbsent(p.remoteID, () => <int>{});
+          final fileIDsForPerson = personIdToFileIDs.putIfAbsent(
+            p.remoteID,
+            () => <int>{},
+          );
           if (!fileIDsForPerson.add(uploadedFileID)) {
             continue;
           }
@@ -491,10 +546,14 @@ Future<List<FaceFilter>> curateFaceFilters(
         continue;
       }
 
-      final filesForPerson =
-          personIdToFiles.putIfAbsent(entry.key, () => <EnteFile>[]);
-      final fileIDsForPerson =
-          personIdToFileIDs.putIfAbsent(entry.key, () => <int>{});
+      final filesForPerson = personIdToFiles.putIfAbsent(
+        entry.key,
+        () => <EnteFile>[],
+      );
+      final fileIDsForPerson = personIdToFileIDs.putIfAbsent(
+        entry.key,
+        () => <int>{},
+      );
 
       for (final manualID in manualIDs) {
         if (!fileIDsForPerson.add(manualID)) {
@@ -550,15 +609,16 @@ Future<List<FaceFilter>> curateFaceFilters(
 
     return faceFilters;
   } catch (e, s) {
-    Logger("hierarchical_search_util")
-        .severe("Error in curating face filters", e, s);
+    Logger(
+      "hierarchical_search_util",
+    ).severe("Error in curating face filters", e, s);
     rethrow;
   }
 }
 
 Future<List<MagicFilter>> curateMagicFilters(
   List<EnteFile> files,
-  BuildContext context,
+  StringsLocalizations l10n,
 ) async {
   final magicFilters = <MagicFilter>[];
 
@@ -567,7 +627,7 @@ Future<List<MagicFilter>> curateMagicFilters(
   for (MagicCache magicCache in magicCaches) {
     final uploadedIDs = magicCache.fileUploadedIDs.toSet();
     final intersection = uploadedIDs.intersection(filesUploadedFileIDs);
-    final title = getLocalizedTitle(context, magicCache.title);
+    final title = getLocalizedTitleForL10n(l10n, magicCache.title);
 
     if (intersection.length > 3) {
       magicFilters.add(
@@ -593,13 +653,16 @@ Map<String, List<HierarchicalSearchFilter>> getFiltersForBottomSheet(
     searchFilterDataProvider.recommendations.whereType<OnlyThemFilter>(),
   );
 
-  final faceFilters =
-      searchFilterDataProvider.appliedFilters.whereType<FaceFilter>().toList();
-  faceFilters
-      .addAll(searchFilterDataProvider.recommendations.whereType<FaceFilter>());
+  final faceFilters = searchFilterDataProvider.appliedFilters
+      .whereType<FaceFilter>()
+      .toList();
+  faceFilters.addAll(
+    searchFilterDataProvider.recommendations.whereType<FaceFilter>(),
+  );
 
-  final albumFilters =
-      searchFilterDataProvider.appliedFilters.whereType<AlbumFilter>().toList();
+  final albumFilters = searchFilterDataProvider.appliedFilters
+      .whereType<AlbumFilter>()
+      .toList();
   albumFilters.addAll(
     searchFilterDataProvider.recommendations.whereType<AlbumFilter>(),
   );
@@ -639,8 +702,9 @@ Map<String, List<HierarchicalSearchFilter>> getFiltersForBottomSheet(
     searchFilterDataProvider.recommendations.whereType<CameraFilter>(),
   );
 
-  final magicFilters =
-      searchFilterDataProvider.appliedFilters.whereType<MagicFilter>().toList();
+  final magicFilters = searchFilterDataProvider.appliedFilters
+      .whereType<MagicFilter>()
+      .toList();
   magicFilters.addAll(
     searchFilterDataProvider.recommendations.whereType<MagicFilter>(),
   );
@@ -672,11 +736,10 @@ List<HierarchicalSearchFilter> getRecommendedFiltersForAppBar(
   int index = 0;
   final totalRecommendations = recommendations.length;
 
-  // Add the most relevant filter from each type available in the first half of
-  // the recommendations list
   for (final filter in recommendations) {
-    if (mostRelevantFilterFromEachType
-        .every((element) => element.runtimeType != filter.runtimeType)) {
+    if (mostRelevantFilterFromEachType.every(
+      (element) => element.runtimeType != filter.runtimeType,
+    )) {
       mostRelevantFilterFromEachType.add(filter);
     }
 

@@ -3,20 +3,20 @@ package legacy_kit
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"strings"
 
-	ctrl "github.com/ente-io/museum/pkg/controller"
-	"github.com/ente-io/museum/pkg/controller/user"
-	"github.com/ente-io/museum/pkg/repo"
-	legacykitrepo "github.com/ente-io/museum/pkg/repo/legacy_kit"
-	servercrypto "github.com/ente-io/museum/pkg/utils/crypto"
-	"github.com/ente-io/museum/pkg/utils/network"
-	timeutil "github.com/ente-io/museum/pkg/utils/time"
+	"github.com/ente/museum/pkg/controller/user"
+	"github.com/ente/museum/pkg/repo"
+	legacykitrepo "github.com/ente/museum/pkg/repo/legacy_kit"
+	servercrypto "github.com/ente/museum/pkg/utils/crypto"
+	"github.com/ente/museum/pkg/utils/network"
+	timeutil "github.com/ente/museum/pkg/utils/time"
 
-	"github.com/ente-io/museum/ente"
-	"github.com/ente-io/stacktrace"
+	"github.com/ente/museum/ente"
+	"github.com/ente/stacktrace"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -36,10 +36,9 @@ const (
 )
 
 type Controller struct {
-	Repo              *legacykitrepo.Repository
-	UserRepo          *repo.UserRepository
-	UserCtrl          *user.UserController
-	PasskeyController *ctrl.PasskeyController
+	Repo     *legacykitrepo.Repository
+	UserRepo *repo.UserRepository
+	UserCtrl *user.UserController
 }
 
 func (c *Controller) CreateKit(ctx *gin.Context, userID int64, req ente.CreateLegacyKitRequest) (*ente.LegacyKit, error) {
@@ -176,9 +175,7 @@ func (c *Controller) CreateChallenge(ctx context.Context, req ente.LegacyKitChal
 		return nil, stacktrace.Propagate(ente.ErrNotFound, "legacy kit not found")
 	}
 	challengeBytes := make([]byte, 32)
-	if _, err := contextAwareRandom(challengeBytes); err != nil {
-		return nil, stacktrace.Propagate(err, "failed to generate legacy kit challenge")
-	}
+	rand.Read(challengeBytes)
 	challenge := base64.StdEncoding.EncodeToString(challengeBytes)
 	challenge = formatChallenge(req.KitID, challenge)
 	encryptedChallenge, err := servercrypto.GetEncryptedToken(base64.URLEncoding.EncodeToString([]byte(challenge)), kit.AuthPublicKey)
@@ -290,22 +287,13 @@ func (c *Controller) ChangePassword(ctx *gin.Context, req ente.LegacyKitRecovery
 	if session.Status != ente.LegacyKitRecoveryStatusReady {
 		return nil, stacktrace.Propagate(ente.NewBadRequestWithMessage("legacy kit recovery is not ready"), "")
 	}
-	// Known and accepted for the current recovery flow: once a legacy-kit session
-	// is READY, we clear existing second-factor requirements before applying the
-	// recovered password update, so an old TOTP/passkey enrollment does not block
-	// the beneficiary from completing takeover.
-	if err := c.UserCtrl.DisableTwoFactor(session.UserID); err != nil {
-		return nil, stacktrace.Propagate(err, "failed to disable two-factor")
-	}
-	if err := c.PasskeyController.RemovePasskey2FA(session.UserID); err != nil {
-		return nil, stacktrace.Propagate(err, "failed to disable passkeys")
-	}
-	resp, err := c.UserCtrl.UpdateSrpAndKeyAttributes(ctx, session.UserID, req.UpdateSrpAndKeysRequest, false)
+	logOutAllSessions := req.UpdateSrpAndKeysRequest.LogOutOtherDevices == nil || *req.UpdateSrpAndKeysRequest.LogOutOtherDevices
+	resp, err := c.UserCtrl.RecoverSrpAndKeyAttributes(ctx, session.UserID, req.UpdateSrpAndKeysRequest, logOutAllSessions,
+		func(txCtx context.Context, tx *sql.Tx) error {
+			return c.Repo.CompleteRecovery(txCtx, tx, session.ID, session.KitID, session.UserID, strings.TrimSpace(req.SessionToken))
+		})
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "failed to update password via legacy kit")
-	}
-	if _, err := c.Repo.UpdateSessionStatus(ctx, session.ID, ente.LegacyKitRecoveryStatusRecovered); err != nil {
-		return nil, err
 	}
 	go c.sendRecoveryCompletedNotification(context.Background(), session.UserID)
 	return resp, nil
@@ -337,10 +325,7 @@ func legacyURL() string {
 }
 
 func toRecoverySession(row *legacykitrepo.RecoverySessionRow) ente.LegacyKitRecoverySession {
-	waitRemaining := row.WaitTill - timeutil.Microseconds()
-	if waitRemaining < 0 {
-		waitRemaining = 0
-	}
+	waitRemaining := max(row.WaitTill-timeutil.Microseconds(), 0)
 	status := row.Status
 	if status == ente.LegacyKitRecoveryStatusWaiting && waitRemaining == 0 {
 		status = ente.LegacyKitRecoveryStatusReady
@@ -405,8 +390,4 @@ func validateUsedPartIndexes(indexes []int, variant ente.LegacyKitVariant) error
 
 func formatChallenge(kitID uuid.UUID, challenge string) string {
 	return fmt.Sprintf("legacy-kit-open:v1\n%s\n%s\n", kitID.String(), challenge)
-}
-
-func contextAwareRandom(buf []byte) (int, error) {
-	return rand.Reader.Read(buf)
 }

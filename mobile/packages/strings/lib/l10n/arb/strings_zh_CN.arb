@@ -1,61 +1,464 @@
 {
-  "networkHostLookUpErr": "无法连接到 Ente，请检查您的网络设置，如果错误仍然存​​在，请联系支持。",
-  "@networkHostLookUpErr": {
-    "description": "Error message shown when the app cannot connect to Ente due to network host lookup failure"
-  },
-  "networkConnectionRefusedErr": "无法连接到 Ente，请稍后重试。如果错误仍然存​​在，请联系支持人员。",
-  "@networkConnectionRefusedErr": {
-    "description": "Error message shown when the app cannot connect to Ente due to connection refused"
-  },
-  "itLooksLikeSomethingWentWrongPleaseRetryAfterSome": "看起来出了点问题。 请稍后重试。 如果错误仍然存在，请联系我们的支持团队。",
-  "@itLooksLikeSomethingWentWrongPleaseRetryAfterSome": {
-    "description": "Generic error message for temporary issues"
-  },
-  "error": "错误",
-  "@error": {
-    "description": "Generic error title"
-  },
-  "ok": "确定",
-  "@ok": {
-    "description": "Generic OK button label"
-  },
-  "faq": "常见问题",
-  "@faq": {
-    "description": "FAQ link label"
-  },
-  "contactSupport": "联系支持",
-  "@contactSupport": {
-    "description": "Contact support button label"
-  },
-  "emailYourLogs": "通过电子邮件发送您的日志",
-  "@emailYourLogs": {
-    "description": "Title for emailing logs dialog"
-  },
-  "pleaseSendTheLogsTo": "请将日志发送至 \n{toEmail}",
-  "@pleaseSendTheLogsTo": {
-    "description": "Message asking user to send logs to email address",
+  "about": "关于",
+  "acceptTrustInvite": "接受邀请",
+  "account": "账户",
+  "accountCredentials": "私密信息",
+  "accountIsAlreadyConfigured": "账户已配置。",
+  "accountOwnerPersonAppbarTitle": "{title} (我)",
+  "@accountOwnerPersonAppbarTitle": {
+    "description": "Title of appbar for account owner person",
     "placeholders": {
-      "toEmail": {
-        "type": "String",
-        "description": "Email address to send logs to"
+      "title": {
+        "type": "String"
       }
     }
   },
-  "copyEmailAddress": "复制电子邮件地址",
-  "@copyEmailAddress": {
-    "description": "Button to copy email address to clipboard"
+  "accountSetupIncompleteCreateAccount": "账号设置未完成。请创建账号以完成设置。",
+  "@accountSetupIncompleteCreateAccount": {
+    "description": "Error shown when account exists but signup is incomplete"
   },
-  "exportLogs": "导出日志",
-  "@exportLogs": {
-    "description": "Button to export logs"
+  "actionNotSupportedOnFavouritesAlbum": "收藏相册不支持此操作",
+  "activeSessions": "已登录的设备",
+  "@activeSessions": {
+    "description": "Title for active sessions page"
   },
+  "add": "添加",
+  "addAdmin": "添加管理员",
+  "addCode": "添加代码",
+  "addCollaborator": "添加协作者",
+  "addedAs": "已添加为",
+  "addedBy": "由 {emailOrName} 添加",
+  "@addedBy": {
+    "placeholders": {
+      "emailOrName": {}
+    }
+  },
+  "addedSuccessfullyTo": "成功添加到  {albumName}",
+  "@addedSuccessfullyTo": {
+    "placeholders": {
+      "albumName": {}
+    }
+  },
+  "addedToQueue": "已添加至队列",
+  "addFamilyMember": "添加家庭成员",
+  "addFiles": "添加文件",
+  "addFromDevice": "从设备添加",
+  "addingPhotos": "正在添加照片",
+  "addingToFavorites": "正在添加到收藏...",
+  "addLocation": "添加地点",
+  "addLocationButton": "添加",
+  "addMember": "添加成员",
+  "addMore": "添加更多",
+  "addMoreAdmins": "添加更多管理员",
+  "addName": "添加名称",
+  "addOnPageSubtitle": "附加组件详情",
+  "addOns": "附加组件",
+  "addOnValidTill": "您的 {storageAmount} 插件有效期至 {endDate}",
+  "@addOnValidTill": {
+    "placeholders": {
+      "endDate": {},
+      "storageAmount": {}
+    }
+  },
+  "addParticipants": "添加参与者",
+  "addPerson": "添加人员",
+  "@addPerson": {
+    "description": "Title for the manual tagging flow where user selects a person to tag files with."
+  },
+  "addPhotos": "添加照片",
+  "addSelected": "添加所选项",
+  "addTag": "添加标签",
+  "addToAlbum": "添加到相册",
+  "addToEnte": "添加到 Ente",
+  "addToHiddenAlbum": "添加到隐藏相册",
+  "addToPerson": "添加到人员",
+  "@addToPerson": {
+    "description": "Action label to add selected files to an existing person."
+  },
+  "addUpTo5MembersFree": "免费添加最多 5 位成员",
+  "addViewer": "添加查看者",
+  "addYourPhotosNow": "立即添加您的照片",
+  "adjust": "调整",
+  "admin": "管理员",
+  "admins": "管理员",
+  "adminsAndCollaboratorsCanAddPhotosDescription": "管理员和合作员可以添加照片。管理员也可以管理照片和参与者。",
+  "admiringThem": "欣赏 {name}",
+  "@admiringThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "advanced": "高级",
+  "aerialViews": "空中视角",
+  "after1Week": "1 周后",
+  "after1Year": "1 年后",
+  "albumLayout": "相册布局",
+  "albumOwner": "所有者",
+  "@albumOwner": {
+    "description": "Role of the album owner"
+  },
+  "albums": "相册",
+  "albumTitle": "相册标题",
+  "albumUpdated": "相册已更新",
+  "algorithm": "算法",
+  "align": "对齐",
+  "all": "全部",
+  "allClear": "✨ 全部清除",
+  "allMemoriesPreserved": "所有回忆都已保存",
+  "allow": "允许",
+  "allowAddingPhotos": "允许添加照片",
+  "@allowAddingPhotos": {
+    "description": "Switch button to enable uploading photos to a public link"
+  },
+  "allowAppToOpenSharedAlbumLinks": "允许应用打开共享相册链接",
+  "allowDownloads": "允许下载",
+  "allowJoiningAlbum": "允许加入相册",
+  "allowPermBody": "请从“设置”中选择允许访问您的照片，以便 Ente 可以显示和备份您的图库。",
+  "allowPermTitle": "允许访问照片",
+  "allPersonGroupingWillReset": "此人的所有分组都将被重设，并且您将丢失针对此人的所有建议",
+  "allTabEmptyHint": "这里暂时没有任何内容。点按 + 添加代码，或打开回收站恢复代码。",
+  "@allTabEmptyHint": {
+    "description": "Shown when the All tab has no active codes but Trash contains codes"
+  },
+  "allWillShiftRangeBasedOnFirst": "这张照片是该组中的第一张。其他已选择的照片将根据此新日期自动调整",
+  "almostDone": "即将完成...",
+  "alreadyAdded": "已添加",
+  "analysis": "分析",
+  "analyzingPhotosLocally": "正在本地分析您的照片...",
+  "androidBiometricHint": "验证身份",
+  "@androidBiometricHint": {
+    "description": "Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters."
+  },
+  "androidCancelButton": "取消",
+  "@androidCancelButton": {
+    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
+  },
+  "androidSignInTitle": "需要进行身份验证",
+  "@androidSignInTitle": {
+    "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
+  },
+  "aNewVersionOfEnteIsAvailable": "有新版本的 Ente 可供使用。",
+  "aNewVersionOfEnteLockerIsAvailable": "有新版本的 Ente Locker 可使用。",
+  "appearance": "外观",
+  "appIcon": "应用图标",
+  "appleId": "Apple ID",
+  "appLock": "应用锁",
+  "@appLock": {
+    "description": "App lock setting title"
+  },
+  "appLockDescription": "在设备的默认锁定屏幕和带有 PIN 或密码的自定义锁定屏幕之间进行选择。",
+  "@appLockDescription": {
+    "description": "Description of app lock feature"
+  },
+  "appLockNotEnabled": "应用锁未启用",
+  "appLockNotEnabledDescription": "请从“安全”>“应用锁”启用应用锁",
+  "apply": "应用",
+  "applyCodeTitle": "应用代码",
+  "appstoreSubscription": "AppStore 订阅",
+  "architecture": "设计典藏",
+  "archive": "存档",
+  "@archive": {
+    "description": "Action of 'Archiving' an element"
+  },
+  "archiveAlbum": "存档相册",
+  "archiving": "正在存档...",
+  "areThey": "他们是 ",
+  "areYouSureDeleteFiles": "您确定要删除这些文件吗？",
+  "areYouSureRemoveThisFaceFromPerson": "您确定要从此人中移除这个人脸吗？",
+  "areYouSureRemoveThisPersonTag": "您确定要从此人中移除这个人物标签吗？",
+  "areYouSureThatYouWantToLeaveTheFamily": "您确定要离开家庭计划吗？",
+  "areYouSureYouWantToCancel": "您确定要取消吗？",
+  "areYouSureYouWantToChangeYourPlan": "您确定要更改您的计划吗？",
+  "areYouSureYouWantToExit": "您确定要退出吗？",
+  "areYouSureYouWantToIgnoreThesePersons": "您确定要忽略这些人吗？",
+  "areYouSureYouWantToIgnoreThisPerson": "您确定要忽略此人吗？",
+  "areYouSureYouWantToRenew": "您确定要续费吗？",
+  "areYouSureYouWantToResetThisPerson": "您确定要重设此人吗？",
+  "artisticPortraits": "艺术人像",
+  "askAQuestion": "提问",
+  "askCancelReason": "您的订阅已取消。您想分享原因吗？",
+  "authenticateGeneric": "请验证",
+  "authenticating": "正在验证...",
+  "authToChangeLockscreenSetting": "请验证以更改锁屏设置",
+  "authToChangeYourPassword": "请验证以更改密码",
+  "authToConfigureTwofactorAuthentication": "请进行身份验证以配置双重身份认证",
+  "authToExportCodes": "请验证以导出您的代码",
+  "authToInitiateSignIn": "请进行身份验证以启动登录进行备份。",
+  "authToManageLegacy": "请验证身份以管理您的可信联系人",
+  "authToSetBackupPassword": "请验证身份以设置备份密码",
+  "authToUpdateBackupPassword": "请验证身份以更新备份密码",
+  "authToViewPasskey": "请验证身份以查看您的通行密钥",
+  "authToViewPasskeyGeneric": "请验证身份以查看通行密钥",
+  "authToViewSecrets": "请进行身份验证以查看您的密钥",
+  "@authToViewSecrets": {
+    "description": "Message prompting authentication to view secrets"
+  },
+  "authToViewTrashedFiles": "请验证身份以查看您已删除的文件",
+  "authToViewYourActiveSessions": "请验证以查看您的活动会话",
+  "authToViewYourHiddenFiles": "请验证以查看您的隐藏文件",
+  "authToViewYourMemories": "请验证以查看您的回忆",
+  "authToViewYourRecoveryKey": "请验证以查看您的恢复密钥",
+  "autoAddPeople": "自动添加人物",
+  "autoAddToAlbum": "自动添加到相册",
+  "autoCastDialogBody": "您将在此处看到可用的 Cast 设备。",
+  "autoCastiOSPermission": "请确保已在“设置”中为 Ente Photos 应用打开本地网络权限。",
+  "autoLock": "自动锁定",
+  "@autoLock": {
+    "description": "Auto lock setting title"
+  },
+  "autoLockFeatureDescription": "应用程序进入后台后锁定的时间",
+  "@autoLockFeatureDescription": {
+    "description": "Description of auto lock feature"
+  },
+  "automaticallyAnalyzeAndSplitGrouping": "我们将自动分析分组以确定是否有多人在场，并再次将他们分开。这可能需要几秒钟。",
+  "autoPair": "自动配对",
+  "autumnColors": "秋日华彩",
+  "backedUpFolders": "已备份的文件夹",
+  "background": "背景",
+  "backgroundWithThem": "与 {name} 一起欣赏美景",
+  "@backgroundWithThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "backingUpLastSevenDaysPhotos": "正在备份最近 7 天的照片",
+  "backup": "备份",
+  "backupAndSync": "备份和同步",
+  "backupCreated": "已创建备份！",
+  "backupFailed": "备份失败",
+  "backupFile": "备份文件",
+  "backupFolderLabel": "备份文件夹：",
+  "backupLocationChoiceDescription": "您想将备份保存在何处？",
+  "backupOnlyNewPhotos": "仅备份新照片",
+  "backupOnlyNewPhotosAllFoldersSelected": "当前已选择备份所有文件夹。\n\n您可以先继续，或调整已选择的文件夹。",
+  "backupOnlyNewPhotosNoFoldersSelectedContinue": "当前未选择任何文件夹进行备份。\n\n您可以先继续，或调整已选择的文件夹。",
+  "backupOnlyNewPhotosNoFoldersSelectedRequire": "当前未选择任何文件夹进行备份。\n\n请选择文件夹后再继续。",
+  "backupOnlyNewPhotosWarningBody": "你当前正在备份 {formattedDate} 起的照片。请更新设置以备份全部照片。",
+  "@backupOnlyNewPhotosWarningBody": {
+    "description": "Warning shown when backup-only-new is enabled and user changes folders.",
+    "placeholders": {
+      "formattedDate": {
+        "type": "String",
+        "example": "Jan 5, 2026"
+      }
+    }
+  },
+  "backupOverMobileData": "通过移动数据备份",
+  "backupPasswordCleared": "已清除备份密码",
+  "backupPasswordHint": "您的备份将使用此密码加密。",
+  "backupSettings": "备份设置",
+  "backupStatus": "备份状态",
+  "backupStatusDescription": "已备份的项目将显示在此处",
+  "backupToEnte": "备份到 Ente",
+  "backupVideos": "备份视频",
+  "beach": "沙滩与大海",
+  "birthday": "生日",
+  "birthdays": "生日",
+  "blog": "博客",
+  "bothIssuerAndAccountCanNotBeEmpty": "发行人和账户均不能为空",
+  "bringYourFamilyAlong": "带上你的家人一起使用",
+  "browseHelpPages": "浏览帮助页面",
+  "brushColor": "笔刷颜色",
+  "cachedData": "缓存数据",
+  "calculating": "正在计算...",
   "cancel": "取消",
   "@cancel": {
     "description": "Cancel button label"
   },
-  "reportABug": "报告错误",
-  "@reportABug": {
-    "description": "Label for reporting a bug"
+  "cancelOtherSubscription": "请先取消您现有的订阅 {paymentProvider}",
+  "@cancelOtherSubscription": {
+    "description": "The text to display when the user has an existing subscription from a different payment provider",
+    "type": "text",
+    "placeholders": {
+      "paymentProvider": {
+        "example": "Apple",
+        "type": "String"
+      }
+    }
+  },
+  "cancelRecovery": "取消恢复",
+  "cancelSubscription": "取消订阅",
+  "cannotAddMorePhotosAfterBecomingViewer": "{user} 将无法添加更多照片到此相册\n\n他们仍然能够删除他们添加的现有照片",
+  "@cannotAddMorePhotosAfterBecomingViewer": {
+    "placeholders": {
+      "user": {}
+    }
+  },
+  "cannotDeleteSharedFiles": "无法删除共享文件",
+  "cannotMoveToSharedAlbums": "无法移动到共享相册",
+  "cannotMoveToSharedAlbumsMessage": "项目只能添加到共享相册，无法移动。要改为添加吗？",
+  "canNotOpenBody": "抱歉，该相册无法在应用中打开。",
+  "canNotOpenTitle": "无法打开此相册",
+  "canOnlyCreateLinkForFilesOwnedByYou": "只能为您拥有的文件创建链接",
+  "canOnlyRemoveFilesOwnedByYou": "只能删除您拥有的文件",
+  "castAlbum": "投放相册",
+  "castIPMismatchBody": "请确保您的设备与电视处于同一网络。",
+  "castIPMismatchTitle": "投放相册失败",
+  "centerPoint": "中心点",
+  "changeEmail": "修改邮箱",
+  "@changeEmail": {
+    "description": "Change email button label"
+  },
+  "changeLocationOfSelectedItems": "确定要更改所选项目的位置吗？",
+  "changePassword": "修改密码",
+  "changePasswordTitle": "修改密码",
+  "@changePasswordTitle": {
+    "description": "Change password title"
+  },
+  "changePermissions": "更改权限",
+  "changePermissionsQuestion": "要修改权限吗？",
+  "changeYourReferralCode": "更改您的代码",
+  "checkForUpdates": "检查更新",
+  "checkInboxAndSpamFolder": "请检查您的收件箱 (或者是在您的“垃圾邮件”列表内) 以完成验证",
+  "@checkInboxAndSpamFolder": {
+    "description": "Message asking user to check inbox and spam folder"
+  },
+  "checking": "正在检查...",
+  "checkingModels": "正在检查模型...",
+  "checkStatus": "检查状态",
+  "@checkStatus": {
+    "description": "Check status button label"
+  },
+  "chooseBackupLocation": "选择备份位置",
+  "chooseIcon": "选择图标",
+  "city": "城市之中",
+  "citySunsets": "城市落日余晖",
+  "claimedByYou": "你已领取",
+  "cleanedUpSimilarImages": "您已释放了 {size} 的空间",
+  "@cleanedUpSimilarImages": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanUncategorized": "清除未分类的",
+  "cleanUncategorizedDescription": "从“未分类”中删除其他相册中存在的所有文件",
+  "clearBackupFolder": "清除备份文件夹",
+  "clearBackupPassword": "清除备份密码",
+  "clearCaches": "清除缓存",
+  "clearSelection": "清除选择",
+  "clickToInstallOurBestVersionYet": "点击安装我们迄今最好的版本",
+  "close": "关闭",
+  "closeBy": "关闭",
+  "@closeBy": {
+    "description": "Appears in the similar images page, to indicate that the images are close in terms of appearance"
+  },
+  "cloudOnly": "清除离线版本",
+  "clusteringProgress": "聚类进展",
+  "coastalCliffs": "海边峭壁",
+  "codeAppliedPageTitle": "代码已应用",
+  "codeChangeLimitReached": "抱歉，您已达到代码更改的限制。",
+  "codeCopiedToClipboard": "代码已复制到剪贴板",
+  "codeIssuerHint": "发行人",
+  "collabLinkSectionDescription": "允许他人在没有 Ente 账号的情况下添加照片",
+  "collaborator": "协作者",
+  "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum": "协作者可以将照片和视频添加到共享相册中。",
+  "collageLayout": "布局",
+  "collageSaved": "拼贴已保存到相册",
+  "collectionCannotBeEdited": "此集合无法编辑",
+  "collectionCannotBeShared": "此集合无法共享",
+  "collectionDeletedSuccessfully": "集合删除成功",
+  "collectionRenamedSuccessfully": "集合重命名成功",
+  "collectPhotos": "收集照片",
+  "color": "颜色",
+  "colorfulMarkets": "活力市集",
+  "compactMode": "紧凑模式",
+  "comparingImageDetails": "正在比较图像细节...",
+  "confirm": "确认",
+  "@confirm": {
+    "description": "Confirm button label"
+  },
+  "confirm2FADisable": "您确定要禁用双重认证吗？",
+  "confirmAddingTrustedContact": "您即将添加 {email} 作为可信联系人。如果您离开了 {numOfDays} 天，他们将能够恢复您的帐户。",
+  "@confirmAddingTrustedContact": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "me@example.com"
+      },
+      "numOfDays": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  "confirmPassword": "请确认密码",
+  "@confirmPassword": {
+    "description": "Confirm password field label"
+  },
+  "confirmPlanChange": "确认更改计划",
+  "confirmRecoveryKey": "确认恢复密钥",
+  "confirmUpdatingkey": "您确定要更新此密钥吗？",
+  "confirmYourRecoveryKey": "确认您的恢复密钥",
+  "connectToDevice": "连接到设备",
+  "contactDetails": "联系方式",
+  "contactName": "联系人姓名",
+  "contactNotes": "给联系人的留言",
+  "contacts": "联系人",
+  "contactSupport": "联系支持",
+  "@contactSupport": {
+    "description": "Contact support button label"
+  },
+  "continueInMailApp": "在邮件应用中继续",
+  "continueLabel": "继续",
+  "@continueLabel": {
+    "description": "Continue button label"
+  },
+  "convertToAlbum": "转换为相册",
+  "copied": "已复制",
+  "copiedNextToClipboard": "已将下一个代码复制到剪贴板",
+  "copiedToClipboard": "已复制到剪贴板",
+  "copyEmailAddress": "复制电子邮件地址",
+  "@copyEmailAddress": {
+    "description": "Button to copy email address to clipboard"
+  },
+  "copyEmbedHtml": "复制嵌入 HTML",
+  "copyLink": "复制链接",
+  "copypasteThisCodentoYourAuthenticatorApp": "请复制粘贴此代码\n到您的身份验证器应用程序上",
+  "couldNotBackUpTryLater": "我们无法备份您的数据。\n我们将稍后再试。",
+  "couldNotFreeUpSpace": "无法释放空间",
+  "couldNotOpenFile": "无法打开项目：{error}",
+  "@couldNotOpenFile": {
+    "description": "Error message when item cannot be opened",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Permission denied"
+      }
+    }
+  },
+  "couldNotUpdateSubscription": "无法升级订阅",
+  "count": "计数",
+  "cozyCafes": "惬意咖啡角落",
+  "crashAndErrorReporting": "崩溃和错误报告",
+  "crashReporting": "上报崩溃",
+  "create": "创建",
+  "createAccount": "创建账户",
+  "@createAccount": {
+    "description": "Create account button label"
+  },
+  "createAccountTitle": "创建帐户",
+  "createAlbumActionHint": "长按选择照片，然后点击 + 创建相册",
+  "createBackupNow": "立即创建备份",
+  "createCollaborativeLink": "创建协作链接",
+  "createCollage": "创建拼贴",
+  "createCollection": "创建集合",
+  "createNewTag": "创建新标签",
+  "createPublicLink": "创建公开链接",
+  "createStream": "创建流",
+  "creatingLink": "正在创建链接...",
+  "creatingStream": "正在创建流",
+  "credentialName": "账户",
+  "credentialNameHint": "服务名称",
+  "credentialNotes": "附加备注",
+  "crop": "裁剪",
+  "curatedMemories": "精选回忆",
+  "currentBackupFolder": "当前备份文件夹：",
+  "currentlyRunning": "目前正在运行",
+  "custom": "自定义",
+  "@custom": {
+    "description": "Label for setting custom value for link expiry"
   },
   "customEndpoint": "已连接至 {endpoint}",
   "@customEndpoint": {
@@ -67,473 +470,552 @@
       }
     }
   },
-  "save": "保存",
-  "@save": {
-    "description": "Label for save button"
-  },
-  "send": "发送",
-  "@send": {
-    "description": "Label for send button"
-  },
-  "saveOrSendDescription": "您想将其保存到您的内置存储（默认情况下为“下载”文件夹）还是将其发送到其他应用程序？",
-  "@saveOrSendDescription": {
-    "description": "Description text asking user if they want to save to storage or share with other apps"
-  },
-  "saveOnlyDescription": "您想将其保存到您的内置存储中（默认情况下为“下载”文件夹）吗？",
-  "@saveOnlyDescription": {
-    "description": "Description text asking user if they want to save to storage (for platforms that don't support sharing)"
-  },
-  "enterNewEmailHint": "请输入您的新电子邮件地址",
-  "@enterNewEmailHint": {
-    "description": "Hint text for entering new email address"
-  },
-  "email": "电子邮件地址",
-  "@email": {
-    "description": "Email field label"
-  },
-  "verify": "验证",
-  "@verify": {
-    "description": "Verify button label"
-  },
-  "invalidEmailTitle": "无效的电子邮件地址",
-  "@invalidEmailTitle": {
-    "description": "Title for invalid email error dialog"
-  },
-  "invalidEmailMessage": "请输入一个有效的电子邮件地址。",
-  "@invalidEmailMessage": {
-    "description": "Message for invalid email error dialog"
-  },
-  "pleaseWait": "请稍候...",
-  "@pleaseWait": {
-    "description": "Please wait message"
-  },
-  "verifyPassword": "验证密码",
-  "@verifyPassword": {
-    "description": "Verify password button label"
-  },
-  "incorrectPasswordTitle": "密码错误",
-  "@incorrectPasswordTitle": {
-    "description": "Title for incorrect password error"
-  },
-  "pleaseTryAgain": "请重试",
-  "@pleaseTryAgain": {
-    "description": "Message asking user to try again"
-  },
-  "enterPassword": "输入密码",
-  "@enterPassword": {
-    "description": "Enter password field label"
-  },
-  "enterYourPasswordHint": "输入您的密码",
-  "@enterYourPasswordHint": {
-    "description": "Hint for password field"
-  },
-  "activeSessions": "已登录的设备",
-  "@activeSessions": {
-    "description": "Title for active sessions page"
-  },
-  "oops": "哎呀",
-  "@oops": {
-    "description": "Oops error title"
-  },
-  "somethingWentWrongPleaseTryAgain": "出了点问题，请重试",
-  "@somethingWentWrongPleaseTryAgain": {
-    "description": "Generic error message"
-  },
-  "thisWillLogYouOutOfThisDevice": "这将使您登出该设备！",
-  "@thisWillLogYouOutOfThisDevice": {
-    "description": "Warning message for logging out of current device"
-  },
-  "thisWillLogYouOutOfTheFollowingDevice": "这将使您登出以下设备：",
-  "@thisWillLogYouOutOfTheFollowingDevice": {
-    "description": "Warning message for logging out of another device"
-  },
-  "terminateSession": "是否终止会话？",
-  "@terminateSession": {
-    "description": "Title for terminate session dialog"
-  },
-  "terminate": "终止",
-  "@terminate": {
-    "description": "Terminate button label"
-  },
-  "thisDevice": "此设备",
-  "@thisDevice": {
-    "description": "Label for current device"
-  },
-  "createAccount": "创建账户",
-  "@createAccount": {
-    "description": "Create account button label"
-  },
-  "weakStrength": "弱",
-  "@weakStrength": {
-    "description": "Weak password strength label"
-  },
-  "moderateStrength": "中",
-  "@moderateStrength": {
-    "description": "Moderate password strength label"
-  },
-  "strongStrength": "强",
-  "@strongStrength": {
-    "description": "Strong password strength label"
+  "customOrder": "自定义排序",
+  "darkTheme": "深色",
+  "data": "数据",
+  "day": "日",
+  "dayToday": "今天",
+  "dayYesterday": "昨天",
+  "declineTrustInvite": "拒绝邀请",
+  "decrypting": "解密中...",
+  "decryptingVideo": "正在解密视频...",
+  "deduplicateCodes": "删除重复代码",
+  "deduplicateFiles": "文件去重",
+  "delete": "删除",
+  "@delete": {
+    "description": "Delete button label"
   },
   "deleteAccount": "删除账户",
   "@deleteAccount": {
     "description": "Delete account button label"
   },
-  "deleteAccountQuery": "我们很抱歉看到您离开。您面临一些问题？",
-  "@deleteAccountQuery": {
-    "description": "Message asking user why they want to delete account"
-  },
-  "yesSendFeedbackAction": "是，发送反馈",
-  "@yesSendFeedbackAction": {
-    "description": "Button to confirm sending feedback"
-  },
-  "noDeleteAccountAction": "否，删除账户",
-  "@noDeleteAccountAction": {
-    "description": "Button to proceed with account deletion"
-  },
-  "initiateAccountDeleteTitle": "请进行身份验证以启动账户删除",
-  "@initiateAccountDeleteTitle": {
-    "description": "Title for authentication dialog before account deletion"
-  },
-  "confirmAccountDeleteTitle": "确认删除账户",
-  "@confirmAccountDeleteTitle": {
-    "description": "Title for account deletion confirmation dialog"
-  },
-  "confirmAccountDeleteMessage": "如果您使用其他 Ente 应用程序，该账户将会与其他应用程序链接。\n\n在所有 Ente 应用程序中，您上传的数据将被安排用于删除，并且您的账户将被永久删除。",
-  "@confirmAccountDeleteMessage": {
-    "description": "Message warning about account deletion consequences"
-  },
-  "delete": "删除",
-  "@delete": {
-    "description": "Delete button label"
-  },
-  "createNewAccount": "创建新账号",
-  "@createNewAccount": {
-    "description": "Create new account button label"
-  },
-  "password": "密码",
-  "@password": {
-    "description": "Password field label"
-  },
-  "confirmPassword": "请确认密码",
-  "@confirmPassword": {
-    "description": "Confirm password field label"
-  },
-  "passwordStrength": "密码强度： {passwordStrengthValue}",
-  "@passwordStrength": {
-    "description": "Text to indicate the password strength",
+  "deleteAlbum": "删除相册",
+  "deleteAlbumDialog": "也删除此相册中存在的照片(和视频)，从 <bold>他们所加入的所有</bold> 其他相册？",
+  "deleteAlbumQuestion": "删除此相册？",
+  "deleteAlbumsDialogBody": "这将删除所有空相册。 当您想减少相册列表的混乱时，这很有用。",
+  "deleteAll": "全部删除",
+  "deleteCodeAuthMessage": "删除代码需要身份验证",
+  "deleteCodeMessage": "您确定要删除此代码吗？此操作不可逆。",
+  "deleteCodeTitle": "要删除代码吗？",
+  "deleteDuplicates": "删除重复项",
+  "deleteEmptyAlbums": "删除空相册",
+  "deleteEmptyAlbumsWithQuestionMark": "要删除空相册吗？",
+  "deleteFiles": "删除文件",
+  "deleteFromBoth": "同时从两者中删除",
+  "deleteFromDevice": "从设备中删除",
+  "deleteFromDeviceQuestion": "从设备中删除？",
+  "deleteFromEnte": "从 Ente 中删除",
+  "deleteItemCount": "{count, plural, other{删除 {count} 个项目}}",
+  "@deleteItemCount": {
     "placeholders": {
-      "passwordStrengthValue": {
-        "description": "The strength of the password as a string",
-        "type": "String",
-        "example": "Weak or Moderate or Strong"
+      "count": {}
+    }
+  },
+  "deleteLink": "删除链接",
+  "deleteLinkQuestion": "删除链接？",
+  "deleteLocation": "删除位置",
+  "deleteMultipleAlbumDialog": "也删除这{count}个相册中的照片（和视频）从它们所在的<bold>所有</bold>其他相册中？",
+  "@deleteMultipleAlbumDialog": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deletePhotos": "删除照片",
+  "deletePhotosWithSize": "删除 {count} 张照片 ({size})",
+  "@deletePhotosWithSize": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
       }
     }
   },
-  "hearUsWhereTitle": "您是怎么知道 Ente 的？（可选）",
-  "@hearUsWhereTitle": {
-    "description": "Title asking how user heard about Ente"
-  },
-  "hearUsExplanation": "我们不跟踪应用程序安装情况。如果您告诉我们您是在哪里找到我们的，将会有所帮助！",
-  "@hearUsExplanation": {
-    "description": "Explanation for asking how user heard about Ente"
-  },
-  "signUpTerms": "我同意 <u-terms>服务条款</u-terms> 和 <u-policy>隐私政策</u-policy>",
-  "@signUpTerms": {
-    "description": "Terms agreement text for sign up"
-  },
-  "termsOfServicesTitle": "服务条款",
-  "@termsOfServicesTitle": {
-    "description": "Terms of service title"
-  },
-  "privacyPolicyTitle": "隐私政策",
-  "@privacyPolicyTitle": {
-    "description": "Privacy policy title"
-  },
-  "ackPasswordLostWarning": "我明白，如果我丢失密码，我可能会丢失我的数据，因为我的数据是 <underline>端到端加密的</underline>。",
-  "@ackPasswordLostWarning": {
-    "description": "Warning about password loss"
-  },
-  "encryption": "加密",
-  "@encryption": {
-    "description": "Encryption label"
-  },
-  "logInLabel": "登录",
-  "@logInLabel": {
-    "description": "Log in button label"
-  },
-  "welcomeBack": "欢迎回来！",
-  "@welcomeBack": {
-    "description": "Welcome back message"
-  },
-  "loginTerms": "点击登录后，我同意 <u-terms>服务条款</u-terms> 和 <u-policy>隐私政策</u-policy>",
-  "@loginTerms": {
-    "description": "Terms agreement text for login"
-  },
-  "noInternetConnection": "无互联网连接",
-  "@noInternetConnection": {
-    "description": "No internet connection error message"
-  },
-  "pleaseCheckYourInternetConnectionAndTryAgain": "请检查您的互联网连接，然后重试。",
-  "@pleaseCheckYourInternetConnectionAndTryAgain": {
-    "description": "Message asking user to check internet connection"
-  },
-  "verificationFailedPleaseTryAgain": "验证失败，请再试一次",
-  "@verificationFailedPleaseTryAgain": {
-    "description": "Verification failed error message"
-  },
-  "recreatePasswordTitle": "重新创建密码",
-  "@recreatePasswordTitle": {
-    "description": "Title for recreate password dialog"
-  },
-  "recreatePasswordBody": "当前设备的功能不足以验证您的密码，但我们可以以适用于所有设备的方式重新生成。\n\n请使用您的恢复密钥登录并重新生成您的密码（如果您愿意，可以再次使用相同的密码）。",
-  "@recreatePasswordBody": {
-    "description": "Body text for recreate password dialog"
-  },
-  "useRecoveryKey": "使用恢复密钥",
-  "@useRecoveryKey": {
-    "description": "Use recovery key button label"
-  },
-  "forgotPassword": "忘记密码",
-  "@forgotPassword": {
-    "description": "Forgot password link label"
-  },
-  "changeEmail": "修改邮箱",
-  "@changeEmail": {
-    "description": "Change email button label"
-  },
-  "verifyEmail": "验证电子邮件",
-  "@verifyEmail": {
-    "description": "Verify email title"
-  },
-  "weHaveSendEmailTo": "我们已经发送邮件到 <green>{email}</green>",
-  "@weHaveSendEmailTo": {
-    "description": "Text to indicate that we have sent a mail to the user",
+  "deleteProgress": "正在删除 {currentlyDeleting} /共 {totalCount}",
+  "@deleteProgress": {
     "placeholders": {
-      "email": {
-        "description": "The email address of the user",
-        "type": "String",
-        "example": "example@ente.com"
+      "currentlyDeleting": {},
+      "totalCount": {}
+    }
+  },
+  "deleteSharedAlbum": "要删除共享相册吗？",
+  "deleteSharedAlbumDialogBody": "将为所有人删除相册\n\n您将无法访问此相册中他人拥有的共享照片",
+  "deleteSuggestions": "删除建议",
+  "deleteTagMessage": "您确定要删除此标签吗？此操作是不可逆的。",
+  "deleteTagTitle": "要删除标签吗？",
+  "deleteUnparseableCodeMessage": "这将从 Auth 中永久删除此代码，不会将其移至回收站。",
+  "deleteUnparseableCodeTitle": "要删除无法解析的代码吗？",
+  "deleteWithCount": "删除 ({count}) 项",
+  "@deleteWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },
-  "toResetVerifyEmail": "要重置您的密码，请先验证您的电子邮件。",
-  "@toResetVerifyEmail": {
-    "description": "Message asking user to verify email before password reset"
+  "deletingDash": "正在删除 - ",
+  "deletingFile": "正在删除项目…",
+  "deletingShareLink": "正在删除链接...",
+  "deselectAll": "取消全选",
+  "desertDreams": "沙漠之梦",
+  "designedForFamilies": "专为家庭设计",
+  "details": "详情",
+  "developerSettings": "开发者设置",
+  "@developerSettings": {
+    "description": "Label for developer settings"
   },
-  "checkInboxAndSpamFolder": "请检查您的收件箱 (或者是在您的“垃圾邮件”列表内) 以完成验证",
-  "@checkInboxAndSpamFolder": {
-    "description": "Message asking user to check inbox and spam folder"
-  },
-  "tapToEnterCode": "点击以输入代码",
-  "@tapToEnterCode": {
-    "description": "Hint for entering verification code"
-  },
-  "sendEmail": "发送电子邮件",
-  "resendEmail": "重新发送电子邮件",
-  "@resendEmail": {
-    "description": "Resend email button label"
-  },
-  "passKeyPendingVerification": "仍需验证",
-  "@passKeyPendingVerification": {
-    "description": "Message when passkey verification is pending"
-  },
-  "loginSessionExpired": "会话已过期",
-  "@loginSessionExpired": {
-    "description": "Login session expired title"
-  },
-  "loginSessionExpiredDetails": "您的会话已过期。请重新登录。",
-  "@loginSessionExpiredDetails": {
-    "description": "Login session expired details"
-  },
-  "passkeyAuthTitle": "通行密钥验证",
-  "@passkeyAuthTitle": {
-    "description": "Passkey authentication title"
-  },
-  "waitingForVerification": "等待验证...",
-  "@waitingForVerification": {
-    "description": "Waiting for verification message"
-  },
-  "tryAgain": "请再试一次",
-  "@tryAgain": {
-    "description": "Try again button label"
-  },
-  "checkStatus": "检查状态",
-  "@checkStatus": {
-    "description": "Check status button label"
-  },
-  "loginWithTOTP": "使用 TOTP 登录",
-  "@loginWithTOTP": {
-    "description": "Login with TOTP button label"
-  },
-  "recoverAccount": "恢复账户",
-  "@recoverAccount": {
-    "description": "Recover account button label"
-  },
-  "setPasswordTitle": "设置密码",
-  "@setPasswordTitle": {
-    "description": "Set password title"
-  },
-  "changePasswordTitle": "修改密码",
-  "@changePasswordTitle": {
-    "description": "Change password title"
-  },
-  "resetPasswordTitle": "重置密码",
-  "@resetPasswordTitle": {
-    "description": "Reset password title"
-  },
-  "encryptionKeys": "加密密钥",
-  "@encryptionKeys": {
-    "description": "Encryption keys title"
-  },
-  "enterPasswordToEncrypt": "输入我们可以用来加密您的数据的密码",
-  "@enterPasswordToEncrypt": {
-    "description": "Prompt to enter password for encryption"
-  },
-  "enterNewPasswordToEncrypt": "输入我们可以用来加密您的数据的新密码",
-  "@enterNewPasswordToEncrypt": {
-    "description": "Prompt to enter new password for encryption"
-  },
-  "passwordWarning": "我们不储存这个密码，所以如果忘记， <underline>我们不能解密您的数据</underline>",
-  "@passwordWarning": {
-    "description": "Warning about password storage"
-  },
-  "howItWorks": "工作原理",
-  "@howItWorks": {
-    "description": "How it works button label"
-  },
-  "generatingEncryptionKeys": "正在生成加密密钥...",
-  "@generatingEncryptionKeys": {
-    "description": "Generating encryption keys message"
-  },
-  "passwordChangedSuccessfully": "密码修改成功",
-  "@passwordChangedSuccessfully": {
-    "description": "Password changed successfully message"
-  },
-  "signOutFromOtherDevices": "从其他设备登出",
-  "@signOutFromOtherDevices": {
-    "description": "Sign out from other devices title"
-  },
-  "signOutOtherBody": "如果您认为有人可能知道您的密码，您可以强制所有其他使用您账户的设备登出。",
-  "@signOutOtherBody": {
-    "description": "Sign out other devices explanation"
-  },
-  "signOutOtherDevices": "登出其他设备",
-  "@signOutOtherDevices": {
-    "description": "Sign out other devices button label"
-  },
-  "doNotSignOut": "不要登出",
-  "@doNotSignOut": {
-    "description": "Do not sign out button label"
-  },
-  "generatingEncryptionKeysTitle": "正在生成加密密钥...",
-  "@generatingEncryptionKeysTitle": {
-    "description": "Generating encryption keys title"
-  },
-  "continueLabel": "继续",
-  "@continueLabel": {
-    "description": "Continue button label"
-  },
-  "insecureDevice": "设备不安全",
-  "@insecureDevice": {
-    "description": "Insecure device warning title"
-  },
-  "sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": "抱歉，我们无法在此设备上生成安全密钥。\n\n请使用其他设备注册。",
-  "@sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": {
-    "description": "Error message for insecure device"
-  },
-  "recoveryKeyCopiedToClipboard": "恢复密钥已复制到剪贴板",
-  "@recoveryKeyCopiedToClipboard": {
-    "description": "Recovery key copied message"
-  },
-  "recoveryKey": "恢复密钥",
-  "@recoveryKey": {
-    "description": "Recovery key label"
-  },
-  "recoveryKeyOnForgotPassword": "如果您忘记了密码，恢复数据的唯一方法就是使用此密钥。",
-  "@recoveryKeyOnForgotPassword": {
-    "description": "Recovery key importance explanation"
-  },
-  "recoveryKeySaveDescription": "我们不会存储此密钥，请将此24个单词密钥保存在一个安全的地方。",
-  "@recoveryKeySaveDescription": {
-    "description": "Recovery key save description"
-  },
-  "doThisLater": "稍后再做",
-  "@doThisLater": {
-    "description": "Do this later button label"
-  },
-  "saveKey": "保存密钥",
-  "@saveKey": {
-    "description": "Save key button label"
-  },
-  "recoveryKeySaved": "恢复密钥已保存在下载文件夹中！",
-  "@recoveryKeySaved": {
-    "description": "Recovery key saved confirmation message"
-  },
-  "noRecoveryKeyTitle": "没有恢复密钥吗？",
-  "@noRecoveryKeyTitle": {
-    "description": "No recovery key title"
-  },
-  "twoFactorAuthTitle": "两步验证",
-  "@twoFactorAuthTitle": {
-    "description": "Two-factor authentication title"
-  },
-  "enterCodeHint": "从你的身份验证器应用中\n输入6位数字代码",
-  "@enterCodeHint": {
-    "description": "Hint for entering 2FA code"
-  },
-  "lostDeviceTitle": "丢失了设备吗？",
-  "@lostDeviceTitle": {
-    "description": "Lost device title"
-  },
-  "enterRecoveryKeyHint": "输入您的恢复密钥",
-  "@enterRecoveryKeyHint": {
-    "description": "Hint for entering recovery key"
-  },
-  "recover": "恢复",
-  "@recover": {
-    "description": "Recover button label"
-  },
-  "loggingOut": "正在登出...",
-  "@loggingOut": {
-    "description": "Message shown while logging out"
-  },
-  "immediately": "立即",
-  "@immediately": {
-    "description": "Immediately option for auto lock timing"
-  },
-  "appLock": "应用锁",
-  "@appLock": {
-    "description": "App lock setting title"
-  },
-  "autoLock": "自动锁定",
-  "@autoLock": {
-    "description": "Auto lock setting title"
-  },
-  "noSystemLockFound": "未找到系统锁",
-  "@noSystemLockFound": {
-    "description": "Error when no system lock is found"
+  "developerSettingsWarning": "您确定要修改开发者设置吗？",
+  "deviceLock": "设备锁",
+  "@deviceLock": {
+    "description": "Device lock option title"
   },
   "deviceLockEnablePreSteps": "要启用设备锁，请在系统设置中设置设备密码或屏幕锁。",
   "@deviceLockEnablePreSteps": {
     "description": "Instructions for enabling device lock"
   },
-  "appLockDescription": "在设备的默认锁定屏幕和带有 PIN 或密码的自定义锁定屏幕之间进行选择。",
-  "@appLockDescription": {
-    "description": "Description of app lock feature"
+  "deviceNotFound": "未发现设备",
+  "didYouKnow": "您知道吗？",
+  "digits": "数字",
+  "disableDownloadWarningBody": "查看者仍然可以使用外部工具截图或保存您的照片副本",
+  "disableDownloadWarningTitle": "请注意",
+  "disableLinkMessage": "这将删除用于访问\"{albumName}\"的公开链接。",
+  "@disableLinkMessage": {
+    "placeholders": {
+      "albumName": {}
+    }
   },
-  "deviceLock": "设备锁",
-  "@deviceLock": {
-    "description": "Device lock option title"
+  "disableTwofactor": "禁用双重认证",
+  "disablingTwofactorAuthentication": "正在禁用双重认证...",
+  "discardChanges": "放弃",
+  "discover": "发现",
+  "@discover": {
+    "description": "The text to display for the discover section under which we show receipts, screenshots, sunsets, greenery, etc."
   },
-  "pinLock": "Pin 锁定",
-  "@pinLock": {
-    "description": "PIN lock option title"
+  "discover_babies": "婴儿",
+  "discover_celebrations": "节日",
+  "discover_food": "食物",
+  "discover_greenery": "绿植",
+  "discover_hills": "山",
+  "discover_identity": "身份",
+  "discover_memes": "表情包",
+  "discover_notes": "备注",
+  "discover_pets": "宠物",
+  "discover_qr_codes": "二维码",
+  "discover_receipts": "收据",
+  "discover_screenshots": "屏幕截图",
+  "discover_selfies": "自拍",
+  "discover_sunset": "日落",
+  "discover_visiting_cards": "访问卡",
+  "discover_wallpapers": "壁纸",
+  "dismiss": "忽略",
+  "distanceInKMUnit": "公里",
+  "@distanceInKMUnit": {
+    "description": "Unit for distance in km"
   },
-  "autoLockFeatureDescription": "应用程序进入后台后锁定的时间",
-  "@autoLockFeatureDescription": {
-    "description": "Description of auto lock feature"
+  "documentSearchHint": "搜索您的文档",
+  "documentsHint": "文档",
+  "doesGroupContainMultiplePeople": "这个分组包含多个人吗？",
+  "doNotSignOut": "不要登出",
+  "@doNotSignOut": {
+    "description": "Do not sign out button label"
   },
+  "dontSave": "不保存",
+  "doThisLater": "稍后再做",
+  "@doThisLater": {
+    "description": "Do this later button label"
+  },
+  "doubleTapToViewHiddenCode": "您可以双击条目来查看代码",
+  "download": "下载",
+  "downloadApplicationUpdate": "下载更新",
+  "downloadUpdate": "下载",
+  "doYouWantToDiscardTheEditsYouHaveMade": "您想要放弃您所做的编辑吗？",
+  "draw": "绘制",
+  "dropSupportEmail": "请从您注册的邮箱发送一封邮件到 {supportEmail}",
+  "@dropSupportEmail": {
+    "placeholders": {
+      "supportEmail": {
+        "description": "The support email address",
+        "type": "String",
+        "example": "support@ente.com"
+      }
+    }
+  },
+  "duplicateCodes": "重复代码",
+  "duplicateFileCountWithStorageSaved": "您已经清理了 {count, plural, other{{count} 个重复文件}}, 释放了 ({storageSaved}!)",
+  "@duplicateFileCountWithStorageSaved": {
+    "description": "The text to display when the user has successfully cleaned up duplicate files",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "1",
+        "type": "int"
+      },
+      "storageSaved": {
+        "example": "1.2 GB",
+        "type": "String"
+      }
+    }
+  },
+  "duplicateItemsGroup": "{count} 个文件，每个文件 {formattedSize}",
+  "@duplicateItemsGroup": {
+    "description": "Display the number of duplicate files and their size",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "12",
+        "type": "int"
+      },
+      "formattedSize": {
+        "example": "2.3 MB",
+        "type": "String"
+      }
+    }
+  },
+  "earned": "已获得",
+  "earnMoreSpace": "获取更多空间！",
+  "edit": "编辑",
+  "editAutoAddPeople": "编辑自动添加人物",
+  "editCodeAuthMessage": "编辑代码需要身份验证",
+  "editEmailAlreadyLinked": "此电子邮件已与{name}关联。",
+  "@editEmailAlreadyLinked": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "editLocation": "编辑位置",
+  "editOrder": "编辑顺序",
+  "editPerson": "编辑人物",
+  "editSecret": "编辑私密信息",
+  "@editSecret": {
+    "description": "Title shown when editing an existing secret"
+  },
+  "editsSaved": "已保存编辑",
+  "editsToLocationWillOnlyBeSeenWithinEnte": "对位置的编辑只能在 Ente 内看到",
+  "editTag": "编辑标签",
+  "editTime": "修改时间",
+  "eligible": "符合资格",
+  "email": "电子邮件地址",
+  "@email": {
+    "description": "Email field label"
+  },
+  "emailAddress": "电子邮件地址",
+  "emailChangedTo": "电子邮件已更改为 {newEmail}",
+  "@emailChangedTo": {
+    "description": "Message when email has been changed",
+    "placeholders": {
+      "newEmail": {
+        "description": "The new email address",
+        "type": "String",
+        "example": "new@example.com"
+      }
+    }
+  },
+  "emailHint": "请输入您的电子邮件地址",
+  "emailNoEnteAccountPhotos": "{email} 没有 Ente 帐户。\n\n向他们发出共享照片的邀请。",
+  "@emailNoEnteAccountPhotos": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "emailUsMessage": "请给我们发送电子邮件至 {email}",
+  "@emailUsMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "emailVerificationEnableWarning": "为避免被锁在您的账户之外，请在启用电子邮件验证之前确保在 Ente Auth 之外存储电子邮件双重认证的副本。",
+  "emailYourLogs": "通过电子邮件发送您的日志",
+  "@emailYourLogs": {
+    "description": "Title for emailing logs dialog"
+  },
+  "embracingThem": "拥抱 {name}",
+  "@embracingThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "emergencyContact": "紧急联系人",
+  "empty": "清空",
+  "emptyTrash": "清空回收站",
+  "emptyTrashQuestion": "要清空回收站吗？",
+  "enable": "启用",
+  "enableAutomaticBackups": "自动备份",
+  "enableBackupsIosInstruction": "要在 iOS 上启用备份，请在“文件”中选择一个文件夹（例如“我的 iPhone 上”）。",
+  "enableComment": "评论与表情回应",
+  "enabled": "已启用",
+  "enableMaps": "启用地图",
+  "encrypted": "已加密",
+  "encryptingBackup": "正在加密备份...",
+  "encryptionKeys": "加密密钥",
+  "@encryptionKeys": {
+    "description": "Encryption keys title"
+  },
+  "endpointUpdatedMessage": "端点更新成功",
+  "@endpointUpdatedMessage": {
+    "description": "Success message when endpoint is updated"
+  },
+  "ente": "Ente",
+  "enterAlbumName": "输入相册名称",
+  "enterAnEmailAddress": "请输入邮箱",
+  "enterAValidEmailAddress": "请输入有效的邮箱地址",
+  "enterCode": "输入代码",
+  "enterCodeDescription": "输入您的朋友提供的代码来为您申请免费存储",
+  "enterCodeHint": "从你的身份验证器应用中\n输入6位数字代码",
+  "@enterCodeHint": {
+    "description": "Hint for entering 2FA code"
+  },
+  "enterDetailsManually": "手动输入详细信息",
+  "enterFileName": "请输入文件名",
+  "enterName": "输入名称",
+  "enterNewEmailHint": "请输入您的新电子邮件地址",
+  "@enterNewEmailHint": {
+    "description": "Hint text for entering new email address"
+  },
+  "enterNewPasswordToEncrypt": "输入我们可以用来加密您的数据的新密码",
+  "@enterNewPasswordToEncrypt": {
+    "description": "Prompt to enter new password for encryption"
+  },
+  "enterPassword": "输入密码",
+  "@enterPassword": {
+    "description": "Enter password field label"
+  },
+  "enterPasswordToAegisVault": "请输入 Aegis 密码库的密码",
+  "enterPasswordToDecrypt2FASBackup": "请输入密码以解密 2FAS 备份",
+  "enterPasswordToDecryptAndOTP": "请输入密码以解密 andOTP 备份",
+  "enterPasswordToEncrypt": "输入我们可以用来加密您的数据的密码",
+  "@enterPasswordToEncrypt": {
+    "description": "Prompt to enter password for encryption"
+  },
+  "enterRecoveryKeyHint": "输入您的恢复密钥",
+  "@enterRecoveryKeyHint": {
+    "description": "Hint for entering recovery key"
+  },
+  "enterReferralCode": "输入推荐代码",
+  "enterThe6digitCodeFromnyourAuthenticatorApp": "从你的身份验证器应用中\n输入6位数字代码",
+  "enterYourNewEmailAddress": "输入您的新电子邮件地址",
+  "enterYourPassword": "输入您的密码",
+  "enterYourPasswordHint": "输入您的密码",
+  "@enterYourPasswordHint": {
+    "description": "Hint for password field"
+  },
+  "enterYourRecoveryKey": "输入您的恢复密钥",
+  "error": "错误",
+  "@error": {
+    "description": "Generic error title"
+  },
+  "errorGenericBody": "导入时发生意外错误。",
+  "errorGenericTitle": "出错了",
+  "errorInvalidQRCodeBody": "扫描的二维码不是有效的双重认证账户。",
+  "errorNoQRCode": "未找到二维码",
+  "exif": "EXIF",
+  "export": "导出",
+  "exportCodes": "导出代码",
+  "exportDialogDesc": "加密导出将由您选择的密码保护。",
+  "exportLogs": "导出日志",
+  "@exportLogs": {
+    "description": "Button to export logs"
+  },
+  "exportWarningDesc": "导出的文件包含敏感信息。请安全存储。",
+  "exportYourData": "导出您的数据",
+  "extraPhotosFound": "发现额外照片",
+  "faceNotClusteredYet": "人脸尚未聚类，请稍后再来",
+  "facesTimelineAppBarTitle": "和 TA 的回忆",
+  "@facesTimelineAppBarTitle": {
+    "description": "Faces timeline page title shown in the app bar"
+  },
+  "facesTimelineCaptionYearsAgo": "{count, plural, other{# 年前}}",
+  "@facesTimelineCaptionYearsAgo": {
+    "description": "Caption for frames when birthdate is unknown, expressing time difference",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Years ago"
+      }
+    }
+  },
+  "facesTimelineCaptionYearsOld": "{name} 已经 {count, plural, other{{count} 岁啦}}",
+  "@facesTimelineCaptionYearsOld": {
+    "description": "Caption for frames when birthdate is known, describing the person's age",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of years old"
+      },
+      "name": {
+        "type": "String",
+        "description": "Person's name"
+      }
+    }
+  },
+  "facesTimelinePlaybackPause": "暂停",
+  "@facesTimelinePlaybackPause": {
+    "description": "Tooltip or semantics label for the pause button"
+  },
+  "facesTimelinePlaybackPlay": "播放",
+  "@facesTimelinePlaybackPlay": {
+    "description": "Tooltip or semantics label for the play button"
+  },
+  "facesTimelineUnavailable": "和 TA 们的回忆正在准备中……",
+  "@facesTimelineUnavailable": {
+    "description": "Fallback message when the Memory Lane cannot be displayed yet"
+  },
+  "faceThumbnailGenerationFailed": "无法生成人脸缩略图",
+  "failedToApplyCode": "无法使用此代码",
+  "failedToCancel": "取消失败",
+  "failedToDecrypt2FASExport": "解密 2FAS 导出失败",
+  "failedToDecryptAegisVault": "解密 Aegis 密码库失败",
+  "failedToDecryptAndOTPBackup": "解密 andOTP 备份失败",
+  "failedToDownloadVideo": "视频下载失败",
+  "failedToFetchActiveSessions": "无法获取活动会话",
+  "@failedToFetchActiveSessions": {
+    "description": "In session page, warn user (in toast) that active sessions could not be fetched."
+  },
+  "failedToFetchOriginalForEdit": "无法获取原始编辑",
+  "failedToFetchReferralDetails": "无法获取引荐详细信息。 请稍后再试。",
+  "failedToLoadAlbums": "加载相册失败",
+  "failedToRefreshStripeSubscription": "刷新订阅失败",
+  "failedToRenew": "续费失败",
+  "failedToSaveFilesOffline": "{count, plural, one{{count} 个文件未能离线保存} other{{count} 个文件未能离线保存}}",
+  "@failedToSaveFilesOffline": {
+    "description": "Failure message when files could not be saved offline",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "failedToVerifyPaymentStatus": "验证支付状态失败",
+  "family": "家庭",
+  "familyMoments": "家庭时光",
+  "faq": "常见问题",
+  "@faq": {
+    "description": "FAQ link label"
+  },
+  "faqs": "常见问题",
+  "favorite": "收藏",
+  "feastingWithThem": "与 {name} 的盛宴",
+  "@feastingWithThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "featureBackupCodes": "端到端加密\n备份与同步",
+  "featureOpenSource": "开源且经\n安全专家审计",
+  "featureSearchEtc": "搜索、标签、分享、\n下一个代码等等",
+  "feedToEngageWithFamily": "与家人互动的信息流",
+  "festivities": "节日欢庆",
+  "fileAnalysisFailed": "无法分析文件",
+  "fileDeletedSuccessfully": "项目删除成功",
+  "fileInfoAddDescHint": "添加说明...",
+  "fileNotUploadedYet": "文件尚未上传",
+  "filesAddedByYouWillBeRemovedFromTheCollection": "您添加的项目将从集合中移除",
+  "filesAvailableOffline": "{count, plural, one{{count} 个文件已离线保存} other{{count} 个文件已离线保存}}",
+  "@filesAvailableOffline": {
+    "description": "Success message when files are saved offline",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "filesAvailableOfflinePartial": "{successCount, plural, one{{successCount} 个文件已离线保存} other{{successCount} 个文件已离线保存}}, {failureCount, plural, one{{failureCount} 个文件未能离线保存} other{{failureCount} 个文件未能离线保存}}",
+  "@filesAvailableOfflinePartial": {
+    "description": "Partial success message for offline save",
+    "placeholders": {
+      "failureCount": {
+        "type": "int",
+        "example": "1"
+      },
+      "successCount": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "fileSavedToGallery": "文件已保存到相册",
+  "filesDeleted": "文件已删除",
+  "filesRemovedFromOffline": "{count, plural, one{{count} 个文件已去除离线状态} other{{count} 个文件已去除离线状态}}",
+  "@filesRemovedFromOffline": {
+    "description": "Success message when offline copies are removed",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "filesSavedToGallery": "多个文件已保存到相册",
+  "fileTypes": "文件类型",
+  "filter": "筛选",
+  "findingSimilarImages": "正在寻找相似图片...",
+  "findSimilarImages": "查找相似图片",
+  "findThemQuickly": "快速找到它们",
+  "@findThemQuickly": {
+    "description": "Subtitle to indicate that the user can find people quickly by name"
+  },
+  "fireworks": "烟火终章",
+  "flip": "上下翻转",
+  "flowers": "绽放之美",
+  "focusOnSearchBar": "应用启动后聚焦搜索",
+  "font": "字体",
+  "food": "美食盛宴",
+  "forestTrails": "森林漫步",
+  "forgotPassword": "忘记密码",
+  "@forgotPassword": {
+    "description": "Forgot password link label"
+  },
+  "forgotRecoveryKey": "丢失恢复密钥？",
+  "free10GB": "<bold-green>ente</bold-green> Photos 上 10GB 免费空间",
+  "freeStorageOffer": "购买 <bold-green>ente</bold-green> Photos 可享受 10% 优惠",
+  "freeStorageOfferDescription": "使用优惠码“AUTH”可享受首年 10% 折扣",
+  "freeTrial": "免费试用",
+  "freeUpAmount": "释放 {sizeInMBorGB}",
+  "@freeUpAmount": {
+    "placeholders": {
+      "sizeInMBorGB": {}
+    }
+  },
+  "freeUpDeviceSpace": "释放设备空间",
+  "freeUpSpace": "释放空间",
+  "gallery": "图库",
+  "galleryMemoryLimitInfo": "在图库中显示最多1000个回忆",
+  "general": "通用",
+  "generatingEncryptionKeys": "正在生成加密密钥...",
+  "@generatingEncryptionKeys": {
+    "description": "Generating encryption keys message"
+  },
+  "generatingEncryptionKeysTitle": "正在生成加密密钥...",
+  "@generatingEncryptionKeysTitle": {
+    "description": "Generating encryption keys title"
+  },
+  "getInTouch": "联系我们",
+  "getStarted": "开始",
+  "gettingReady": "准备就绪",
+  "gettingStarted": "入门指南",
+  "gettingStartedDesc": "安装 Locker、创建账户并保存您的第一个项目",
+  "giveUsAStarOnGithub": "在 GitHub 上给我们一个星标",
+  "googlePlayId": "Google Play ID",
+  "grantFullAccessPrompt": "请在手机“设置”中授权软件访问所有照片",
+  "grantPermission": "授予权限",
+  "greenery": "绿色生活",
+  "groupBy": "分组依据",
+  "groupByDay": "天",
+  "guestView": "访客视图",
+  "guestViewEnablePreSteps": "要启用访客视图，请在系统设置中设置设备密码或屏幕锁。",
+  "happyBirthday": "生日快乐！ 🥳",
+  "hearUsWhereOptionalTitle": "您是怎么知道 Ente 的？（可选）",
+  "@hearUsWhereOptionalTitle": {
+    "description": "Title asking how user heard about Ente"
+  },
+  "help": "帮助",
+  "helpAndSupport": "帮助和支持",
+  "hidden": "已隐藏",
+  "hide": "隐藏",
   "hideContent": "隐藏内容",
   "@hideContent": {
     "description": "Hide content setting title"
@@ -546,46 +1028,767 @@
   "@hideContentDescriptioniOS": {
     "description": "Description of hide content feature on iOS"
   },
-  "tooManyIncorrectAttempts": "错误的尝试次数过多",
-  "@tooManyIncorrectAttempts": {
-    "description": "Message shown when too many incorrect attempts are made"
+  "hideFromMemories": "从回忆中隐藏",
+  "hideSharedItemsFromHomeGallery": "隐藏主页图库中的共享项目",
+  "hiding": "正在隐藏...",
+  "hikingWithThem": "与 {name} 徒步",
+  "@hikingWithThem": {
+    "placeholders": {
+      "name": {}
+    }
   },
-  "tapToUnlock": "点击解锁",
-  "@tapToUnlock": {
-    "description": "Message prompting user to tap to unlock"
+  "hintForDesktop": "右键单击代码即可编辑或删除。",
+  "hintForMobile": "长按代码即可编辑或删除。",
+  "historicSites": "历史回响",
+  "homeEmptyStateLegacyDescription": "设置您的数字遗产，以便亲友在您不在时访问重要信息",
+  "@homeEmptyStateLegacyDescription": {
+    "description": "Description shown in the empty Locker home state above the Legacy setup action"
   },
-  "areYouSureYouWantToLogout": "您确定要登出吗？",
-  "@areYouSureYouWantToLogout": {
-    "description": "Confirmation message before logout"
+  "hoorayyyy": "耶～～！",
+  "hostedAtOsmFrance": "法国 OSM 主办",
+  "howItWorks": "工作原理",
+  "@howItWorks": {
+    "description": "How it works button label"
   },
-  "yesLogout": "是的，登出",
-  "@yesLogout": {
-    "description": "Confirmation button for logout"
+  "ignore": "忽略",
+  "ignored": "已忽略",
+  "ignorePerson": "忽略此人",
+  "imageNotAnalyzed": "图像未分析",
+  "immediately": "立即",
+  "@immediately": {
+    "description": "Immediately option for auto lock timing"
   },
-  "authToViewSecrets": "请进行身份验证以查看您的密钥",
-  "@authToViewSecrets": {
-    "description": "Message prompting authentication to view secrets"
+  "import2FasGuide": "使用 2FAS 中的“设置 -> 备份 -> 导出”选项。\n\n如果您的备份已加密，则需要输入密码来解密备份",
+  "importAccountPageTitle": "输入账户详细信息",
+  "importAegisGuide": "使用 Aegis 设置中的“导出密码库”选项。\n\n如果您的密码库已加密，则需要输入密码库密码才能解密密码库。",
+  "importAndOTPGuide": "使用设置中的“备份”选项从 andOTP 导出您的备份。\n\n如果您的备份已加密，您需要输入备份密码才能解密。",
+  "importBitwardenGuide": "使用 Bitwarden 工具中的“导出密码库”选项并导入未加密的 JSON 文件。",
+  "importCodeDelimiterInfo": "代码可以用逗号或换行符分隔",
+  "importCodes": "导入代码",
+  "importEnteEncGuide": "选择从 Ente 导出的 JSON 加密文件",
+  "importEnterSetupKey": "输入设置密钥",
+  "importFailureDesc": "无法解析选定的文件。",
+  "importFromGallery": "从图库导入",
+  "importGoogleAuthConfirmation": "{codeCount, plural, other{要从 Google Authenticator 导入 {codeCount} 个验证码吗？}}",
+  "@importGoogleAuthConfirmation": {
+    "placeholders": {
+      "codeCount": {
+        "description": "The number of Google Authenticator codes to import",
+        "type": "int",
+        "example": "2"
+      }
+    }
   },
+  "importGoogleAuthGuide": "使用“转移帐户”选项，将您的 Google Authenticator 帐户导出到二维码。然后扫描二维码或从图像导入。",
+  "importInstruction": "请选择一个包含以下格式的代码列表的文件",
+  "importLabel": "导入",
+  "importLastpassGuide": "使用 Lastpass Authenticator 设置中的“转移账户”选项，然后按“将账户导出到文件”。导入下载的 JSON。",
+  "importOtpAuthGuide": "从 OTP 身份验证导出加密备份，然后选择 .otpauthdb 或 .otpauthdp 文件。也支持单账户 .otpauth 文件导出。",
+  "importProtonAuthGuide": "使用 Proton Authenticator 设置中的“导出”选项导出您的验证码。\n\n如果导出的文件受密码保护，您需要输入密码才能解密。",
+  "importRaivoGuide": "使用 Raivo 设置中的“将 OTP 导出到 Zip 存档”选项。\n\n解压 zip 文件并导入 JSON 文件。",
+  "importSelectAppExport": "选择 {appName} 的导出文件",
+  "@importSelectAppExport": {
+    "placeholders": {
+      "appName": {}
+    }
+  },
+  "importSelectJsonFile": "选择 JSON 文件",
+  "importSuccessDesc": "您已导入了 {count} 个代码！",
+  "@importSuccessDesc": {
+    "placeholders": {
+      "count": {
+        "description": "The number of codes imported",
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "importSuccessTitle": "耶！",
+  "importTypeEnteEncrypted": "Ente 加密导出",
+  "incorrectCode": "代码错误",
+  "@incorrectCode": {
+    "description": "Error message when code is incorrect"
+  },
+  "incorrectDetails": "详细信息不正确",
+  "incorrectPasswordTitle": "密码错误",
+  "@incorrectPasswordTitle": {
+    "description": "Title for incorrect password error"
+  },
+  "incorrectRecoveryKeyBody": "您输入的恢复密钥不正确",
+  "incorrectRecoveryKeyTitle": "恢复密钥不正确",
+  "info": "详情",
+  "informationTypes": "信息类型",
+  "informationTypesDesc": "文档、笔记、卡片、密码及其他项目类型",
+  "initialBackupCreated": "初始备份已创建！",
+  "insecureDevice": "设备不安全",
+  "@insecureDevice": {
+    "description": "Insecure device warning title"
+  },
+  "invalidEmailMessage": "请输入一个有效的电子邮件地址。",
+  "@invalidEmailMessage": {
+    "description": "Message for invalid email error dialog"
+  },
+  "invalidEmailTitle": "无效的电子邮件地址",
+  "@invalidEmailTitle": {
+    "description": "Title for invalid email error dialog"
+  },
+  "invalidEndpoint": "端点无效",
+  "@invalidEndpoint": {
+    "description": "Error message when endpoint is invalid"
+  },
+  "invalidEndpointMessage": "抱歉，您输入的端点无效。请输入有效的端点，然后重试。",
+  "@invalidEndpointMessage": {
+    "description": "Detailed error message when endpoint is invalid"
+  },
+  "invalidProtonExportMessage": "所选文件不是有效的 Proton Authenticator 导出文件。",
+  "invalidProtonExportTitle": "Proton 导出无效",
+  "invalidQRCode": "二维码无效",
+  "invalidRecoveryKey": "您输入的恢复密钥无效。请确保它包含24个单词，并检查每个单词的拼写。\n\n如果您输入了旧的恢复码，请确保它长度为64个字符，并检查其中每个字符。",
+  "invalidReferralCode": "无效代码",
+  "invite": "邀请",
+  "inviteLimitReached": "你已添加 5 个邀请。请移除一个后再添加新的邀请",
+  "inviteMembers": "邀请成员",
+  "ok": "确定",
+  "@ok": {
+    "description": "Generic OK button label"
+  },
+  "iosOnMyDeviceNotSupported": "“在我的 iPhone 上” 无法直接使用。请选择或创建该文件夹。",
+  "itemCount": "{count, plural, one{{count} 个项目} other{{count} 个项目}}",
+  "@itemCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "itemsShowTheNumberOfDaysRemainingBeforePermanentDeletion": "项目显示永久删除前剩余的天数",
+  "itemsWillBeRemovedFromAlbum": "所选项目将从此相册中移除",
+  "itLooksLikeSomethingWentWrongPleaseRetryAfterSome": "看起来出了点问题。 请稍后重试。 如果错误仍然存在，请联系我们的支持团队。",
+  "@itLooksLikeSomethingWentWrongPleaseRetryAfterSome": {
+    "description": "Generic error message for temporary issues"
+  },
+  "iUnderStand": "了解",
+  "@iUnderStand": {
+    "description": "Text for the button to confirm the user understands the warning"
+  },
+  "join": "加入",
+  "joinAlbum": "加入相册",
+  "joinAlbumConfirmationDialogBody": "加入相册将使相册的参与者可以看到您的电子邮件地址。",
+  "joinAlbumSubtext": "来查看和添加您的照片",
+  "joinAlbumSubtextViewer": "来将其添加到共享相册",
+  "keepOffline": "保持离线可用",
+  "keepPhotos": "保留照片",
+  "kiloMeterUnit": "公里",
+  "lakeside": "湖畔宁静",
+  "language": "语言",
+  "lastUpdated": "最后更新",
+  "lastWeek": "上周",
+  "lastYearsTrip": "去年的旅行",
+  "layout": "布局",
+  "layoutGrouped": "已分组",
+  "layoutMasonry": "瀑布流布局",
+  "layoutTrip": "旅游",
+  "leave": "离开",
+  "leaveAlbum": "离开相册",
+  "leaveCollection": "离开集合",
+  "leaveSharedAlbum": "要离开共享相册吗？",
+  "left": "向左",
+  "legacy": "遗产",
+  "legacyAccounts": "遗产账户",
+  "legacyDesc": "可信联系人、数字遗产工具包和账户恢复计划",
+  "legacyInvite": "{email} 已邀请您成为可信联系人",
+  "@legacyInvite": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "family@example.com"
+      }
+    }
+  },
+  "legacyPageDesc": "遗产允许信任的联系人在您不在时访问您的账户。",
+  "legacyPageDesc2": "可信联系人可以启动账户恢复，如果 30 天内没有被阻止，则可以重置密码并访问您的账户。",
+  "lightTheme": "浅色",
+  "linkDeviceLimit": "设备限制",
+  "linkEnabled": "已启用",
+  "linkExpired": "已过期",
+  "linkExpiresOn": "链接将在 {expiryTime} 过期",
+  "@linkExpiresOn": {
+    "placeholders": {
+      "expiryTime": {}
+    }
+  },
+  "linkHasExpired": "链接已过期",
+  "linkLabel": "链接",
+  "linkRequestLimitExceeded": "此相册已在过多设备上被查看",
+  "livePhotos": "实况照片",
+  "loadingExifData": "正在加载 EXIF 数据...",
+  "loadingGallery": "正在加载图库...",
+  "loadingModel": "正在下载模型...",
+  "loadingYourPhotos": "正在加载您的照片...",
+  "loadMessage1": "您可以与家庭分享您的订阅",
+  "loadMessage3": "我们保存你的3个数据副本，其中一个在地下安全屋中",
+  "loadMessage4": "我们所有的应用程序都是开源的",
+  "loadMessage5": "我们的源代码和加密技术已经由外部审计",
+  "loadMessage6": "您可以与您所爱的人分享您相册的链接",
+  "loadMessage7": "我们的移动应用程序在后台运行以加密和备份您点击的任何新照片",
+  "loadMessage8": "{webUrl} 有一个巧妙的上传器",
+  "@loadMessage8": {
+    "description": "Loading screen message about the web uploader.",
+    "placeholders": {
+      "webUrl": {
+        "type": "String",
+        "example": "photos.ente.com"
+      }
+    }
+  },
+  "loadMessage9": "我们使用 Xchacha20Poly1305 加密技术来安全地加密您的数据",
+  "localBackupDailyManualCopy": "每次打开应用时会自动创建一份本地备份。使用“立即备份”按钮可手动执行备份。备份最多保留 5 个文件。",
+  "localBackupSidebarTitle": "本地备份",
+  "localGallery": "本地相册",
+  "localSyncErrorMessage": "似乎出了点问题，因为本地照片同步耗时比预期的要长。请联系我们的支持团队",
+  "location": "地理位置",
+  "locationName": "地点名称",
+  "locationPickerTip": "您也可以在照片的详情界面上添加以照片为中心的定位",
+  "@locationPickerTip": {
+    "description": "Helper tip text shown in the location picker that refers to the photo info screen."
+  },
+  "locations": "位置",
+  "locationTagFeatureDescription": "位置标签将在照片的某个半径范围内拍摄的所有照片进行分组",
+  "locationUpdatedAndBackupCreated": "位置已更新，初始备份已创建！",
+  "lockButtonLabel": "锁定",
+  "loggingOut": "正在退出登录...",
+  "@loggingOut": {
+    "description": "Message shown while logging out"
+  },
+  "logInLabel": "登录",
+  "@logInLabel": {
+    "description": "Log in button label"
+  },
+  "loginSessionExpired": "会话已过期",
+  "@loginSessionExpired": {
+    "description": "Login session expired title"
+  },
+  "loginSessionExpiredDetails": "您的会话已过期。请重新登录。",
+  "@loginSessionExpiredDetails": {
+    "description": "Login session expired details"
+  },
+  "loginWithAuthAccount": "使用您的认证账户登录",
+  "loginWithTOTP": "使用 TOTP 登录",
+  "@loginWithTOTP": {
+    "description": "Login with TOTP button label"
+  },
+  "logsDialogBody": "这将跨日志发送以帮助我们调试您的问题。 请注意，将包含文件名以帮助跟踪特定文件的问题。",
+  "@logsDialogBody": {
+    "description": "Body text for the logs dialog explaining what will be sent"
+  },
+  "longPressAnEmailToVerifyEndToEndEncryption": "长按电子邮件以验证端到端加密。",
+  "lookBackOnYourMemories": "回顾你的回忆🌄",
+  "lookingForVisualSimilarities": "正在寻找视觉相似点……",
+  "loopVideoOff": "开启循环",
+  "loopVideoOn": "关闭循环",
+  "lostDevice": "设备丢失？",
+  "lostDeviceTitle": "丢失了设备吗？",
+  "@lostDeviceTitle": {
+    "description": "Lost device title"
+  },
+  "machineLearning": "机器学习",
+  "magic": "魔法",
+  "@magic": {
+    "description": "Section header for magic search results"
+  },
+  "manage": "管理",
+  "manageDeviceStorage": "管理设备缓存",
+  "manageFamily": "管理家庭计划",
+  "manageLink": "管理链接",
+  "manageParticipants": "管理",
+  "manageSubscription": "管理订阅",
+  "manualSort": "自定义",
+  "map": "地图",
+  "@map": {
+    "description": "Label for the map view"
+  },
+  "maps": "地图",
+  "mapsPrivacyNotice": "我们会将大致坐标发送给注重隐私的第三方（例如 OpenStreetMap），以便显示地图和位置。",
+  "me": "我",
+  "members": "成员",
+  "memories": "回忆",
+  "memoryCount": "{count, plural, =0{暂无回忆} other{{formattedCount} 个回忆}}",
+  "@memoryCount": {
+    "description": "The text to display the number of memories",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "1",
+        "type": "int"
+      },
+      "formattedCount": {
+        "type": "String",
+        "example": "11.513, 11,511"
+      }
+    }
+  },
+  "merchandise": "商品",
+  "merge": "合并",
+  "mergedPhotos": "已合并照片",
+  "mergeWithExisting": "与现有的合并",
+  "minimizeAppOnCopy": "复制时最小化应用",
+  "minimizeToTrayOnClose": "关闭时最小化到托盘",
+  "mixedGrouping": "混合分组？",
+  "mlConsent": "启用机器学习",
+  "mlConsentConfirmation": "我了解了，并希望启用机器学习",
+  "mlConsentDescription": "如果您启用机器学习，Ente 将从文件（包括与您共享的文件）中提取面部几何形状等信息。\n\n这将在您的设备上进行，并且任何生成的生物特征信息都将被端到端加密。",
+  "mlConsentPrivacy": "请点击此处查看我们隐私政策中有关此功能的更多详细信息",
+  "mlIndexingDescription": "请注意，在所有项目处理完成之前，机器学习会导致更高的带宽和电池用量。建议使用桌面应用以加快处理速度，所有结果都会自动同步。",
+  "modifyYourQueryOrTrySearchingFor": "修改您的查询，或尝试搜索",
+  "moments": "瞬间",
+  "month": "月",
+  "monthly": "每月",
+  "@monthly": {
+    "description": "The text to display for monthly plans",
+    "type": "text"
+  },
+  "moon": "月光之下",
+  "moreDetails": "更多详情",
+  "moreOptions": "更多选项",
+  "@moreOptions": {
+    "description": "Button label for showing additional delete options."
+  },
+  "mostFrequentlyUsed": "经常使用",
+  "mostRecent": "最近",
+  "mostRecentlyUsed": "最近使用",
+  "mostRelevant": "最相关",
+  "mountains": "翻过山丘",
+  "movedSuccessfullyTo": "成功移动到 {albumName}",
+  "@movedSuccessfullyTo": {
+    "placeholders": {
+      "albumName": {}
+    }
+  },
+  "movedToTrash": "已移至回收站",
+  "moveMultipleToTrashMessage": "您确定要将 {count} 个项目移至回收站吗？",
+  "@moveMultipleToTrashMessage": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "moveSelectedPhotosToOneDate": "将选定的照片调整到某一日期",
+  "moveToAlbum": "移动到相册",
+  "moveToHiddenAlbum": "移至隐藏相册",
+  "movingFilesToAlbum": "正在将文件移动到相册...",
+  "name": "名称",
+  "networkConnectionRefusedErr": "无法连接到 Ente，请稍后重试。如果错误仍然存在，请联系支持人员。",
+  "@networkConnectionRefusedErr": {
+    "description": "Error message shown when the app cannot connect to Ente due to connection refused"
+  },
+  "networkHostLookUpErr": "无法连接到 Ente，请检查您的网络设置，如果错误仍然存在，请联系支持人员。",
+  "@networkHostLookUpErr": {
+    "description": "Error message shown when the app cannot connect to Ente due to network host lookup failure"
+  },
+  "never": "永不",
+  "newAlbum": "新建相册",
+  "newest": "最新",
+  "newLocation": "新位置",
+  "newPhotosEmoji": " 新 📸",
+  "newRange": "新起始图片",
   "next": "下一步",
   "@next": {
     "description": "Next button label"
   },
-  "setNewPassword": "设置新密码",
-  "@setNewPassword": {
-    "description": "Set new password title"
+  "nextTotpTitle": "下一个",
+  "nightLights": "霓虹之夜",
+  "no": "否",
+  "noAppToOpenFileDownloadInstead": "没有应用可以预览此文件。您可以下载该文件并用其他应用打开该文件。",
+  "@noAppToOpenFileDownloadInstead": {
+    "description": "Message shown when Android cannot find an app to open or preview a file"
   },
-  "enterPin": "输入 PIN 码",
-  "@enterPin": {
-    "description": "Enter PIN prompt"
+  "noDefaultBackupFolder": "无法创建默认备份文件夹。",
+  "noDeleteSuggestion": "暂无删除建议",
+  "noDeviceFound": "未发现设备",
+  "noDeviceThatCanBeDeleted": "您在此设备上没有可被删除的文件",
+  "noExifData": "无 EXIF 数据",
+  "noFacesFound": "未找到任何面部",
+  "noFilesFound": "这里没有项目",
+  "noImagesWithLocation": "没有带有位置的图像",
+  "noInternetConnection": "无互联网连接",
+  "@noInternetConnection": {
+    "description": "No internet connection error message"
   },
-  "setNewPin": "设置新 PIN 码",
-  "@setNewPin": {
-    "description": "Set new PIN title"
+  "noPhotosFoundHere": "这里没有找到照片",
+  "noRecoveryKeyNoDecryption": "由于我们端到端加密协议的性质，如果没有您的密码或恢复密钥，您的数据将无法解密",
+  "@noRecoveryKeyNoDecryption": {
+    "description": "Explanation that data cannot be decrypted without password or recovery key"
   },
-  "confirm": "确认",
-  "@confirm": {
-    "description": "Confirm button label"
+  "noRecoveryKeyTitle": "没有恢复密钥吗？",
+  "@noRecoveryKeyTitle": {
+    "description": "No recovery key title"
   },
+  "noResult": "无结果",
+  "noResultsFound": "未找到任何结果",
+  "noSimilarImagesFound": "未找到相似图片",
+  "noSuggestionsForPerson": "没有针对 {personName} 的建议",
+  "@noSuggestionsForPerson": {
+    "placeholders": {
+      "personName": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "noteContent": "内容",
+  "noteName": "标题",
+  "noteNameHint": "笔记标题",
+  "notes": "备注",
+  "notesLengthLimit": "备注最多可以包含 {count} 个字符",
+  "@notesLengthLimit": {
+    "description": "Text to indicate the maximum number of characters allowed for notes",
+    "placeholders": {
+      "count": {
+        "description": "The maximum number of characters allowed for notes",
+        "type": "int",
+        "example": "100"
+      }
+    }
+  },
+  "nothingToSeeHere": "这里空空如也",
+  "nothingToTidyUpHere": "这里没什么可清理的",
+  "notifications": "通知",
+  "notPersonLabel": "不是 {name}？",
+  "@notPersonLabel": {
+    "description": "Label to indicate that the person in the photo is not the person whose name is mentioned",
+    "placeholders": {
+      "name": {
+        "content": "{name}",
+        "type": "String"
+      }
+    }
+  },
+  "notSupportedForHOTP": "不支持 HOTP",
+  "notThisPerson": "不是此人？",
+  "ocrGenericDetectError": "无法检测到图像中的文本",
+  "ocrImageDecodeFailedError": "无法读取图像文件",
+  "ocrImageNotFoundError": "未找到图像文件",
+  "ocrModelsNetworkRequiredError": "首次使用时需要连接网络才能下载 OCR 模型",
+  "ocrModelsPrepareFailed": "无法准备 OCR 模型",
+  "ocrNoTextDetected": "未检测到文本",
+  "offlineModeWarning": "您已选择在不进行备份的情况下继续操作。请手动备份以确保您的代码安全。",
+  "onboardingDesc": "保存你的照片和视频。每一份回忆，尽在一处。",
+  "onboardingTitle": "用于你不想忘记的一切",
+  "onEnte": "在 <branding>ente</branding> 上",
+  "@onEnte": {
+    "description": "The text displayed above albums backed up to Ente",
+    "type": "text"
+  },
+  "onlyFamilyAdminCanChangeCode": "请联系{familyAdminEmail} 以更改您的代码。",
+  "@onlyFamilyAdminCanChangeCode": {
+    "placeholders": {
+      "familyAdminEmail": {}
+    }
+  },
+  "onlyThem": "仅限他们",
+  "onlyUploadedFilesCanBeAddedToPerson": "只能将上传的文件添加到一个人",
+  "@onlyUploadedFilesCanBeAddedToPerson": {
+    "description": "Shown when user tries to manually tag files that are not uploaded yet."
+  },
+  "onTheRoad": "再次踏上旅途",
+  "onThisDay": "这天",
+  "onThisDayMemories": "这天的回忆",
+  "oops": "哎呀",
+  "@oops": {
+    "description": "Oops error title"
+  },
+  "oopsCouldNotSaveEdits": "糟糕，无法保存编辑",
+  "oopsSomethingWentWrong": "哎呀，似乎出了点问题",
+  "openAlbumInBrowser": "在浏览器中打开相册",
+  "openAlbumInBrowserTitle": "请使用网络应用将照片添加到此相册",
+  "openFile": "打开文件",
+  "openstreetmapContributors": "OpenStreetMap 贡献者",
+  "optionalAsShortAsYouLike": "可选的，按您喜欢的短语...",
+  "organization": "整理",
+  "organizationDesc": "集合、收藏、搜索及其他项目整理方式",
+  "otherDetectedFaces": "其他检测到的人脸",
+  "pair": "配对",
+  "panorama": "全景",
+  "parsingError": "解析出错",
+  "partyWithThem": "与 {name} 开派对",
+  "@partyWithThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "passkey": "通行密钥",
+  "password": "密码",
+  "@password": {
+    "description": "Password field label"
+  },
+  "passwordChangedSuccessfully": "密码修改成功",
+  "@passwordChangedSuccessfully": {
+    "description": "Password changed successfully message"
+  },
+  "passwordEmptyError": "密码不能为空",
+  "passwordForDecryptingExport": "用来解密导出的密码",
+  "passwordHint": "密码",
+  "passwordLock": "密码锁",
+  "passwordsDontMatch": "密码不一致",
+  "passwordsMatch": "密码一致",
+  "passwordStrength": "密码强度： {passwordStrengthValue}",
+  "@passwordStrength": {
+    "description": "Text to indicate the password strength",
+    "placeholders": {
+      "passwordStrengthValue": {
+        "description": "The strength of the password as a string",
+        "type": "String",
+        "example": "Weak or Moderate or Strong"
+      }
+    }
+  },
+  "passwordToEncryptExport": "用来加密导出的密码",
+  "passwordTooShort": "密码长度必须至少为 8 个字符。",
+  "pastYearsMemories": "往年回忆",
+  "paymentDetails": "付款明细",
+  "paymentFailed": "支付失败",
+  "paymentFailedMessage": "不幸的是，您的付款失败。请联系支持人员，我们将为您提供帮助！",
+  "paymentFailedTalkToProvider": "如果您被收取费用，请用英语与 {providerName} 的客服聊天",
+  "@paymentFailedTalkToProvider": {
+    "description": "The text to display when the payment failed",
+    "type": "text",
+    "placeholders": {
+      "providerName": {
+        "example": "AppStore|PlayStore",
+        "type": "String"
+      }
+    }
+  },
+  "pendingSync": "正在等待同步",
+  "pendingSyncs": "警告",
+  "pendingSyncsWarningBody": "您的一些代码尚未备份。\n\n请确保您在登出之前备份这些代码。",
+  "people": "人物",
+  "peopleAutoAddDesc": "自动将选定人物的照片添加到此相册",
+  "@peopleAutoAddDesc": {
+    "description": "The message the copy should convey is that photos or videos containing the selected people's faces will be automatically added to this album"
+  },
+  "period": "周期",
+  "permanentlyDelete": "永久删除",
+  "permDeleteWarning": "回收站中的所有项目将被永久删除\n\n此操作无法撤消",
+  "personalNote": "笔记",
+  "personIsAge": "{name} {age} 岁啦！",
+  "@personIsAge": {
+    "placeholders": {
+      "age": {},
+      "name": {}
+    }
+  },
+  "personTurningAge": "{name} 快满 {age} 岁啦",
+  "@personTurningAge": {
+    "placeholders": {
+      "age": {},
+      "name": {}
+    }
+  },
+  "pets": "毛茸茸的伙伴",
+  "photoGridSize": "照片网格大小",
+  "photos": "照片",
+  "photosAddedByYouWillBeRemovedFromTheAlbum": "您添加的照片将从相册中移除",
+  "photosKeepRelativeTimeDifference": "照片保持相对时间差",
+  "pickCenterPoint": "选择中心点",
+  "pin": "置顶",
+  "pinLock": "Pin 锁定",
+  "@pinLock": {
+    "description": "PIN lock option title"
+  },
+  "pinnedCodeMessage": "{code} 已被置顶",
+  "@pinnedCodeMessage": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "pinnedCount": "{count, plural, one{已置顶 {count} 个项目} other{已置顶 {count} 个项目}}",
+  "@pinnedCount": {
+    "description": "Text to show number of items pinned",
+    "placeholders": {
+      "count": {
+        "description": "Number of items pinned",
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "pinPerson": "置顶人员",
+  "pinText": "置顶",
+  "plainHTML": "纯 HTML",
+  "plainText": "纯文本",
+  "plansStartAt": "计划低至 {price}/月",
+  "@plansStartAt": {
+    "placeholders": {
+      "price": {
+        "type": "String",
+        "example": "$1.99"
+      }
+    }
+  },
+  "playfulKids": "童趣时光",
+  "playOriginal": "播放原内容",
+  "playstoreSubscription": "PlayStore 订阅",
+  "playStream": "播放流",
+  "pleaseCheckPasswordAndTryAgain": "请检查您的密码并重试。",
+  "pleaseCheckYourInternetConnectionAndTryAgain": "请检查您的互联网连接，然后重试。",
+  "@pleaseCheckYourInternetConnectionAndTryAgain": {
+    "description": "Message asking user to check internet connection"
+  },
+  "pleaseContactSupportIfTheProblemPersists": "如果问题仍然存在，请联系支持",
+  "pleaseEmailUsAt": "请给我们发送电子邮件至 {toEmail}",
+  "@pleaseEmailUsAt": {
+    "placeholders": {
+      "toEmail": {}
+    }
+  },
+  "pleaseGrantPermissions": "请授予权限",
+  "pleaseLoginAgain": "请重新登录",
+  "pleaseNamePersonInPeopleSectionFirst": "请先在人员部分中命名一个人",
+  "@pleaseNamePersonInPeopleSectionFirst": {
+    "description": "Shown when manual tagging requires at least one named person."
+  },
+  "pleaseSelectQuickLinksToRemove": "请选择要删除的快速链接",
+  "pleaseSendTheLogsTo": "请将日志发送至 \n{toEmail}",
+  "@pleaseSendTheLogsTo": {
+    "description": "Message asking user to send logs to email address",
+    "placeholders": {
+      "toEmail": {
+        "type": "String",
+        "description": "Email address to send logs to"
+      }
+    }
+  },
+  "pleaseTryAgain": "请重试",
+  "@pleaseTryAgain": {
+    "description": "Message asking user to try again"
+  },
+  "pleaseVerifyDetails": "请验证详细信息并重试",
+  "pleaseVerifyTheCodeYouHaveEntered": "请验证您输入的代码",
+  "pleaseWait": "请稍候...",
+  "@pleaseWait": {
+    "description": "Please wait message"
+  },
+  "pleaseWaitDeletingAlbum": "请稍候，正在删除相册",
+  "pleaseWaitForSometimeBeforeRetrying": "请稍等片刻后再重试",
+  "pleaseWaitThisWillTakeAWhile": "请稍候，这将需要一段时间。",
+  "posingWithThem": "与 {name} 的合影",
+  "@posingWithThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "preparingLogs": "正在准备日志...",
+  "preserveMore": "保留更多",
+  "pressAndHoldToPlayVideoDetailed": "长按图像以播放视频",
+  "preview": "预览",
+  "privacy": "隐私",
+  "privacyPolicyTitle": "隐私政策",
+  "@privacyPolicyTitle": {
+    "description": "Privacy policy title"
+  },
+  "privateSpaceForEveryMember": "每位成员都有私密空间",
+  "proceed": "继续",
+  "processed": "已处理",
+  "processingImport": "正在处理 {folderName}...",
+  "@processingImport": {
+    "placeholders": {
+      "folderName": {}
+    }
+  },
+  "publicLinkEnabled": "公开链接已启用",
+  "qr": "二维码",
+  "qrCode": "二维码",
+  "questionmark": "？",
+  "queued": "已入列",
+  "radius": "半径",
+  "rainyDays": "雨天心情",
+  "raiseTicket": "提升工单",
+  "@raiseTicket": {
+    "description": "Button text for raising a support tickets in case of unhandled errors during backup",
+    "type": "text"
+  },
+  "rateUs": "给我们评分",
+  "rawCodeData": "原始代码数据",
+  "readyToBackupSubtitle": "你的照片将在后台同步。首次备份可能需要一些时间。",
+  "readyToBackupTitle": "已准备好备份",
+  "reassignedToName": "已将您重新分配给 {name}",
+  "@reassignedToName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reassigningLoading": "正在重新分配...",
+  "reassignMe": "重新分配“我”",
+  "recordLocation": "位置",
+  "recordSavedSuccessfully": "记录保存成功",
+  "recover": "恢复",
+  "@recover": {
+    "description": "Recover button label"
+  },
+  "recoverAccount": "恢复账户",
+  "@recoverAccount": {
+    "description": "Recover account button label"
+  },
+  "recoveryInitiated": "已启动恢复",
+  "recoveryInitiatedDesc": "您可以在 {days} 天后访问该账户。通知将发送至 {email}。",
+  "@recoveryInitiatedDesc": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "30"
+      },
+      "email": {
+        "type": "String",
+        "example": "me@example.com"
+      }
+    }
+  },
+  "recoveryKey": "恢复密钥",
+  "@recoveryKey": {
+    "description": "Recovery key label"
+  },
+  "recoveryKeyCopiedToClipboard": "恢复密钥已复制到剪贴板",
+  "@recoveryKeyCopiedToClipboard": {
+    "description": "Recovery key copied message"
+  },
+  "recoveryKeyOnForgotPassword": "如果您忘记了密码，恢复数据的唯一方法就是使用此密钥。",
+  "@recoveryKeyOnForgotPassword": {
+    "description": "Recovery key importance explanation"
+  },
+  "recoveryKeySaved": "恢复密钥已保存在下载文件夹中！",
+  "@recoveryKeySaved": {
+    "description": "Recovery key saved confirmation message"
+  },
+  "recoveryKeySaveDescription": "我们不会存储此密钥，请将此24个单词密钥保存在一个安全的地方。",
+  "@recoveryKeySaveDescription": {
+    "description": "Recovery key save description"
+  },
+  "recoveryKeySaveShortDescription": "请将此密钥保存在安全的地方。",
+  "recoveryKeySuccessBody": "太棒了！ 您的恢复密钥是有效的。 感谢您的验证。\n\n请记住要安全备份您的恢复密钥。",
+  "recoveryKeyVerified": "恢复密钥已验证",
+  "recoveryReady": "您现在可以通过设置新密码来恢复 {email} 的账户。",
+  "@recoveryReady": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "me@example.com"
+      }
+    }
+  },
+  "recoverySuccessful": "恢复成功!",
+  "recoveryWarning": "一位可信联系人正在尝试访问您的账户",
+  "recoveryWarningBody": "{email} 正在尝试恢复您的账户。",
+  "@recoveryWarningBody": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "recreatePasswordTitle": "重新创建密码",
+  "@recreatePasswordTitle": {
+    "description": "Title for recreate password dialog"
+  },
+  "recreateStream": "重建流",
+  "redo": "重做",
   "reEnterPassword": "再次输入密码",
   "@reEnterPassword": {
     "description": "Re-enter password prompt"
@@ -594,131 +1797,943 @@
   "@reEnterPin": {
     "description": "Re-enter PIN prompt"
   },
-  "androidBiometricHint": "验证身份",
-  "@androidBiometricHint": {
-    "description": "Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricNotRecognized": "未能识别，请重试。",
-  "@androidBiometricNotRecognized": {
-    "description": "Message to let the user know that authentication was failed. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricSuccess": "成功",
-  "@androidBiometricSuccess": {
-    "description": "Message to let the user know that authentication was successful. It is used on Android side. Maximum 60 characters."
-  },
-  "androidCancelButton": "取消",
-  "@androidCancelButton": {
-    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
-  },
-  "androidSignInTitle": "需要进行身份验证",
-  "@androidSignInTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
-  },
-  "androidBiometricRequiredTitle": "需要进行生物识别认证",
-  "@androidBiometricRequiredTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user has not set up biometric authentication on their device. It is used on Android side. Maximum 60 characters."
-  },
-  "androidDeviceCredentialsRequiredTitle": "需要设备凭据",
-  "@androidDeviceCredentialsRequiredTitle": {
-    "description": "Message showed as a title in a dialog which indicates the user has not set up credentials authentication on their device. It is used on Android side. Maximum 60 characters."
-  },
-  "androidDeviceCredentialsSetupDescription": "需要设备凭据",
-  "@androidDeviceCredentialsSetupDescription": {
-    "description": "Message advising the user to go to the settings and configure device credentials on their device. It shows in a dialog on Android side."
-  },
-  "goToSettings": "前往设置",
-  "@goToSettings": {
-    "description": "Message showed on a button that the user can click to go to settings pages from the current dialog. It is used on both Android and iOS side. Maximum 30 characters."
-  },
-  "androidGoToSettingsDescription": "您的设备上未设置生物识别身份验证。转到“设置 > 安全”以添加生物识别身份验证。",
-  "@androidGoToSettingsDescription": {
-    "description": "Message advising the user to go to the settings and configure biometric on their device. It shows in a dialog on Android side."
-  },
-  "iOSLockOut": "生物识别身份验证已禁用。请锁定并解锁屏幕以启用该功能。",
-  "@iOSLockOut": {
-    "description": "Message advising the user to re-enable biometrics on their device. It shows in a dialog on iOS side."
-  },
-  "iOSOkButton": "好",
-  "@iOSOkButton": {
-    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters."
-  },
-  "emailAlreadyRegistered": "电子邮件地址已被注册。",
-  "@emailAlreadyRegistered": {
-    "description": "Error message when email is already registered"
-  },
-  "emailNotRegistered": "电子邮件地址未注册。",
-  "@emailNotRegistered": {
-    "description": "Error message when email is not registered"
-  },
-  "thisEmailIsAlreadyInUse": "该电子邮件已被使用",
-  "@thisEmailIsAlreadyInUse": {
-    "description": "Error message when email is already in use"
-  },
-  "emailChangedTo": "电子邮件已更改为 {newEmail}",
-  "@emailChangedTo": {
-    "description": "Message when email has been changed",
+  "referralCodeHint": "此代码最多可自定义 3 次",
+  "referrals": "推荐",
+  "referralsAreCurrentlyPaused": "推荐已暂停",
+  "referralStats": "推荐状态",
+  "referralStorageForBoth": "对方升级后：他们可获得 {storageAmountInGB} GB，你也可获得 {storageAmountInGB} GB。",
+  "@referralStorageForBoth": {
     "placeholders": {
-      "newEmail": {
-        "description": "The new email address",
+      "storageAmountInGB": {}
+    }
+  },
+  "referralStorageInfo": "来自付费订阅用户的推荐可获得额外奖励存储空间。\n\n你可使用的存储空间上限为当前套餐额度。若要使用你已获得但超过套餐上限的其余存储空间，请升级套餐。",
+  "rejectRecovery": "拒绝恢复",
+  "rejectSuggestions": "拒绝建议",
+  "related": "相关",
+  "remindToEmptyDeviceTrash": "同时从“设置”->“存储”中清空“最近删除”以领取释放的空间",
+  "remindToEmptyEnteTrash": "同时清空您的“回收站”以领取释放的空间",
+  "remoteImages": "云端图像",
+  "remoteThumbnails": "云端缩略图",
+  "remoteVideos": "云端视频",
+  "remove": "移除",
+  "removeAlbumParticipantBody": "{userEmail} 将从这个共享相册中删除\n\nTA们添加的任何照片也将从相册中删除",
+  "@removeAlbumParticipantBody": {
+    "placeholders": {
+      "userEmail": {}
+    }
+  },
+  "removeFromAlbum": "从相册中移除",
+  "removeFromAlbumTitle": "要从相册中移除吗？",
+  "removeFromFavorite": "从收藏中移除",
+  "removeLink": "移除链接",
+  "removeParticipant": "移除参与者",
+  "@removeParticipant": {
+    "description": "menuSectionTitle for removing a participant"
+  },
+  "removePersonLabel": "移除人物标签",
+  "removePersonTag": "移除人物标签",
+  "removePublicLink": "删除公开链接",
+  "removePublicLinks": "删除公开链接",
+  "removeShareItemsWarning": "除了照片所有者之外，本相册中的部分照片将不对任何其他浏览者开放。",
+  "removingFromFavorites": "正在从收藏中删除...",
+  "rename": "重命名",
+  "renameAlbum": "重命名相册",
+  "renameFile": "重命名文件",
+  "renewsOn": "在 {endDate} 前续费",
+  "@renewsOn": {
+    "placeholders": {
+      "endDate": {}
+    }
+  },
+  "renewSubscription": "续费订阅",
+  "reportAnIssue": "报告问题",
+  "requestAFeature": "请求新功能",
+  "resendCode": "重新发送验证码",
+  "resendInvite": "重新发送邀请",
+  "reset": "重设",
+  "resetIgnoredFiles": "重置忽略的文件",
+  "resetPasswordTitle": "重置密码",
+  "@resetPasswordTitle": {
+    "description": "Reset password title"
+  },
+  "resetToDefault": "重置为默认设置",
+  "@resetToDefault": {
+    "description": "Button text to reset cover photo to default"
+  },
+  "restore": "恢复",
+  "@restore": {
+    "description": "Display text for an action which triggers a restore of item from trash",
+    "type": "text"
+  },
+  "restoreToAlbum": "恢复到相册",
+  "restoringFiles": "正在恢复文件...",
+  "restoringItems": "正在恢复...",
+  "resumableUploads": "可续传上传",
+  "retry": "重试",
+  "review": "查看",
+  "reviewSuggestions": "查看建议",
+  "revokeInviteConfirmTitle": "撤销邀请？",
+  "right": "向右",
+  "ritualAddedToAlbum": "已添加到相册",
+  "ritualAddedToAlbumWithName": "已添加到 {albumName}",
+  "@ritualAddedToAlbumWithName": {
+    "placeholders": {
+      "albumName": {
         "type": "String",
-        "example": "new@example.com"
+        "description": "The target album name"
       }
     }
   },
-  "authenticationFailedPleaseTryAgain": "认证失败，请重试",
-  "@authenticationFailedPleaseTryAgain": {
-    "description": "Error message when authentication fails"
+  "ritualAddToAlbumFailure": "无法向此相册添加照片： {error}",
+  "@ritualAddToAlbumFailure": {
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error message for album add failure"
+      }
+    }
   },
-  "authenticationSuccessful": "认证成功！",
-  "@authenticationSuccessful": {
-    "description": "Success message when authentication is successful"
+  "ritualAddTooltip": "添加仪式",
+  "ritualAlbumLabel": "相册",
+  "ritualAlbumMissing": "仪式相册缺失。请编辑仪式以设置相册。",
+  "ritualAlbumNotSet": "相册未设置",
+  "ritualAlbumSelectionPlaceholder": "选择相册",
+  "ritualBackToList": "回到仪式",
+  "ritualCameraNotFound": "在此设备上未找到相机。",
+  "ritualCaptureAtLeastOne": "先至少拍一张照片。",
+  "ritualCaptureError": "无法拍摄照片。请重试。",
+  "ritualChooseAlbumLabel": "选择相册",
+  "ritualChooseDaysLabel": "选择仪式日期",
+  "ritualCreateAction": "创建仪式",
+  "ritualCreateNewTitle": "创建新仪式",
+  "ritualCreateYourOwn": "创建你自己的仪式",
+  "ritualCustomKeyboardLabel": "自定义（键盘）",
+  "ritualDefaultCameraTitle": "拍照",
+  "ritualEdit": "编辑仪式",
+  "ritualEditorLabel": "仪式编辑器",
+  "ritualEmojiKeyboardHint": "按下即可打开表情符号键盘",
+  "ritualEmojiUseAction": "使用",
+  "ritualEnterDescription": "请输入描述",
+  "ritualEnterPrompt": "输入您的仪式",
+  "ritualGetDailyReminders": "每日提醒",
+  "ritualNoAlbumsYet": "暂无相册",
+  "ritualNoMatchingAlbums": "没有匹配的相册",
+  "ritualNoPhotosYet": "暂无照片",
+  "ritualNotificationMessage": "立即拍照",
+  "ritualNotificationsOffHint": "通知已关闭。点击日期即可开启通知。",
+  "ritualOpenCameraTooltip": "打开仪式相机",
+  "ritualPhotoLimit": "您最多可以添加 {maxPhotos, plural, other{# 张照片。}}",
+  "@ritualPhotoLimit": {
+    "placeholders": {
+      "maxPhotos": {
+        "type": "int",
+        "description": "Maximum number of photos allowed"
+      }
+    }
+  },
+  "ritualPickEmojiTitle": "选择一个表情",
+  "ritualSearchEmpty": "养成拍照的习惯，并为此建立一套仪式。",
+  "ritualSelectAlbumTitle": "选择相册",
+  "ritualSendReminderLabel": "发送提醒",
+  "ritualSetAlbumToLaunchCamera": "设置一个相册，记录下这个启动相机的仪式。",
+  "ritualShareUnavailable": "暂时无法分享，请稍后重试。",
+  "ritualsTitle": "仪式",
+  "ritualUntitled": "未命名仪式",
+  "ritualUpdate": "更新仪式",
+  "riverCruises": "河上游览美景",
+  "roadtripWithThem": "与 {name} 一起的自驾游",
+  "@roadtripWithThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "rotate": "旋转",
+  "sameperson": "是同一个人？",
+  "save": "保存",
+  "@save": {
+    "description": "Label for save button"
+  },
+  "saveAsAnotherPerson": "另存为其他人物",
+  "saveChangesBeforeLeavingQuestion": "离开之前要保存更改吗？",
+  "saveCode": "保存代码",
+  "saveCollage": "保存拼贴",
+  "saveCopy": "保存副本",
+  "saveKey": "保存密钥",
+  "@saveKey": {
+    "description": "Save key button label"
+  },
+  "saveOnlyDescription": "您想将其保存到您的内置存储中（默认情况下为“下载”文件夹）吗？",
+  "@saveOnlyDescription": {
+    "description": "Description text asking user if they want to save to storage (for platforms that don't support sharing)"
+  },
+  "saveOrSendDescription": "您想将其保存到您的内置存储（默认情况下为“下载”文件夹）还是将其发送到其他应用程序？",
+  "@saveOrSendDescription": {
+    "description": "Description text asking user if they want to save to storage or share with other apps"
+  },
+  "savePerson": "保存人物",
+  "saveToLocker": "保存到 Locker",
+  "saveYourRecoveryKeyIfYouHaventAlready": "若您尚未保存，请妥善保存此恢复密钥",
+  "saving": "正在保存...",
+  "savingEdits": "正在保存编辑内容...",
+  "savingOffline": "正在离线保存...",
+  "scan": "扫描",
+  "scanACode": "扫描代码",
+  "scanAQrCode": "扫描二维码",
+  "scanCode": "扫描二维码/条码",
+  "scannerTorchOff": "关闭手电筒",
+  "scannerTorchOn": "打开手电筒",
+  "scanThisBarcodeWithnyourAuthenticatorApp": "用您的身份验证器应用\n扫描此条码",
+  "search": "搜索",
+  "searchAlbumsEmptySection": "相册",
+  "searchByAlbumNameHint": "相册名称",
+  "searchDiscoverEmptySection": "处理和同步完成后，图像将显示在此处",
+  "searchEmptyTitle": "未找到匹配项",
+  "searchEverywhereTitle": "在所有位置搜索“{query}”",
+  "@searchEverywhereTitle": {
+    "description": "CTA title prompting the user to search globally",
+    "placeholders": {
+      "query": {
+        "type": "String",
+        "example": "passport"
+      }
+    }
+  },
+  "searchFileTypesAndNamesEmptySection": "文件类型和名称",
+  "searchHint": "搜索...",
+  "searchHint1": "在设备上快速搜索",
+  "searchHint2": "照片日期、描述",
+  "searchHint3": "相册、文件名和类型",
+  "searchHint4": "位置",
+  "searchHint5": "即将到来：面部和魔法搜索✨",
+  "searchLocationEmptySection": "在照片的一定半径内拍摄的几组照片",
+  "searchPeopleEmptySection": "邀请他人，您将在此看到他们分享的所有照片",
+  "searchPersonsEmptySection": "处理和同步完成后，人物将显示在此处",
+  "searchResultCount": "{count, plural, other{已找到 {count} 个结果}}",
+  "@searchResultCount": {
+    "description": "Text to tell user how many results were found for their search query",
+    "placeholders": {
+      "count": {
+        "example": "1|2|3",
+        "type": "int"
+      }
+    }
+  },
+  "searchResultDescription": "说明",
+  "@searchResultDescription": {
+    "description": "Search result subtitle label for description matches"
+  },
+  "searchResultFileExtension": "文件扩展名",
+  "@searchResultFileExtension": {
+    "description": "Search result subtitle label for file extension matches"
+  },
+  "searchResultFileName": "文件名",
+  "@searchResultFileName": {
+    "description": "Search result subtitle label for file name matches"
+  },
+  "searchResultPerson": "人",
+  "@searchResultPerson": {
+    "description": "Search result subtitle label for person results"
+  },
+  "searchResultType": "类型",
+  "@searchResultType": {
+    "description": "Search result subtitle label for file type matches"
+  },
+  "searchSectionsLengthMismatch": "部分长度不匹配：{snapshotLength} != {searchLength}",
+  "@searchSectionsLengthMismatch": {
+    "description": "Appears in search tab page",
+    "placeholders": {
+      "searchLength": {
+        "type": "int",
+        "example": "2"
+      },
+      "snapshotLength": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "secret": "密钥",
+  "secretCanNotBeEmpty": "密码不能为空",
+  "security": "安全",
+  "securityDesc": "加密、恢复密钥、应用锁和账户保护",
+  "seePublicAlbumLinksInApp": "在应用程序中查看公开相册链接",
+  "selectAlbumsToBackUpToEnte": "选择要备份到 Ente 的相册",
+  "selectAll": "全选",
+  "selectAllShort": "全部",
+  "@selectAllShort": {
+    "description": "Text that appears in bottom right when you start to select multiple photos. When clicked, it selects all photos."
+  },
+  "selectALocation": "选择一个位置",
+  "selectALocationFirst": "首先选择一个位置",
+  "selectBackupFolder": "选择备份文件夹",
+  "selectCoverPhoto": "选择封面照片",
+  "selectDate": "选择日期",
+  "selected": "已选",
+  "selectedAlbums": "已选择 {count} 个",
+  "@selectedAlbums": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "selectedCount": "{count, plural, one{已选择 {count} 个} other{已选择 {count} 个}}",
+  "@selectedCount": {
+    "description": "Number of items selected",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "selectedFilesAreNotOnEnte": "所选文件不在 Ente 上",
+  "selectedItemsWillBeRemovedFromThisPerson": "选定的项目将从此人身上移除，但不会从您的库中删除。",
+  "selectedPhotos": "已选择 {count} 个",
+  "@selectedPhotos": {
+    "description": "Display the number of selected photos",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "5",
+        "type": "int"
+      }
+    }
+  },
+  "selectedPhotosWithYours": "选择了 {count} 个 (您的 {yourCount} 个)",
+  "@selectedPhotosWithYours": {
+    "description": "Display the number of selected photos, including the number of selected photos owned by the user",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "12",
+        "type": "int"
+      },
+      "yourCount": {
+        "example": "2",
+        "type": "int"
+      }
+    }
+  },
+  "selectExportFormat": "选择导出格式",
+  "selectFile": "选择文件",
+  "selectFolder": "选择文件夹",
+  "selectFolders": "选择文件夹",
+  "selectFoldersForBackup": "选择要备份的文件夹",
+  "selectFolderToContinue": "选择文件夹以继续",
+  "selectItemsToAdd": "选择要添加的项目",
+  "selectLanguage": "选择语言",
+  "selectMailApp": "选择邮件应用",
+  "selectMorePhotos": "选择更多照片",
+  "selectOneDateAndTime": "选择一个日期和时间",
+  "selectOneDateAndTimeForAll": "为所有项选择一个日期和时间",
+  "selectStartOfRange": "选择起始图片",
+  "selectTime": "选择时间",
+  "selectYourFace": "选择你的脸",
+  "selfiesWithThem": "与 {name} 的自拍",
+  "@selfiesWithThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "send": "发送",
+  "@send": {
+    "description": "Label for send button"
+  },
+  "sendCountInvites": "{count, plural, =0{发送邀请} other{发送 {count} 个邀请}}",
+  "@sendCountInvites": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "sendLink": "发送链接",
+  "sendLogsDescription": "这将发送日志以帮助我们调试您的问题。虽然我们采取预防措施确保不记录敏感信息，但我们建议您在共享这些日志之前先查看它们。",
+  "sendQrCode": "发送二维码",
+  "serverEndpoint": "服务器端点",
+  "@serverEndpoint": {
+    "description": "Label for server endpoint setting"
   },
   "sessionExpired": "会话已过期",
   "@sessionExpired": {
     "description": "Error message when session has expired"
   },
-  "incorrectRecoveryKey": "恢复密钥不正确",
-  "@incorrectRecoveryKey": {
-    "description": "Error message when recovery key is incorrect"
+  "sessionIdMismatch": "会话 ID 不匹配",
+  "@sessionIdMismatch": {
+    "description": "In passkey page, deeplink is ignored because of session ID mismatch."
   },
+  "setAPassword": "设置密码",
+  "setAs": "设置为",
+  "setBackupFolder": "设置备份文件夹",
+  "setBackupPassword": "设置备份密码",
+  "setCover": "设置封面",
+  "@setCover": {
+    "description": "Text to set cover photo for an album"
+  },
+  "setLabel": "设置",
+  "@setLabel": {
+    "description": "Label of confirm button to add a new custom radius to the radius selector of a location tag"
+  },
+  "setNewPassword": "设置新密码",
+  "@setNewPassword": {
+    "description": "Set new password title"
+  },
+  "setNewPin": "设置新 PIN 码",
+  "@setNewPin": {
+    "description": "Set new PIN title"
+  },
+  "setPasswordTitle": "设置密码",
+  "@setPasswordTitle": {
+    "description": "Set password title"
+  },
+  "setRadius": "设定半径",
+  "settings": "设置",
+  "setupComplete": "设置完成",
+  "setupFirstAccount": "设置您的\n第一个账户",
+  "setupLegacy": "设置数字遗产",
+  "@setupLegacy": {
+    "description": "Short action label on the home banner that opens Legacy setup"
+  },
+  "setupYourLegacy": "设置您的数字遗产",
+  "share": "分享",
+  "shareCodes": "分享代码",
+  "shareCodesDuration": "选择您要分享代码的期限。",
+  "sharedAlbumSectionDescription": "与其他 Ente 用户（包括免费计划用户）创建共享和协作相册。",
+  "shareKey": "共享密钥",
+  "shareLink": "分享链接",
+  "shareMyVerificationID": "这是我的 ente.com 验证 ID：{verificationID}。",
+  "@shareMyVerificationID": {
+    "placeholders": {
+      "verificationID": {}
+    }
+  },
+  "shareStorageWith5Members": "与 5 位成员共享存储空间",
+  "shareTextConfirmOthersVerificationID": "嘿，你能确认这是你的 ente.com 验证 ID 吗：{verificationID}",
+  "@shareTextConfirmOthersVerificationID": {
+    "placeholders": {
+      "verificationID": {}
+    }
+  },
+  "shareTextRecommendUsingEnteForFamily": "下载 Ente，这样我就能把你加入我的家庭计划：\n\nhttps://ente.com",
+  "shareTextRecommendUsingEnteForPhotos": "下载 Ente，这样我们就能轻松共享原始画质的照片和视频：\n\nhttps://ente.com",
+  "shareWithNonenteUsers": "与非 Ente 用户共享",
+  "shareYourLegacyBannerDescription": "帮助亲友在您不在时访问重要信息。",
+  "@shareYourLegacyBannerDescription": {
+    "description": "Description of the home banner prompting the user to set up Legacy"
+  },
+  "shareYourLegacyBannerTitle": "分享您的数字遗产",
+  "@shareYourLegacyBannerTitle": {
+    "description": "Title of the home banner prompting the user to set up Legacy"
+  },
+  "shareYourSubscription": "与亲友共享你的订阅",
+  "shiftDatesAndTime": "调整日期和时间",
+  "shouldHideCode": "隐藏代码",
+  "shouldRemoveFilesSmartAlbumsDesc": "应该移除之前在智能相册中选择的与该人相关的文件吗？",
+  "showInMemories": "显示回忆",
+  "showLargeIcons": "显示大图标",
+  "showMemories": "显示回忆",
+  "showMoreFaces": "显示更多人脸",
+  "showPerson": "显示人员",
+  "showQRAuthMessage": "显示二维码需要身份验证",
+  "sigInBackupReminder": "登录后 Ente 会自动备份代码。\n\n我们仍然建议您导出代码作为额外备份。",
+  "signInToBackup": "登录以备份您的代码",
+  "signOutOtherDevices": "登出其他设备",
+  "@signOutOtherDevices": {
+    "description": "Sign out other devices button label"
+  },
+  "signUp": "注册",
+  "signUpTerms": "我同意 <u-terms>服务条款</u-terms> 和 <u-policy>隐私政策</u-policy>",
+  "@signUpTerms": {
+    "description": "Terms agreement text for sign up"
+  },
+  "similar": "相似的",
+  "similarImages": "相似图片",
+  "similarImagesCount": "{count} 张相似图片",
+  "@similarImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "singIn": "登录",
+  "skip": "跳过",
+  "smartMemories": "智能回忆",
+  "snowAdventures": "冬日探险",
+  "socialNotifications": "点赞与评论",
+  "somethingWentWrongMessage": "出了点问题，请重试",
+  "somethingWentWrongParsingCode": "我们无法解析 {x} 代码。",
+  "@somethingWentWrongParsingCode": {
+    "placeholders": {
+      "x": {}
+    }
+  },
+  "somethingWentWrongPleaseTryAgain": "出了点问题，请重试",
+  "@somethingWentWrongPleaseTryAgain": {
+    "description": "Generic error message"
+  },
+  "sorry": "抱歉",
+  "sorryBackupFailedDesc": "抱歉，我们目前无法备份此文件，我们将稍后重试。",
+  "sorryCouldNotAddToFavorites": "抱歉，无法添加到收藏！",
+  "sorryCouldNotRemoveFromFavorites": "抱歉，无法从收藏中移除！",
+  "sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": "抱歉，我们无法在此设备上生成安全密钥。\n\n请使用其他设备注册。",
+  "@sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease": {
+    "description": "Error message for insecure device"
+  },
+  "sorryWeHadToPauseYourBackups": "抱歉，我们不得不暂停您的备份",
+  "sort": "排序",
+  "sortAlbumsBy": "排序方式",
+  "sortNewestFirst": "最新在前",
+  "sortOldestFirst": "最旧在前",
+  "sportsAction": "开赛时刻",
+  "sportsWithThem": "与 {name} 一起运动",
+  "@sportsWithThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "spotlightOnThem": "聚光灯下的 {name}",
+  "@spotlightOnThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "spotlightOnYourself": "聚光灯下的自己",
+  "stargazing": "星空之下",
+  "startBackup": "开始备份",
+  "startRecovery": "开始恢复",
+  "startWithLatestPhotos": "从最新照片开始",
+  "status": "状态",
+  "sticker": "贴纸",
+  "stopCastingBody": "您想停止投放吗？",
+  "stopCastingTitle": "停止投放",
+  "storage": "存储空间",
+  "storageBreakupFamily": "家庭",
+  "storageBreakupYou": "您",
+  "@storageBreakupYou": {
+    "description": "Label to indicate how much storage you are using when you are part of a family plan"
+  },
+  "storageClaimed": "已领取 {storageAmountInGB} GB！",
+  "@storageClaimed": {
+    "placeholders": {
+      "storageAmountInGB": {}
+    }
+  },
+  "storageLimitExceeded": "已超出存储限制",
+  "streamDetails": "流详情",
+  "streetArt": "街头艺术故事",
+  "streetFood": "街头美食一口咬",
+  "strongPassword": "强密码",
+  "strongStrength": "强",
+  "@strongStrength": {
+    "description": "Strong password strength label"
+  },
+  "submit": "提交",
+  "subscribe": "订阅",
+  "subscribeToChangeLinkSetting": "您需要付费订阅才能更改此链接设置。",
+  "subscribeToEnableSharing": "您需要有效的付费订阅才能启用共享。",
+  "subscription": "订阅",
+  "subWillBeCancelledOn": "您的订阅将于 {endDate} 取消",
+  "@subWillBeCancelledOn": {
+    "placeholders": {
+      "endDate": {}
+    }
+  },
+  "success": "成功",
+  "successfullyArchived": "存档成功",
+  "successfullyHid": "已成功隐藏",
+  "successfullyUnarchived": "取消存档成功",
+  "successfullyUnhid": "已成功取消隐藏",
+  "suggestFeatures": "建议新功能",
+  "sunrise": "在地平线上",
+  "support": "支持",
+  "supportEnte": "支持 <bold-green>ente</bold-green>",
+  "syncing": "正在同步···",
+  "syncProgress": "已保存的回忆 {completed}/共 {total}",
+  "@syncProgress": {
+    "description": "Text to tell user how many memories have been preserved",
+    "placeholders": {
+      "completed": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "syncStopped": "同步已停止",
+  "systemTheme": "跟随系统",
+  "tag": "标签",
+  "tags": "标签",
+  "tapToCopy": "点击以复制",
+  "tapToUnlock": "点击解锁",
+  "@tapToUnlock": {
+    "description": "Message prompting user to tap to unlock"
+  },
+  "tapToUpload": "点按上传",
+  "@tapToUpload": {
+    "description": "Shown in upload icon widet, inside a tooltip."
+  },
+  "tapToUploadIsIgnoredDue": "点按上传，由于{ignoreReason}，目前上传已被忽略",
+  "@tapToUploadIsIgnoredDue": {
+    "description": "Shown in upload icon widet, inside a tooltip.",
+    "placeholders": {
+      "ignoreReason": {
+        "type": "String",
+        "example": "no network"
+      }
+    }
+  },
+  "tellUsWhatYouThink": "告诉我们您的想法",
+  "tempErrorContactSupportIfPersists": "看起来出了点问题。 请稍后重试。 如果错误仍然存在，请联系我们的支持团队。",
+  "terminate": "终止",
+  "@terminate": {
+    "description": "Terminate button label"
+  },
+  "terminateSession": "是否终止会话？",
+  "@terminateSession": {
+    "description": "Title for terminate session dialog"
+  },
+  "thankYou": "非常感谢您",
+  "thankYouForSubscribing": "感谢您的订阅！",
+  "theLinkYouAreTryingToAccessHasExpired": "您尝试访问的链接已过期。",
+  "theme": "主题",
+  "thePersonGroupsWillNotBeDisplayed": "人物组将不再显示在人物部分。照片将保持不变。",
+  "thePersonWillNotBeDisplayed": "该人将不再显示在人物部分。照片将保持不变。",
   "theRecoveryKeyYouEnteredIsIncorrect": "您输入的恢复密钥不正确",
   "@theRecoveryKeyYouEnteredIsIncorrect": {
     "description": "Detailed error message when recovery key is incorrect"
   },
-  "twofactorAuthenticationSuccessfullyReset": "两步验证已成功重置",
+  "theseItemsWillBeDeletedFromYourDevice": "这些项目将从您的设备中删除。",
+  "thisCanBeUsedToRecoverYourAccountIfYou": "如果您丢失了双重认证方式，这可以用来恢复您的账户",
+  "thisDevice": "此设备",
+  "@thisDevice": {
+    "description": "Label for current device"
+  },
+  "thisImageHasNoExifData": "此图像没有Exif 数据",
+  "thisIsMeExclamation": "这就是我！",
+  "thisIsPersonVerificationId": "这是 {email} 的验证ID",
+  "@thisIsPersonVerificationId": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "someone@ente.com"
+      }
+    }
+  },
+  "thisIsYourVerificationId": "这是您的验证 ID",
+  "thisMonth": "本月",
+  "thisWeek": "本周",
+  "thisWeekThroughTheYears": "历年本周",
+  "thisWillMakeTheDateAndTimeOfAllSelected": "这将使所有选定的照片的日期和时间相同。",
+  "thisYear": "今年",
+  "throughTheYears": "{dateFormat} 年间",
+  "@throughTheYears": {
+    "placeholders": {
+      "dateFormat": {}
+    }
+  },
+  "title": "标题",
+  "todaysLogs": "当天日志",
+  "toResetVerifyEmail": "要重置您的密码，请先验证您的电子邮件。",
+  "@toResetVerifyEmail": {
+    "description": "Message asking user to verify email before password reset"
+  },
+  "totalSize": "总大小",
+  "trash": "回收站",
+  "trashClearedSuccessfully": "回收站已清空",
+  "trashCode": "要删除代码吗？",
+  "trashCodeMessage": "您确定要删除 {account} 的代码吗？",
+  "@trashCodeMessage": {
+    "placeholders": {
+      "account": {}
+    }
+  },
+  "trashIsEmpty": "回收站为空",
+  "trim": "修剪",
+  "tripInYear": "{year} 年的旅行",
+  "@tripInYear": {
+    "placeholders": {
+      "year": {}
+    }
+  },
+  "tripToLocation": "前往 {location} 的旅行",
+  "@tripToLocation": {
+    "placeholders": {
+      "location": {}
+    }
+  },
+  "tropicalParadise": "热带之旅",
+  "troubleshooting": "故障排除",
+  "troubleshootingDesc": "常见问题及其解决方法",
+  "trustedContacts": "可信联系人",
+  "tryAgain": "请再试一次",
+  "@tryAgain": {
+    "description": "Try again button label"
+  },
+  "twofactor": "双重认证",
+  "twofactorAuthenticationHasBeenDisabled": "双重认证已被禁用",
+  "twofactorAuthenticationSuccessfullyReset": "成功重置双重认证",
   "@twofactorAuthenticationSuccessfullyReset": {
     "description": "Message when two-factor authentication is successfully reset"
   },
+  "twoFactorAuthTitle": "双重认证",
+  "@twoFactorAuthTitle": {
+    "description": "Two-factor authentication title"
+  },
+  "twofactorSetup": "双重认证设置",
+  "twoFAVerification": "双重认证",
+  "type": "类型",
+  "typeOfGallerGallerytypeIsNotSupportedForRename": "相册类型 {galleryType} 不支持重命名",
+  "@typeOfGallerGallerytypeIsNotSupportedForRename": {
+    "placeholders": {
+      "galleryType": {
+        "type": "String",
+        "example": "no network"
+      }
+    }
+  },
+  "unableToCheckForUpdatesRightNow": "现在无法检查更新",
+  "unableToExtractFileInformation": "无法从此文件中提取信息",
+  "unarchive": "取消存档",
+  "@unarchive": {
+    "description": "Action of 'Unarchiving' an element"
+  },
+  "unarchiveAlbum": "取消存档相册",
+  "unarchiving": "正在取消存档...",
+  "undo": "撤销",
+  "unhide": "取消隐藏",
+  "unhideToAlbum": "取消隐藏到相册",
+  "unhiding": "正在取消隐藏...",
+  "unhidingFilesToAlbum": "正在取消隐藏文件到相册",
+  "unlock": "解锁",
+  "@unlock": {
+    "description": "Short action label used as the system authentication reason when unlocking the app"
+  },
+  "unpin": "取消置顶",
+  "unpinnedCodeMessage": "{code} 已被取消置顶",
+  "@unpinnedCodeMessage": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "unpinnedCount": "{count, plural, one{已取消置顶 {count} 个项目} other{已取消置顶 {count} 个项目}}",
+  "@unpinnedCount": {
+    "description": "Text to show number of items unpinned",
+    "placeholders": {
+      "count": {
+        "description": "Number of items unpinned",
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "unpinPerson": "取消置顶人员",
+  "unpinText": "取消置顶",
+  "unsavedNoteChangesDescription": "此笔记中有未保存的改动。现在返回将丢失这些改动。",
+  "unselectAll": "取消全部选择",
+  "updateAvailable": "有可用的更新",
+  "updateBackupPassword": "更新备份密码",
+  "updated": "已更新",
+  "updateSettings": "更新设置",
+  "updatingFolderSelection": "正在更新文件夹选择...",
+  "upgrade": "升级",
+  "uploadingFilesToAlbum": "正在将文件上传到相册...",
+  "uploadingMultipleMemories": "正在保存 {count} 个回忆...",
+  "@uploadingMultipleMemories": {
+    "description": "Text to tell user how many memories are being preserved",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadingSingleMemory": "正在保存 1 个回忆...",
+  "uploadIsIgnoredDueToIgnorereason": "由于 {ignoreReason}，上传被忽略",
+  "@uploadIsIgnoredDueToIgnorereason": {
+    "placeholders": {
+      "ignoreReason": {
+        "type": "String",
+        "example": "no network"
+      }
+    }
+  },
+  "usable": "可用",
+  "useAsCover": "用作封面",
+  "usedSpace": "已用空间",
+  "usedYourCode": "使用了您的邀请码",
+  "useOffline": "无需备份即可使用",
+  "useRecoveryKey": "使用恢复密钥",
+  "@useRecoveryKey": {
+    "description": "Use recovery key button label"
+  },
+  "username": "用户名",
+  "useSelectedPhoto": "使用所选照片",
+  "validTill": "有效期至 {endDate}",
+  "@validTill": {
+    "placeholders": {
+      "endDate": {}
+    }
+  },
+  "verify": "验证",
+  "@verify": {
+    "description": "Verify button label"
+  },
+  "verifyEmail": "验证电子邮件",
+  "@verifyEmail": {
+    "description": "Verify email title"
+  },
+  "verifyIDLabel": "验证",
+  "verifying": "正在验证...",
+  "verifyingRecoveryKey": "正在验证恢复密钥...",
+  "verifyPassword": "验证密码",
+  "@verifyPassword": {
+    "description": "Verify password button label"
+  },
+  "videoAlreadyInQueue": "视频文件已存在于队列中",
+  "videoExportFailed": "视频创建失败，请重试。",
+  "videoExportSuccess": "视频已成功创建于 {path}",
+  "@videoExportSuccess": {
+    "description": "Toast shown when a video export completes, mentioning the filesystem path.",
+    "placeholders": {
+      "path": {
+        "description": "File path where the exported video was written",
+        "type": "String",
+        "example": "/tmp/ente_export.mp4"
+      }
+    }
+  },
+  "videoInfo": "视频详情",
+  "videoPreviewAlreadyExists": "视频预览已存在",
+  "videos": "视频",
+  "videoStreaming": "可流媒体播放的视频",
+  "videoStreamingDescriptionLine1": "在任何设备上立即播放视频。",
+  "videoStreamingDescriptionLine2": "启用以处理此设备上的视频流。",
+  "videoStreamingNote": "此设备仅处理过去 60 天内时长不超过 1 分钟的视频。对于更早/更长的视频，请在桌面应用中启用流式传输。",
+  "viewActiveSessions": "查看活动会话",
+  "viewAddOnButton": "查看附加组件",
+  "viewAllExifData": "查看所有 EXIF 数据",
+  "viewAllHelpTopics": "查看所有帮助主题",
+  "viewer": "查看者",
+  "viewLargeFiles": "大文件",
+  "viewLogs": "查看日志",
+  "@viewLogs": {
+    "description": "Button to view logs"
+  },
+  "viewLogsAction": "查看日志",
+  "viewPersonToUnlink": "查看{name}以解除关联",
+  "@viewPersonToUnlink": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "viewPlans": "查看计划",
+  "viewRawCodes": "查看原始代码",
+  "viewRecoveryKey": "查看恢复密钥",
+  "vintageVibes": "复古氛围",
+  "visitWebToManage": "请访问 {webUrl} 来管理您的订阅",
+  "@visitWebToManage": {
+    "description": "Shown when a Stripe subscriber needs to manage their subscription on the web.",
+    "placeholders": {
+      "webUrl": {
+        "type": "String",
+        "example": "photos.ente.com"
+      }
+    }
+  },
+  "waitingForVerification": "等待验证...",
+  "@waitingForVerification": {
+    "description": "Waiting for verification message"
+  },
+  "waitingForWifi": "正在等待 WiFi...",
+  "warning": "警告",
+  "waterfalls": "追逐瀑布",
+  "weakStrength": "弱",
+  "@weakStrength": {
+    "description": "Weak password strength label"
+  },
+  "weDontSupportEditingPhotosAndAlbumsThatYouDont": "我们不支持编辑您尚未拥有的照片和相册",
+  "weHaveSentCodeTo": "我们已向 {email} 发送验证码",
+  "@weHaveSentCodeTo": {
+    "description": "Text to indicate that we have sent a verification code to the user's email",
+    "placeholders": {
+      "email": {
+        "description": "The email address of the user",
+        "type": "String",
+        "example": "example@ente.com"
+      }
+    }
+  },
+  "whatsNew": "更新日志",
+  "widgets": "小组件",
+  "wildlife": "走进荒野",
+  "wishThemAHappyBirthday": "祝 {name} 生日快乐！ 🎉",
+  "@wishThemAHappyBirthday": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "yearly": "每年",
+  "@yearly": {
+    "description": "The text to display for yearly plans",
+    "type": "text"
+  },
+  "yearsAgo": "{count, plural, one{{count} 年前} other{{count} 年前}}",
+  "@yearsAgo": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "yearShort": "年",
+  "@yearShort": {
+    "description": "Appears in pricing page (/yr)"
+  },
+  "yes": "是",
+  "yesCancel": "是的，取消",
+  "yesConvertToViewer": "是的，转换为查看者",
+  "yesDelete": "是的, 删除",
+  "yesDiscardChanges": "是的，放弃更改",
+  "yesIgnore": "是的，忽略",
+  "yesRemove": "是，移除",
+  "yesRenew": "是的，续费",
+  "yesResetPerson": "是，重设人物",
+  "you": "您",
+  "youAndThem": "您和 {name}",
+  "@youAndThem": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "youAreOnTheLatestVersion": "当前为最新版本",
+  "youCannotDowngradeToThisPlan": "您不能降级到此计划",
+  "youHaveNoFileSuggestedForDeletion": "目前没有建议删除的文件",
+  "youHaveSuccessfullyFreedUp": "您已成功释放了 {storageSaved}！",
+  "@youHaveSuccessfullyFreedUp": {
+    "description": "The text to display when the user has successfully freed up storage",
+    "type": "text",
+    "placeholders": {
+      "storageSaved": {
+        "example": "1.2 GB",
+        "type": "String"
+      }
+    }
+  },
+  "yourMap": "您的地图",
+  "yourPhotosLookUnique": "您的照片看起来很独特",
+  "yourPlanSupportsFamily": "你的计划已支持家庭功能",
+  "yourPlanWasSuccessfullyDowngraded": "您的计划已成功降级",
+  "yourPlanWasSuccessfullyUpgraded": "您的计划已成功升级",
+  "yourPurchaseWasSuccessful": "您购买成功！",
+  "yourSubscriptionHasExpired": "您的订阅已过期",
+  "yourSubscriptionWasUpdatedSuccessfully": "您的订阅已成功更新",
+  "yourTrashIsEmpty": "回收站为空",
   "yourVerificationCodeHasExpired": "您的验证码已过期",
   "@yourVerificationCodeHasExpired": {
     "description": "Error message when verification code has expired"
   },
-  "incorrectCode": "验证码错误",
-  "@incorrectCode": {
-    "description": "Error message when code is incorrect"
-  },
-  "sorryTheCodeYouveEnteredIsIncorrect": "抱歉，您输入的验证码不正确",
-  "@sorryTheCodeYouveEnteredIsIncorrect": {
-    "description": "Detailed error message when code is incorrect"
-  },
-  "developerSettings": "开发者设置",
-  "@developerSettings": {
-    "description": "Label for developerSettings"
-  },
-  "serverEndpoint": "服务器端点",
-  "@serverEndpoint": {
-    "description": "Label for serverEndpoint"
-  },
-  "invalidEndpoint": "端点无效",
-  "@invalidEndpoint": {
-    "description": "Label for invalidEndpoint"
-  },
-  "invalidEndpointMessage": "抱歉，您输入的端点无效。请输入有效的端点，然后重试。",
-  "@invalidEndpointMessage": {
-    "description": "Label for invalidEndpointMessage"
-  },
-  "endpointUpdatedMessage": "端点更新成功",
-  "@endpointUpdatedMessage": {
-    "description": "Label for endpointUpdatedMessage"
-  }
+  "youveNoDuplicateCodesThatCanBeCleared": "您没有可清除的重复代码",
+  "youveNoDuplicateFilesThatCanBeCleared": "您没有任何可以清除的重复文件",
+  "youveNoFilesInThisAlbumThatCanBeDeleted": "您在此相册中没有可以删除的文件",
+  "zoomOutToSeePhotos": "缩小以查看照片"
 }

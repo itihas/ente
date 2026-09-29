@@ -1,13 +1,11 @@
-ext {
-    compileSdkVersion   = 35
-    targetSdkVersion    = 35
-}
+apply from: "../../../gradle/ente-android.gradle"
 
 allprojects {
     repositories {
         google()
         jcenter()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
         // mavenLocal() // for FDroid
         maven {
             url "${project(':ffmpeg_kit_flutter').projectDir}/libs"

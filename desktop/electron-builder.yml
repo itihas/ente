@@ -19,6 +19,7 @@ win:
         endpoint: https://eus.codesigning.azure.net/
         certificateProfileName: EnteTrustCertProfile
         codeSigningAccountName: EnteTechnologiesInc
+    signExts: [".dll", ".node"]
 nsis:
     deleteAppDataOnUninstall: true
 linux:
@@ -34,9 +35,13 @@ linux:
     category: Photography
     icon: ./build/icon.icns
 mac:
+    minimumSystemVersion: "13.3"
     target:
         target: default
         arch: [universal]
     category: public.app-category.photography
     hardenedRuntime: true
     mergeASARs: false
+    # Both macOS build passes contain separate x64 and arm64 binaries. Copy them
+    # into the universal app unchanged; the app selects one at runtime.
+    x64ArchFiles: "**/{napi,onnxruntime}/**"

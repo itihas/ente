@@ -1,19 +1,10 @@
 import { AddPhotosIcon } from "@/public-album/components/ActionIcons";
 import { thumbnailManager } from "@/public-album/media/thumbnails/thumbnail-manager";
-import { type SelectedState } from "@/public-album/utils/file";
+import type { SelectedState } from "@/public-album/utils/file";
 import {
     handleSelectCreator,
     handleSelectCreatorMulti,
 } from "@/public-album/utils/photo-frame";
-import {
-    LoadingThumbnail,
-    StaticThumbnail,
-} from "@/shared/ui/media/PlaceholderThumbnails";
-import {
-    computeThumbnailGridLayoutParams,
-    thumbnailGap,
-    type ThumbnailGridLayoutParams,
-} from "@/shared/utils/thumbnail-grid-layout";
 import AlbumOutlinedIcon from "@mui/icons-material/AlbumOutlined";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import PlayCircleOutlineOutlinedIcon from "@mui/icons-material/PlayCircleOutlineOutlined";
@@ -23,6 +14,15 @@ import log from "ente-base/log";
 import type { EnteFile } from "ente-media/file";
 import { fileDurationString } from "ente-media/file-metadata";
 import { FileType } from "ente-media/file-type";
+import {
+    LoadingThumbnail,
+    StaticThumbnail,
+} from "ente-new/photos/components/PlaceholderThumbnails";
+import {
+    computeThumbnailGridLayoutParams,
+    thumbnailGap,
+    type ThumbnailGridLayoutParams,
+} from "ente-new/photos/components/utils/thumbnail-grid-layout";
 import { batch } from "ente-utils/array";
 import { t } from "i18next";
 import React, {
@@ -40,99 +40,35 @@ import {
     type ListChildComponentProps,
 } from "react-window";
 
-/**
- * A component with an explicit height suitable for being plugged in as the
- * {@link header} or {@link footer} of the {@link FileList}.
- */
 export interface FileListHeaderOrFooter {
-    /**
-     * The component itself.
-     */
     component: React.ReactNode;
-    /**
-     * The height of the component (in px).
-     */
     height: number;
-    /**
-     * By default, all items in the {@link FileList}, including headers and
-     * footers injected using this type, get an inline margin.
-     *
-     * Set this property to `true` to omit this default margin, and instead
-     * have the component extend to the container's edges.
-     */
     extendToInlineEdges?: boolean;
 }
 
-/**
- * Data needed to render each row in the variable size list that comprises the
- * file list.
- */
 type FileListItem =
     | {
           type: "file";
-          /**
-           * The height of the row that will render this item.
-           */
           height: number;
-          /**
-           * Groups of items that are shown in the row.
-           *
-           * Each group spans multiple columns (the number of columns being given by
-           * the length of {@link annotatedFiles} or the {@link span}). Groups are
-           * separated by gaps.
-           */
           groups: {
-              /**
-               * The annotated files in this group.
-               */
               annotatedFiles: FileListAnnotatedFile[];
-              /**
-               * The index of the first annotated file in the component's global list
-               * of annotated files.
-               */
               annotatedFilesStartIndex: number;
           }[];
       }
     | {
           type: "date";
           height: number;
-          groups: {
-              /**
-               * The date string to show.
-               */
-              date: string;
-              /**
-               * The number of columns to span.
-               */
-              dateSpan: number;
-          }[];
+          groups: { date: string; dateSpan: number }[];
       }
     | {
           type: "span";
           height: number;
-          /**
-           * The React component that is the rendered representation of the item.
-           */
           component: React.ReactNode;
           extendToInlineEdges?: boolean;
       };
 
 export interface FileListAnnotatedFile {
     file: EnteFile;
-    /**
-     * The date string using with the associated {@link file} should be shown in
-     * the timeline.
-     *
-     * [Note: Timeline date string]
-     *
-     * The timeline date string is a formatted date string under which a
-     * particular file should be grouped in the gallery listing. e.g. "Today",
-     * "Yesterday", "Fri, 21 Feb" etc.
-     *
-     * All files which have the same timelineDateString will be grouped under a
-     * single section in the gallery listing, prefixed by the timelineDateString
-     * itself, and a checkbox to select all files on that date.
-     */
     timelineDateString: string;
 }
 
@@ -159,56 +95,22 @@ interface MasonrySourceItem {
 }
 
 export interface FileListProps {
-    /** The height we should occupy (needed since the list is virtualized). */
     height: number;
-    /** The width we should occupy.*/
     width: number;
-    /**
-     * The files to show, annotated with cached precomputed properties that are
-     * frequently needed by the {@link FileList}.
-     */
     annotatedFiles: FileListAnnotatedFile[];
-    /**
-     * The visual layout used to render the file listing.
-     */
     layout?: "grid" | "masonry";
-    /**
-     * An optional component shown before all the items in the list.
-     *
-     * It is not sticky, and scrolls along with the content of the list.
-     */
     header?: FileListHeaderOrFooter;
-    /**
-     * An optional component shown after all the items in the list.
-     *
-     * It is not sticky, and scrolls along with the content of the list.
-     */
     footer?: FileListHeaderOrFooter;
-    /**
-     * If `true`, then the user can select files in the listing by clicking on
-     * their thumbnails (and other range selection mechanisms).
-     */
     enableSelect?: boolean;
     setSelected: (
         selected: SelectedState | ((selected: SelectedState) => SelectedState),
     ) => void;
     selected: SelectedState;
-    /** A stable key used to reset the virtualized list when the file set changes. */
     activeCollectionID: number;
-    /** Optional action shown below the empty list message. */
     emptyStateAction?: { label: string; onClick: () => void };
-    /**
-     * Called when the user activates the thumbnail at the given {@link index}.
-     *
-     * This corresponding file would be at the corresponding index of
-     * {@link annotatedFiles}.
-     */
     onItemClick: (index: number) => void;
 }
 
-/**
- * A virtualized list of files, each represented by their thumbnail.
- */
 export const FileList: React.FC<FileListProps> = ({
     height,
     width,
@@ -224,6 +126,7 @@ export const FileList: React.FC<FileListProps> = ({
     onItemClick,
 }) => {
     const [_items, setItems] = useState<FileListItem[]>([]);
+    // Deferring item updates keeps resize work interruptible.
     const items = useDeferredValue(_items);
 
     const [rangeStartIndex, setRangeStartIndex] = useState<number | undefined>(
@@ -236,9 +139,6 @@ export const FileList: React.FC<FileListProps> = ({
     const masonryScrollIdleTimeoutRef = useRef<
         ReturnType<typeof setTimeout> | undefined
     >(undefined);
-    // Timeline date strings for which all photos have been selected.
-    //
-    // See: [Note: Timeline date string]
     const [checkedTimelineDateStrings, setCheckedTimelineDateStrings] =
         useState(new Set<string>());
     const listRef = useRef<VariableSizeList | null>(null);
@@ -256,22 +156,12 @@ export const FileList: React.FC<FileListProps> = ({
             return;
         }
 
-        // Since width and height are dependencies, there might be too many
-        // updates to the list during a resize. The list computation too, while
-        // fast, is non-trivial.
-        //
-        // To avoid these issues, the we use `useDeferredValue`: if it gets
-        // another update when processing one, React will restart the background
-        // rerender from scratch.
-
         let items: FileListItem[] = [];
 
         if (header) items.push(asFullSpanFileListItem(header));
 
         const { isSmallerLayout, columns } = layoutParams;
         const fileItemHeight = layoutParams.itemHeight + layoutParams.gap;
-        // A running counter of files that have been pushed into items, and
-        // a function to push them (incrementing the counter).
         let fileIndex = 0;
         const createFileItem = (splits: FileListAnnotatedFile[][]) =>
             ({
@@ -289,8 +179,6 @@ export const FileList: React.FC<FileListProps> = ({
 
         const pushItemsFromSplits = (splits: FileListAnnotatedFile[][]) => {
             if (splits.length > 1) {
-                // If we get here, the combined number of files across
-                // splits is less than the number of columns.
                 items.push({
                     height: dateListItemHeight,
                     type: "date",
@@ -301,8 +189,6 @@ export const FileList: React.FC<FileListProps> = ({
                 });
                 items.push(createFileItem(splits));
             } else {
-                // A single group of files, but the number of such files
-                // might be more than what fits a single row.
                 items.push({
                     height: dateListItemHeight,
                     type: "date",
@@ -329,7 +215,6 @@ export const FileList: React.FC<FileListProps> = ({
             );
             const incomingColumns = split.length;
 
-            // Check if the files in this split can be added to same row.
             if (
                 !isSmallerLayout &&
                 filledColumns +
@@ -387,7 +272,6 @@ export const FileList: React.FC<FileListProps> = ({
     ]);
 
     useEffect(() => {
-        // Refresh list
         listRef.current?.resetAfterIndex(0);
     }, [items]);
 
@@ -396,28 +280,21 @@ export const FileList: React.FC<FileListProps> = ({
             (af) => !selected[af.file.id],
         );
 
-        // Get dates of files which were manually unselected.
         const unselectedDates = new Set(
             notSelectedFiles.map((af) => af.timelineDateString),
         );
 
-        // Get files which were manually selected.
         const localSelectedFiles = annotatedFiles.filter(
             (af) => !unselectedDates.has(af.timelineDateString),
         );
 
-        // Get dates of files which were manually selected.
         const localSelectedDates = new Set(
             localSelectedFiles.map((af) => af.timelineDateString),
         );
 
         setCheckedTimelineDateStrings((prev) => {
             const checked = new Set(prev);
-            // Uncheck the "Select all" checkbox if any of the files on the date
-            // is unselected.
             unselectedDates.forEach((date) => checked.delete(date));
-            // Check the "Select all" checkbox if all of the files on a date are
-            // selected.
             localSelectedDates.forEach((date) => checked.add(date));
             return checked;
         });
@@ -441,7 +318,6 @@ export const FileList: React.FC<FileListProps> = ({
             }
             setCheckedTimelineDateStrings(next);
 
-            // All files on a checked/unchecked day.
             const filesOnADay = annotatedFiles.filter(
                 (af) => af.timelineDateString === date,
             );
@@ -963,10 +839,6 @@ export const FileList: React.FC<FileListProps> = ({
     );
 };
 
-/**
- * Return a new array of splits, each split containing {@link annotatedFiles}
- * which have the same {@link timelineDateString}.
- */
 const splitByDate = (annotatedFiles: FileListAnnotatedFile[]) =>
     annotatedFiles.reduce(
         (splits, annotatedFile) => (
@@ -1064,7 +936,7 @@ const preferredMobileMasonryRowItemCount = (
     const secondIsPortrait = secondRatio < 0.9;
     const thirdIsPortrait = !!third && third.aspectRatio < 0.9;
 
-    // Occasionally show one tall portrait in a row to mimic the mobile collage feel.
+    // Periodically isolate a tall portrait for the mobile collage layout.
     if (firstRatio <= 0.62 && rowIndex % 4 === 1) return 1;
 
     if (firstIsPortrait && secondIsPortrait && third && thirdIsPortrait) {
@@ -1077,11 +949,6 @@ const preferredMobileMasonryRowItemCount = (
     return 2;
 };
 
-/**
- * For each element of {@link xs}, obtain an array by applying {@link f},
- * then obtain a gap element by applying {@link g}. Return a flattened array
- * containing all of these, except the trailing gap.
- */
 const intersperseWithGaps = <T, U>(
     xs: T[],
     f: (x: T) => U[],
@@ -1091,9 +958,6 @@ const intersperseWithGaps = <T, U>(
     return ys.slice(0, ys.length - 1);
 };
 
-/**
- * A list item container that spans the full width.
- */
 const FullSpanListItem = styled("div")`
     display: flex;
     align-items: center;
@@ -1156,10 +1020,6 @@ const EmptyStateActionButton = styled(Button)(({ theme }) => ({
     "& svg": { color: "inherit" },
 }));
 
-/**
- * Convert a {@link FileListHeaderOrFooter} into a {@link FileListItem}
- * that spans the entire width available to the row.
- */
 const asFullSpanFileListItem = ({
     component,
     ...rest
@@ -1169,18 +1029,12 @@ const asFullSpanFileListItem = ({
     component: <FullSpanListItem>{component}</FullSpanListItem>,
 });
 
-/**
- * An grid item, spanning {@link span} columns.
- */
 const GridSpanListItem = styled("div")<{ span: number }>`
     grid-column: span ${({ span }) => span};
     display: flex;
     align-items: center;
 `;
 
-/**
- * The fixed height (in px) of {@link DateListItem}.
- */
 const dateListItemHeight = 48;
 
 const DateListItem = styled(GridSpanListItem)(
@@ -1427,6 +1281,8 @@ const FileThumbnail_ = styled("div")<{
     border-radius: 4px;
 `;
 
+// Safari requires both pseudo-elements to be blocks.
+// It also requires ::before to be relatively positioned.
 const Check = styled("input")<{ $active: boolean }>(
     ({ theme, $active }) => `
     appearance: none;
@@ -1447,19 +1303,19 @@ const Check = styled("input")<{ $active: boolean }>(
 
     &::before {
         content: "";
-        display: block; /* Critical for Safari */
+        display: block;
         width: 19px;
         height: 19px;
         background-color: #ddd;
         border-radius: 50%;
         margin: 6px;
         transition: background-color 0.3s ease, opacity 0.3s ease;
-        position: relative; /* Important for Safari */
+        position: relative;
     }
     
     &::after {
         content: "";
-        display: block; /* Critical for Safari */
+        display: block;
         position: absolute;
         top: 50%;
         left: 50%;
@@ -1472,10 +1328,8 @@ const Check = styled("input")<{ $active: boolean }>(
         transform-origin: center;
     }
 
-    /* Default state - hide both */
     visibility: hidden;
     
-    /* When $active - show both with reduced opacity */
     ${
         $active &&
         `
@@ -1484,13 +1338,11 @@ const Check = styled("input")<{ $active: boolean }>(
     `
     };
     
-    /* Hover state - show both */
     &:hover {
         visibility: visible;
         opacity: 0.7;
     }
     
-    /* Checked state - show both with full opacity and colored */
     &:checked {
         visibility: visible;
         opacity: 1 !important;
@@ -1519,10 +1371,6 @@ const HoverOverlay = styled("div")<{ checked: boolean }>`
         "background:linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0))"};
 `;
 
-/**
- * An overlay with a gradient, showing the file type indicator (e.g. live photo,
- * video) at the bottom right.
- */
 const FileTypeIndicatorOverlay = styled(Overlay)`
     display: flex;
     justify-content: flex-end;

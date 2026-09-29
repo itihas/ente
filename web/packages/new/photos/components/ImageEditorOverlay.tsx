@@ -4,7 +4,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
@@ -55,6 +54,7 @@ import React, {
     forwardRef,
     Fragment,
     useEffect,
+    useId,
     useRef,
     useState,
     type Ref,
@@ -63,24 +63,12 @@ import React, {
 import { savedCollections } from "../services/photos-fdb";
 
 export type ImageEditorOverlayProps = ModalVisibilityProps & {
-    /**
-     * The (Ente) file to edit.
-     */
     file: EnteFile;
-    /**
-     * Called when the user activates the button to save a copy of the given
-     * {@link enteFile} to their Ente account with the edits they have made.
-     *
-     * @param editedFile A Web {@link File} containing the edited contents.
-     * @param collection The collection to which the edited file should be
-     * added.
-     * @param enteFile The original {@link EnteFile}.
-     */
     onSaveEditedCopy: (
         editedFile: File,
         collection: Collection,
         enteFile: EnteFile,
-    ) => void;
+    ) => boolean;
 };
 
 const filterDefaultValues = {
@@ -107,15 +95,13 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
     onSaveEditedCopy,
 }) => {
     const { showMiniDialog } = useBaseContext();
+    const titleID = useId();
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const originalSizeCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const parentRef = useRef<HTMLDivElement | null>(null);
 
     const [fileURL, setFileURL] = useState<string | undefined>(undefined);
-    // The MIME type of the original file that we are editing.
-    //
-    // It should generally be present, but it is not guaranteed to be.
     const [mimeType, setMIMEType] = useState<string | undefined>(undefined);
 
     const [currentRotationAngle, setCurrentRotationAngle] = useState(0);
@@ -167,7 +153,6 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
         };
         const parentBounds = parentRef.current!.getBoundingClientRect();
 
-        // calculate the offset created by centering the canvas in its parent
         const offsetX = (parentBounds.width - canvasBounds.width) / 2;
         const offsetY = (parentBounds.height - canvasBounds.height) / 2;
 
@@ -181,11 +166,8 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
         const offsetX = e.pageX - rect.left - rect.width / 2;
         const offsetY = e.pageY - rect.top - rect.height / 2;
 
-        // The threshold near the corners of the crop box in which dragging is
-        // assumed as not the intention.
         const cornerThreshold = 20;
 
-        // check if the cursor is near the corners of the box
         const isNearLeftOrRightEdge =
             e.pageX < rect.left + cornerThreshold ||
             e.pageX > rect.right - cornerThreshold;
@@ -194,7 +176,6 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
             e.pageY > rect.bottom - cornerThreshold;
 
         if (isNearLeftOrRightEdge && isNearTopOrBottomEdge) {
-            // cursor is near a corner, do not initiate dragging
             setIsGrowing(true);
             setStartX(e.pageX);
             setStartY(e.pageY);
@@ -211,7 +192,6 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
     const handleDrag: React.MouseEventHandler = (e) => {
         if (!isDragging && !isGrowing) return;
 
-        // d- variables are the delta change between start and now
         const dx = e.pageX - startX;
         const dy = e.pageY - startY;
 
@@ -235,7 +215,6 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
                 let newX = prev.x + dx;
                 let newY = prev.y + dy;
 
-                // constrain the new position to the canvas boundaries, accounting for the offset
                 newX = Math.max(
                     offsetX,
                     Math.min(newX, offsetX + canvasBounds.width - prev.width),
@@ -347,7 +326,6 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
 
     useEffect(() => {
         if (currentRotationAngle >= 360 || currentRotationAngle <= -360) {
-            // set back to 0
             setCurrentRotationAngle(0);
         }
     }, [currentRotationAngle]);
@@ -482,8 +460,9 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
             const collection = collections.find(
                 (c) => c.id == file.collectionID,
             );
-            onSaveEditedCopy(await getEditedFile(), collection!, file);
-            setFileURL(undefined);
+            if (onSaveEditedCopy(await getEditedFile(), collection!, file)) {
+                setFileURL(undefined);
+            }
         } catch (e) {
             log.error("Error saving copy to ente", e);
         }
@@ -523,8 +502,16 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
 
     return (
         <Backdrop
+            slotProps={{
+                root: {
+                    "aria-hidden": false,
+                    "aria-labelledby": titleID,
+                    "aria-modal": true,
+                    role: "dialog",
+                },
+            }}
             sx={{
-                backgroundColor: "background.default" /* Opaque */,
+                backgroundColor: "background.default",
                 width: "100%",
                 zIndex: "var(--mui-zIndex-modal)",
             }}
@@ -538,7 +525,11 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
                         alignItems: "center",
                     }}
                 >
-                    <Typography variant="h2" sx={{ fontWeight: "medium" }}>
+                    <Typography
+                        id={titleID}
+                        variant="h2"
+                        sx={{ fontWeight: "medium" }}
+                    >
                         {t("photo_editor")}
                     </Typography>
                     <IconButton
@@ -648,8 +639,7 @@ export const ImageEditorOverlay: React.FC<ImageEditorOverlayProps> = ({
                 >
                     <Tabs
                         value={currentTab}
-                        onChange={(_, value) => {
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                        onChange={(_, value: OperationTab) => {
                             setCurrentTab(value);
                         }}
                     >
@@ -724,21 +714,6 @@ const confirmEditorCloseDialogAttributes = (
     continue: { text: t("discard"), color: "critical", action: onConfirm },
 });
 
-/**
- * Create a new {@link File} with the contents of the given canvas.
- *
- * @param canvas A {@link HTMLCanvasElement} whose contents we want to download
- * as a file.
- *
- * @param originalFileName The name of the original file which was used to seed
- * the canvas. This will be used as a base name for the generated file (with an
- * "-edited" suffix).
- *
- * @param originalMIMEType The MIME type of the original file which was used to
- * seed the canvas. When possible, we try to download a file in the same format,
- * but this is not guaranteed and depends on browser support. If the original
- * MIME type can not be preserved, a PNG file will be downloaded.
- */
 const canvasToFile = async (
     canvas: HTMLCanvasElement,
     originalFileName: string,
@@ -747,9 +722,7 @@ const canvasToFile = async (
     const image = new Image();
     image.src = canvas.toDataURL();
 
-    // Browsers are required to support "image/png". They may also support
-    // "image/jpeg" and "image/webp". Potentially they may even support more
-    // formats, but to keep this scoped we limit to these three.
+    // PNG is guaranteed; preserve JPEG or WebP when possible.
     let [mimeType, extension] = ["image/png", "png"];
     switch (originalMIMEType) {
         case "image/jpeg":
@@ -764,11 +737,10 @@ const canvasToFile = async (
             break;
     }
 
-    const blob = (await new Promise<Blob>((resolve) =>
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+    const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, mimeType),
-    ))!;
+    );
+    if (!blob) throw new Error("Failed to encode edited image");
 
     const [originalName] = nameAndExtension(originalFileName);
     const fileName = `${originalName}-edited.${extension}`;
@@ -882,19 +854,13 @@ const getCropRegionArgs = (
     cropBoxEle: HTMLDivElement,
     canvasEle: HTMLCanvasElement,
 ) => {
-    // get the bounding rectangle of the crop box
     const cropBoxRect = cropBoxEle.getBoundingClientRect();
-    // Get the bounding rectangle of the canvas
     const canvasRect = canvasEle.getBoundingClientRect();
 
-    // calculate the scale of the canvas display relative to its actual dimensions
     const displayScale = canvasEle.width / canvasRect.width;
 
-    // calculate the coordinates of the crop box relative to the canvas and adjust for any scrolling by adding scroll offsets
-    const x1 =
-        (cropBoxRect.left - canvasRect.left + window.scrollX) * displayScale;
-    const y1 =
-        (cropBoxRect.top - canvasRect.top + window.scrollY) * displayScale;
+    const x1 = (cropBoxRect.left - canvasRect.left) * displayScale;
+    const y1 = (cropBoxRect.top - canvasRect.top) * displayScale;
     const x2 = x1 + cropBoxRect.width * displayScale;
     const y2 = y1 + cropBoxRect.height * displayScale;
 
@@ -913,16 +879,11 @@ const FreehandCropRegion = forwardRef(
     ) => {
         return (
             <>
-                {/* Top overlay */}
                 <CropOverlayRegionTemplate
-                    // Height up to the top of the crop box.
                     sx={{ top: 0, left: 0, right: 0, height: `${cropBox.y}px` }}
                 />
 
-                {/* Bottom overlay */}
                 <CropOverlayRegionTemplate
-                    // Height from the bottom of the crop box to the bottom of
-                    // the canvas.
                     sx={{
                         bottom: 0,
                         left: 0,
@@ -931,27 +892,20 @@ const FreehandCropRegion = forwardRef(
                     }}
                 />
 
-                {/* Left overlay */}
                 <CropOverlayRegionTemplate
                     sx={{
                         top: `${cropBox.y}px`,
                         left: 0,
-                        // Width up to the left side of the crop box.
                         width: `${cropBox.x}px`,
-                        // Same height as the crop box.
                         height: `${cropBox.height}px`,
                     }}
                 />
 
-                {/* Right overlay */}
                 <CropOverlayRegionTemplate
                     sx={{
                         top: `${cropBox.y}px`,
                         right: 0,
-                        // Width from the right side of the crop box to the
-                        // right side of the canvas.
                         width: `calc(100% - ${cropBox.x + cropBox.width}px)`,
-                        // Same height as the crop box.
                         height: `${cropBox.height}px`,
                     }}
                 />
@@ -1025,7 +979,6 @@ const TransformMenu: React.FC<CommonMenuProps> = ({
     setCanvasLoading,
     setTransformationPerformed,
 }) => {
-    // Crops the canvas according to originalHeight and originalWidth without compounding
     const cropCanvas = (
         canvas: HTMLCanvasElement,
         widthRatio: number,
@@ -1306,7 +1259,7 @@ const ColoursMenu: React.FC<ColoursMenuProps> = (props) => (
                 value={props.brightness}
                 marks={[{ value: 100, label: "100%" }]}
                 onChange={(_, value) => {
-                    props.setBrightness(value as number);
+                    props.setBrightness(value);
                 }}
             />
             <RowButtonGroupTitle>{t("contrast")}</RowButtonGroupTitle>
@@ -1318,7 +1271,7 @@ const ColoursMenu: React.FC<ColoursMenuProps> = (props) => (
                 valueLabelDisplay="auto"
                 value={props.contrast}
                 onChange={(_, value) => {
-                    props.setContrast(value as number);
+                    props.setContrast(value);
                 }}
                 marks={[{ value: 100, label: "100%" }]}
             />
@@ -1331,7 +1284,7 @@ const ColoursMenu: React.FC<ColoursMenuProps> = (props) => (
                 valueLabelDisplay="auto"
                 value={props.blur}
                 onChange={(_, value) => {
-                    props.setBlur(value as number);
+                    props.setBlur(value);
                 }}
             />
             <RowButtonGroupTitle>{t("saturation")}</RowButtonGroupTitle>
@@ -1343,7 +1296,7 @@ const ColoursMenu: React.FC<ColoursMenuProps> = (props) => (
                 valueLabelDisplay="auto"
                 value={props.saturation}
                 onChange={(_, value) => {
-                    props.setSaturation(value as number);
+                    props.setSaturation(value);
                 }}
                 marks={[{ value: 100, label: "100%" }]}
             />

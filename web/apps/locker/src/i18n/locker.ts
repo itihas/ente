@@ -22,13 +22,7 @@ const ensureLockerBundle = (locale: LockerLocale) => {
     );
 };
 
-/**
- * Add Locker-local translations on top of the shared web bundle.
- *
- * This keeps the Locker parity work scoped to the app instead of modifying the
- * shared i18n package.
- */
-export const setupLockerI18n = () => {
+const setupLockerI18n = () => {
     ensureLockerBundle("en-US");
 
     const locale = i18n.language as LockerLocale;
