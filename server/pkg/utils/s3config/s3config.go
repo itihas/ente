@@ -2,6 +2,7 @@ package s3config
 
 import (
 	"fmt"
+	neturl "net/url"
 	"slices"
 	"strings"
 
@@ -159,7 +160,11 @@ func (config *S3Config) UploadURL(url string) string {
 	if rest, ok := strings.CutPrefix(url, config.uploadProxyFrom+"/"); ok {
 		return config.uploadProxyTo + "/" + rest
 	}
-	log.Warnf("Upload URL does not match s3.upload-proxy.from %s, not proxying it", config.uploadProxyFrom)
+	host := url
+	if u, err := neturl.Parse(url); err == nil {
+		host = u.Scheme + "://" + u.Host
+	}
+	log.Warnf("Upload URL origin %s does not match s3.upload-proxy.from %s, not proxying it", host, config.uploadProxyFrom)
 	return url
 }
 

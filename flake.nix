@@ -231,9 +231,14 @@
                 http.port = cfg.port;
                 apps = mapAttrs (n: v: "https://${v.subdomain}.${cfg.domain}") cfg.apps;
               } // optionalAttrs cfg.uploadProxy.enable {
-                s3.upload-proxy = {
-                  from = "https://${cfg.uploadProxy.upstream}";
-                  to = "https://${cfg.uploadProxy.subdomain}.${cfg.domain}";
+                s3 = {
+                  # The rewrite only swaps the origin, so the bucket must be
+                  # in the path rather than the hostname.
+                  use_path_style_urls = true;
+                  upload-proxy = {
+                    from = "https://${cfg.uploadProxy.upstream}";
+                    to = "https://${cfg.uploadProxy.subdomain}.${cfg.domain}";
+                  };
                 };
               };
               configDir = pkgs.symlinkJoin {
