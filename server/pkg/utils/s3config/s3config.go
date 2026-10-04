@@ -3,6 +3,7 @@ package s3config
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -29,6 +30,10 @@ type S3Config struct {
 
 	fileDataConfig   FileDataConfig
 	attachmentConfig AttachmentConfig
+
+	// Origins for rewriting presigned upload URLs, see UploadURL.
+	uploadProxyFrom string
+	uploadProxyTo   string
 }
 
 // The primary object-replication path uses three provider-specific roles:
@@ -119,6 +124,15 @@ func (config *S3Config) initialize() {
 		}
 	}
 
+	config.uploadProxyFrom = strings.TrimSuffix(viper.GetString("s3.upload-proxy.from"), "/")
+	config.uploadProxyTo = strings.TrimSuffix(viper.GetString("s3.upload-proxy.to"), "/")
+	if (config.uploadProxyFrom == "") != (config.uploadProxyTo == "") {
+		log.Fatal("s3.upload-proxy needs both from and to")
+	}
+	if config.uploadProxyFrom != "" {
+		log.Infof("Upload proxy: %s -> %s", config.uploadProxyFrom, config.uploadProxyTo)
+	}
+
 	if err := viper.Sub("s3").Unmarshal(&config.fileDataConfig); err != nil {
 		log.Fatalf("Unable to decode into struct: %v\n", err)
 		return
@@ -128,6 +142,25 @@ func (config *S3Config) initialize() {
 		return
 	}
 
+}
+
+// UploadURL returns the presigned upload URL to hand out to clients.
+//
+// When s3.upload-proxy is configured, a URL presigned for its `from` origin is
+// rewritten to its `to` origin. The proxy there must forward requests with the
+// original Host header so that the presigned signature still verifies. This
+// lets self-hosted deployments route uploads around a slow client-to-S3 path
+// (e.g. browsers' HTTP/2 uploads to providers that keep a small flow-control
+// window).
+func (config *S3Config) UploadURL(url string) string {
+	if config.uploadProxyFrom == "" {
+		return url
+	}
+	if rest, ok := strings.CutPrefix(url, config.uploadProxyFrom+"/"); ok {
+		return config.uploadProxyTo + "/" + rest
+	}
+	log.Warnf("Upload URL does not match s3.upload-proxy.from %s, not proxying it", config.uploadProxyFrom)
+	return url
 }
 
 func (config *S3Config) GetBucket(dcOrBucketID string) *string {

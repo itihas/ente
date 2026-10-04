@@ -195,6 +195,27 @@
               type = types.attrs;
               default = { };
             };
+            uploadProxy = {
+              enable = mkEnableOption ''
+                proxying uploads to the S3 bucket through nginx on this host:
+                museum rewrites the origin of the presigned upload URLs it
+                hands out to point at the proxy. Browsers upload to S3 over
+                HTTP/2, and some providers (e.g. Hetzner Object Storage) never
+                grow the HTTP/2 flow-control window, which caps each upload
+                connection at ~64 KB per round trip. The proxy is served over
+                HTTP/1.1 and talks to the bucket over a short hop'';
+              subdomain = mkOption {
+                type = types.str;
+                default = "s3";
+                description = "subdomain of `domain` that serves the proxy.";
+              };
+              upstream = mkOption {
+                type = types.str;
+                example = "hel1.your-objectstorage.com";
+                description =
+                  "host of the S3 endpoint museum presigns upload URLs for. Uploads fail with a signature error if this doesn't match.";
+              };
+            };
           };
           config = {
 
@@ -209,6 +230,11 @@
               museumConfig = {
                 http.port = cfg.port;
                 apps = mapAttrs (n: v: "https://${v.subdomain}.${cfg.domain}") cfg.apps;
+              } // optionalAttrs cfg.uploadProxy.enable {
+                s3.upload-proxy = {
+                  from = "https://${cfg.uploadProxy.upstream}";
+                  to = "https://${cfg.uploadProxy.subdomain}.${cfg.domain}";
+                };
               };
               configDir = pkgs.symlinkJoin {
                 name = "ente-config";
@@ -279,7 +305,29 @@
                   sub_filter_once on;
 
                   try_files $uri $uri.html /index.html;'';
-              })) cfg.apps;
+              })) cfg.apps // optionalAttrs cfg.uploadProxy.enable {
+                "${cfg.uploadProxy.subdomain}.${cfg.domain}" = {
+                  forceSSL = true;
+                  enableACME = true;
+                  # The point of the proxy: browsers must not negotiate HTTP/2.
+                  http2 = false;
+                  locations."/" = {
+                    proxyPass = "https://${cfg.uploadProxy.upstream}";
+                    # The default proxy headers would set Host to this
+                    # vhost, breaking the presigned signature.
+                    recommendedProxySettings = false;
+                    extraConfig = ''
+                      proxy_set_header Host ${cfg.uploadProxy.upstream};
+                      proxy_ssl_server_name on;
+                      proxy_ssl_name ${cfg.uploadProxy.upstream};
+                      proxy_http_version 1.1;
+                      proxy_request_buffering off;
+                      proxy_buffering off;
+                      client_max_body_size 64m;
+                    '';
+                  };
+                };
+              };
           };
         });
     });

@@ -1097,7 +1097,7 @@ func (c *FileController) getObjectURL(object ente.TempObject) (ente.UploadURL, e
 	if err != nil {
 		return ente.UploadURL{}, stacktrace.Propagate(err, "")
 	}
-	return ente.UploadURL{ObjectKey: object.ObjectKey, URL: url}, nil
+	return ente.UploadURL{ObjectKey: object.ObjectKey, URL: c.S3Config.UploadURL(url)}, nil
 }
 
 func (c *FileController) GetMultipartUploadURLs(ctx context.Context, userID int64, count int, app ente.App, client string) (ente.MultipartUploadURLs, error) {
@@ -1151,7 +1151,7 @@ func (c *FileController) GetMultipartUploadURLs(ctx context.Context, userID int6
 	if err != nil {
 		return multipartUploadURLs, stacktrace.Propagate(err, "")
 	}
-	multipartUploadURLs.CompleteURL = url
+	multipartUploadURLs.CompleteURL = c.S3Config.UploadURL(url)
 
 	return multipartUploadURLs, nil
 }
@@ -1244,7 +1244,7 @@ func (c *FileController) GetMultipartUploadURLWithMetadata(ctx context.Context, 
 	if err != nil {
 		return multipartUploadURLs, stacktrace.Propagate(err, "")
 	}
-	multipartUploadURLs.CompleteURL = url
+	multipartUploadURLs.CompleteURL = c.S3Config.UploadURL(url)
 	return multipartUploadURLs, nil
 }
 
@@ -1266,7 +1266,7 @@ func (c *FileController) getPartURL(s3Client s3.S3, objectKey string, partNumber
 	if err != nil {
 		return "", stacktrace.Propagate(err, "")
 	}
-	return url, nil
+	return c.S3Config.UploadURL(url), nil
 }
 
 func calculateMultipartPartCount(contentLength int64, partLength int64) int {
