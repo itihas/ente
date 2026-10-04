@@ -51,7 +51,6 @@ import {
     type UploadResult,
 } from ".";
 import { tryParseEpochMicrosecondsFromFileName } from "./date";
-import { computeMd5Base64 } from "./md5";
 import { matchJSONMetadata, type ParsedMetadataJSON } from "./metadata-json";
 import {
     completeMultipartUpload,
@@ -826,6 +825,7 @@ export const upload = async (
         const backupedFile = await uploadToBucket(
             encryptedFilePieces,
             uploadContext,
+            worker,
         );
 
         abortIfCancelled();
@@ -1730,6 +1730,7 @@ const areUint8ArraysEqual = (a: Uint8Array, b: Uint8Array) => {
 const uploadToBucket = async (
     encryptedFilePieces: EncryptedFilePieces,
     uploadContext: UploadContext,
+    worker: CryptoWorker,
 ): Promise<
     Pick<
         PostEnteFileRequest,
@@ -1773,6 +1774,7 @@ const uploadToBucket = async (
                 requestRetrier,
                 maxPercent,
                 checksumEnabled,
+                worker,
             ));
     } else {
         const data =
@@ -1782,7 +1784,7 @@ const uploadToBucket = async (
         fileSize = data.length;
 
         const fileMd5 = shouldSendContentChecksum
-            ? computeMd5Base64(data)
+            ? await worker.md5Base64(data)
             : undefined;
         const fileUploadURL = await uploadService.getUploadURL(
             shouldSendContentChecksum
@@ -1804,7 +1806,7 @@ const uploadToBucket = async (
     }
 
     const thumbnailMd5 = shouldSendContentChecksum
-        ? computeMd5Base64(thumbnail.encryptedData)
+        ? await worker.md5Base64(thumbnail.encryptedData)
         : undefined;
     const thumbnailUploadURL = await uploadService.getUploadURL(
         shouldSendContentChecksum
@@ -1888,6 +1890,7 @@ const uploadStreamUsingMultipart = async (
     requestRetrier: HTTPRequestRetrier,
     maxPercent: number,
     checksumEnabled: boolean,
+    worker: CryptoWorker,
 ) => {
     const { isCFUploadProxyDisabled, abortIfCancelled, updateUploadProgress } =
         uploadContext;
@@ -1911,7 +1914,8 @@ const uploadStreamUsingMultipart = async (
             if (partData.length === 0) break;
             parts.push(partData);
             fileSize += partData.length;
-            partMd5s.push(computeMd5Base64(partData));
+            // See: [Note: MD5 off the main thread]
+            partMd5s.push(await worker.md5Base64(partData));
         }
         const { done } = await streamReader.read();
         if (!done) throw new Error("More chunks than expected");

@@ -1,9 +1,11 @@
 import { expose } from "comlink";
 import { logUnhandledErrorsAndRejectionsInWorker } from "ente-base/log-web";
 import * as libsodium from "./libsodium";
+import * as md5 from "./md5";
 
 /**
- * A web worker that exposes the functions defined by libsodium.ts.
+ * A web worker that exposes the functions defined by libsodium.ts (and the
+ * MD5 checksum from md5.ts).
  *
  * See: [Note: Crypto code hierarchy].
  *
@@ -46,6 +48,7 @@ export class CryptoWorker {
     deriveSensitiveKey = libsodium.deriveSensitiveKey;
     deriveInteractiveKey = libsodium.deriveInteractiveKey;
     deriveSubKeyBytes = libsodium.deriveSubKeyBytes;
+    md5Base64 = md5.computeMd5Base64;
 }
 
 expose(CryptoWorker);
